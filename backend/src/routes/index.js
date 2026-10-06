@@ -7,7 +7,7 @@ const router = express.Router();
 
 // 导入各模块路由
 const authRoutes = require('./auth.routes');
-const simpleApiRoutes = require('./simple-api.routes');
+const apiRoutes = require('./api.routes');
 const nodeRoutes = require('./node.routes');
 const materialRoutes = require('./material.routes');
 const issueRoutes = require('./issue.routes');
@@ -15,7 +15,7 @@ const pendingRoutes = require('./pending.routes');
 
 // 挂载路由
 router.use('/auth', authRoutes);
-router.use('/', simpleApiRoutes); // 新的简化API
+router.use('/', apiRoutes);
 router.use('/nodes', nodeRoutes);
 router.use('/materials', materialRoutes);
 router.use('/issues', issueRoutes);

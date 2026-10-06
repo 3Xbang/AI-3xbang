@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -407,7 +407,7 @@
         // 加载工序库
         async function loadProcessLibrary() {
             try {
-                const response = await fetch(`${API_BASE}/processes/library`, {
+                const response = await fetch(${API_BASE}/processes`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const result = await response.json();
@@ -488,8 +488,8 @@
                     <div class="process-card">
                         <div class="process-header">
                             <div class="process-info">
-                                <div class="process-name">${process.process_name}</div>
-                                <div class="process-code">${process.process_code}</div>
+                                <div class="process-name">${process.node_name}</div>
+                                <div class="process-code">${process.node_code}</div>
                             </div>
                             <span class="process-status status-${process.status}">
                                 ${getStatusText(process.status)}
@@ -508,13 +508,13 @@
                         <div class="process-actions">
                             <button 
                                 class="btn-action ${canStart ? 'btn-start' : 'btn-disabled'}" 
-                                onclick="checkinProcess(${process.node_id}, 'start')"
+                                onclick="checkinProcess(${process.id}, 'start')"
                                 ${!canStart ? 'disabled' : ''}>
                                 ${canStart ? '🚀 开始' : '已开始'}
                             </button>
                             <button 
                                 class="btn-action ${canComplete ? 'btn-complete' : 'btn-disabled'}" 
-                                onclick="checkinProcess(${process.node_id}, 'complete')"
+                                onclick="checkinProcess(${process.id}, 'complete')"
                                 ${!canComplete ? 'disabled' : ''}>
                                 ${canComplete ? '✅ 完成' : process.status === 'completed' || process.status === 'approved' ? '已完成' : '待开始'}
                             </button>
@@ -544,7 +544,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/processes/${nodeId}/checkin`, {
+                const response = await fetch(${API_BASE}/projects/${projectId}/processes/${nodeId}/checkin`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -629,3 +629,4 @@
     </script>
 </body>
 </html>
+

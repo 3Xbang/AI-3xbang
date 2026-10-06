@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -348,7 +348,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">项目地址 *</label>
-                    <input type="text" class="form-input" name="address" required placeholder="请输入项目地址">
+                    <input type="text" class="form-input" name="location" required placeholder="请输入项目地址">
                 </div>
                 <div class="form-group">
                     <label class="form-label">业主姓名</label>
@@ -429,8 +429,7 @@
             projectsGrid.innerHTML = projects.map(project => `
                 <div class="project-card" onclick="openProject(${project.id})">
                     <div class="project-name">${project.project_name}</div>
-                    <div class="project-info">📍 ${project.location || '未设置地址'}</div>
-                    ${project.client_name ? `<div class="project-info">👤 ${project.client_name}</div>` : ''}
+                    <div class="project-info">📍 ${project.location || '未设置地址'}</div></div>` : ''}
                     ${project.budget ? `<div class="project-info">💰 预算: ¥${parseFloat(project.budget).toLocaleString()}</div>` : ''}
                     <div class="project-info">📅 创建: ${new Date(project.created_at).toLocaleDateString()}</div>
                     <span class="project-status status-${project.status}">
@@ -469,8 +468,7 @@
             const formData = new FormData(event.target);
             const data = {
                 project_name: formData.get('project_name'),
-                address: formData.get('address'),
-                client_name: formData.get('client_name') || null,
+                location: formData.get('location'),
                 budget: formData.get('budget') ? parseFloat(formData.get('budget')) : null
             };
 
@@ -523,3 +521,4 @@
     </script>
 </body>
 </html>
+

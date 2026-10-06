@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目详情 - Winaii施工管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .navbar h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 项目信息卡片 */
+        .project-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .project-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .project-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .meta-label {
+            color: #999;
+        }
+
+        .meta-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .stat-title {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-icon {
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-subtitle {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 快捷操作按钮 */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .action-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .action-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .action-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .action-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* 最近活动 */
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 9px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #667eea;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #667eea;
+        }
+
+        .timeline-content {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .navbar h1 {
+                font-size: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .project-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+        <div class="navbar-left">
+            <button class="btn-back" onclick="goBack()">←</button>
+            <h1 id="projectName">项目详情</h1>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 加载状态 -->
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <div>加载中...</div>
+        </div>
+
+        <!-- 项目内容 -->
+        <div id="projectContent" style="display: none;">
+            <!-- 项目信息卡片 -->
+            <div class="project-header">
+                <div class="project-title" id="projectTitle">项目名称</div>
+                <div class="project-meta" id="projectMeta">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">工序进度</span>
+                        <span class="stat-icon">📊</span>
+                    </div>
+                    <div class="stat-value" id="processProgress">0%</div>
+                    <div class="stat-subtitle" id="processDetail">0/0 已完成</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">在岗工人</span>
+                        <span class="stat-icon">👷</span>
+                    </div>
+                    <div class="stat-value" id="workerCount">0</div>
+                    <div class="stat-subtitle">活跃工人数</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">项目预算</span>
+                        <span class="stat-icon">💰</span>
+                    </div>
+                    <div class="stat-value" id="budgetAmount">¥0</div>
+                    <div class="stat-subtitle">预算总额</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">项目天数</span>
+                        <span class="stat-icon">📅</span>
+                    </div>
+                    <div class="stat-value" id="projectDays">0</div>
+                    <div class="stat-subtitle">已进行天数</div>
+                </div>
+            </div>
+
+            <!-- 快捷操作 -->
+            <div class="actions-grid">
+                <a href="#" class="action-btn" onclick="goToProcesses(event)">
+                    <div class="action-icon">⚙️</div>
+                    <div class="action-text">工序管理</div>
+                </a>
+                <a href="#" class="action-btn" onclick="goToWorkers(event)">
+                    <div class="action-icon">👥</div>
+                    <div class="action-text">工人管理</div>
+                </a>
+                <a href="#" class="action-btn" onclick="goToAttendance(event)">
+                    <div class="action-icon">✅</div>
+                    <div class="action-text">考勤打卡</div>
+                </a>
+                <a href="#" class="action-btn" onclick="goToMaterials(event)">
+                    <div class="action-icon">📦</div>
+                    <div class="action-text">材料管理</div>
+                </a>
+            </div>
+
+            <!-- 最近活动 -->
+            <div class="section">
+                <div class="section-title">
+                    <span>📝</span>
+                    <span>最近活动</span>
+                </div>
+                <div class="timeline" id="recentActivity">
+                    <div class="empty-state">暂无活动记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const token = localStorage.getItem('token');
+        let projectId = null;
+        let projectData = null;
+
+        // 获取URL参数
+        function getProjectId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // 检查认证
+        function checkAuth() {
+            if (!token) {
+                window.location.href = '/index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // 加载项目详情
+        async function loadProjectDetail() {
+            projectId = getProjectId();
+            
+            if (!projectId) {
+                alert('缺少项目ID');
+                goBack();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    projectData = result.data;
+                    displayProjectDetail(projectData);
+                    loadProjectStats();
+                } else {
+                    alert('加载失败：' + result.message);
+                    goBack();
+                }
+            } catch (error) {
+                console.error('加载项目详情失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 显示项目详情
+        function displayProjectDetail(project) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('projectContent').style.display = 'block';
+
+            // 更新导航栏标题
+            document.getElementById('projectName').textContent = project.project_name;
+
+            // 更新项目标题
+            document.getElementById('projectTitle').textContent = project.project_name;
+
+            // 更新项目元信息
+            const metaHtml = `
+                <div class="meta-item">
+                    <span class="meta-label">📍 地址:</span>
+                    <span class="meta-value">${project.address || '未设置'}</span>
+                </div>
+                ${project.client_name ? `
+                <div class="meta-item">
+                    <span class="meta-label">👤 业主:</span>
+                    <span class="meta-value">${project.client_name}</span>
+                </div>
+                ` : ''}
+                ${project.client_phone ? `
+                <div class="meta-item">
+                    <span class="meta-label">📞 电话:</span>
+                    <span class="meta-value">${project.client_phone}</span>
+                </div>
+                ` : ''}
+                <div class="meta-item">
+                    <span class="meta-label">📅 创建时间:</span>
+                    <span class="meta-value">${new Date(project.created_at).toLocaleDateString()}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">📊 状态:</span>
+                    <span class="meta-value">${getStatusText(project.status)}</span>
+                </div>
+            `;
+            document.getElementById('projectMeta').innerHTML = metaHtml;
+
+            // 更新预算
+            if (project.budget) {
+                document.getElementById('budgetAmount').textContent = '¥' + parseFloat(project.budget).toLocaleString();
+            }
+
+            // 计算项目天数
+            const days = Math.floor((new Date() - new Date(project.created_at)) / (1000 * 60 * 60 * 24));
+            document.getElementById('projectDays').textContent = days;
+        }
+
+        // 加载项目统计
+        async function loadProjectStats() {
+            try {
+                // 加载工序统计
+                const processResponse = await fetch(`${API_BASE}/projects/${projectId}/processes`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const processResult = await processResponse.json();
+                
+                if (processResult.success) {
+                    const processes = processResult.data;
+                    const total = processes.length;
+                    const completed = processes.filter(p => p.status === 'completed' || p.status === 'approved').length;
+                    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+                    
+                    document.getElementById('processProgress').textContent = progress + '%';
+                    document.getElementById('processDetail').textContent = `${completed}/${total} 已完成`;
+                }
+
+                // 加载工人统计
+                const workerResponse = await fetch(`${API_BASE}/projects/${projectId}/workers`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const workerResult = await workerResponse.json();
+                
+                if (workerResult.success) {
+                    const activeWorkers = workerResult.data.filter(w => w.status === 'active').length;
+                    document.getElementById('workerCount').textContent = activeWorkers;
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+
+        // 状态文本
+        function getStatusText(status) {
+            const map = {
+                'planning': '规划中',
+                'in_progress': '施工中',
+                'completed': '已完工',
+                'paused': '已暂停'
+            };
+            return map[status] || status;
+        }
+
+        // 返回
+        function goBack() {
+            window.location.href = '/projects.html';
+        }
+
+        // 导航到工序页面
+        function goToProcesses(e) {
+            e.preventDefault();
+            window.location.href = `/processes.html?id=${projectId}`;
+        }
+
+        // 导航到工人页面
+        function goToWorkers(e) {
+            e.preventDefault();
+            window.location.href = `/workers.html?id=${projectId}`;
+        }
+
+        // 导航到考勤页面
+        function goToAttendance(e) {
+            e.preventDefault();
+            window.location.href = `/attendance.html?id=${projectId}`;
+        }
+
+        // 导航到材料页面
+        function goToMaterials(e) {
+            e.preventDefault();
+            alert('材料管理功能开发中...');
+        }
+
+        // 页面加载
+        window.onload = function() {
+            if (checkAuth()) {
+                loadProjectDetail();
+            }
+        };
+    </script>
+</body>
+</html>

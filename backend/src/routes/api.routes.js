@@ -53,12 +53,11 @@ router.get('/processes/library', authenticate, async (req, res) => {
   }
 });
 
-// 项目工序列表
+// 项目工序列表 - 使用别名映射字段名
 router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM process_nodes WHERE project_id = $1 ORDER BY sequence',
-      [req.params.projectId]
+      'SELECT id as node_id, node_name as process_name, node_code as process_code, sort_order, description, NULL as status, NULL as actual_start_date, NULL as actual_end_date FROM process_nodes ORDER BY sort_order'
     );
     res.json({ success: true, data: result.rows });
   } catch (error) {

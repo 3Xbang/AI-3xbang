@@ -151,4 +151,79 @@ router.post('/projects/:projectId/attendance', authenticate, async (req, res) =>
   }
 });
 
+// 材料库列表
+router.get('/materials/library', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM material_library ORDER BY category, material_code');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 项目材料列表
+router.get('/projects/:projectId/materials', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM project_materials WHERE project_id = $1 ORDER BY created_at DESC', [req.params.projectId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 添加材料需求
+router.post('/projects/:projectId/materials', authenticate, async (req, res) => {
+  try {
+    const { material_id, material_name, planned_quantity, unit, unit_price, planned_date, supplier, notes } = req.body;
+    const total_cost = planned_quantity * (unit_price || 0);
+    
+    const result = await pool.query(
+      `INSERT INTO project_materials (project_id, material_id, material_name, planned_quantity, unit, unit_price, total_cost, planned_date, supplier, notes, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'planned') RETURNING *`,
+      [req.params.projectId, material_id, material_name, planned_quantity, unit, unit_price, total_cost, planned_date, supplier, notes]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 材料到货登记
+router.post('/materials/:materialId/receive', authenticate, async (req, res) => {
+  try {
+    const { quantity, receive_date, notes } = req.body;
+    
+    // 获取当前材料信息
+    const material = await pool.query('SELECT * FROM project_materials WHERE id = $1', [req.params.materialId]);
+    if (material.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '材料不存在' });
+    }
+    
+    const mat = material.rows[0];
+    const newReceived = parseFloat(mat.received_quantity || 0) + parseFloat(quantity);
+    const newStatus = newReceived >= mat.planned_quantity ? 'received' : 'partial';
+    
+    const result = await pool.query(
+      `UPDATE project_materials 
+       SET received_quantity = $1, actual_date = $2, status = $3, notes = $4, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $5 RETURNING *`,
+      [newReceived, receive_date, newStatus, notes, req.params.materialId]
+    );
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 删除材料
+router.delete('/materials/:materialId', authenticate, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM project_materials WHERE id = $1', [req.params.materialId]);
+    res.json({ success: true, message: '删除成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

@@ -15,13 +15,26 @@ router.get('/projects', authenticate, async (req, res) => {
   }
 });
 
+// 项目详情
+router.get('/projects/:id', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '项目不存在' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 创建项目
 router.post('/projects', authenticate, async (req, res) => {
   try {
-    const { project_name, address } = req.body;
+    const { project_name, location } = req.body;
     const result = await pool.query(
-      'INSERT INTO projects (project_name, address, created_by, status) VALUES ($1, $2, $3, $4) RETURNING *',
-      [project_name, address, req.user.user_id, 'planning']
+      'INSERT INTO projects (project_name, location, start_date, status) VALUES ($1, $2, CURRENT_DATE, $3) RETURNING *',
+      [project_name, location, 'active']
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {

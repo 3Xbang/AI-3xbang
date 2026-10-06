@@ -477,7 +477,7 @@
             const metaHtml = `
                 <div class="meta-item">
                     <span class="meta-label">📍 地址:</span>
-                    <span class="meta-value">${project.address || '未设置'}</span>
+                    <span class="meta-value">${project.location || '未设置'}</span>
                 </div>
                 ${project.client_name ? `
                 <div class="meta-item">
@@ -583,7 +583,7 @@
         // 导航到材料页面
         function goToMaterials(e) {
             e.preventDefault();
-            alert('材料管理功能开发中...');
+            showMessage('材料管理功能即将推出，敬请期待！', 'info');
         }
 
         // 页面加载

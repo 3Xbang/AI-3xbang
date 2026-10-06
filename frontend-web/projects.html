@@ -427,9 +427,9 @@
             projectsGrid.style.display = 'grid';
 
             projectsGrid.innerHTML = projects.map(project => `
-                <div class="project-card" onclick="openProject(${project.project_id})">
+                <div class="project-card" onclick="openProject(${project.id})">
                     <div class="project-name">${project.project_name}</div>
-                    <div class="project-info">📍 ${project.address || '未设置地址'}</div>
+                    <div class="project-info">📍 ${project.location || '未设置地址'}</div>
                     ${project.client_name ? `<div class="project-info">👤 ${project.client_name}</div>` : ''}
                     ${project.budget ? `<div class="project-info">💰 预算: ¥${parseFloat(project.budget).toLocaleString()}</div>` : ''}
                     <div class="project-info">📅 创建: ${new Date(project.created_at).toLocaleDateString()}</div>

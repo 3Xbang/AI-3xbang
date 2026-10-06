@@ -1,0 +1,147 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "summary": {
+    "high_findings": 3,
+    "medium_findings": 5,
+    "nit_findings": 4,
+    "total_findings": 12
+  },
+  "findings": [
+    {
+      "id": "HIGH-1",
+      "severity": "HIGH",
+      "title": "Missing Service Files - Unverified Architecture Assumption",
+      "location": "Design section 1.2, section 4",
+      "description": "The design claims to reuse existing backend services (process.service.js, worker.service.js, report.service.js) but these files do not exist in e:\\3XBANG\\.worktrees\\construction-v2\\backend\\src\\services. They must be created from scratch, not extended.",
+      "impact": "Implementation plan is based on false assumption. Effort estimation and task breakdown will be incorrect.",
+      "fix": "Update design to state these are NEW files to be created. Specify whether node.service.js should be refactored/renamed or new files added alongside it."
+    },
+    {
+      "id": "HIGH-2",
+      "severity": "HIGH",
+      "title": "Ambiguous API Error Handling Strategy",
+      "location": "Section 4 Backend API Design",
+      "description": "Design does not specify when to use 400 vs 422 vs 500 status codes, how validation errors are structured (single message vs array), or transaction semantics for photo upload failures.",
+      "impact": "Frontend cannot implement consistent error handling. Photo upload rollback logic unclear.",
+      "fix": "Add section 4.3 with explicit rules: 400 for validation, 422 for business rules, 500 for server errors. Define transaction boundaries for multipart photo uploads."
+    },
+    {
+      "id": "HIGH-3",
+      "severity": "HIGH",
+      "title": "Incomplete Base Data Schema Validation Specification",
+      "location": "Section 3, section 4.2",
+      "description": "Design shows validation functions but does not specify how base_data_schema JSON drives validation, whether it is JSON Schema or custom format, or how conflicting derived fields (user-provided volume vs calculated volume) are handled.",
+      "impact": "Cannot implement validation logic. Each of 31 processes has different schema; without clear rules, validation will be inconsistent.",
+      "fix": "Add section 3.4 specifying: (1) base_data_schema structure, (2) derived field handling (overwrite user input with calculated values), (3) per-process schema enforcement, (4) validation error response format."
+    },
+    {
+      "id": "MEDIUM-1",
+      "severity": "MEDIUM",
+      "title": "Ambiguous Trilingual Fallback Strategy",
+      "location": "Section 5.4 I18n, FR-6",
+      "description": "Design does not specify fallback behavior when i18n file load fails, or when database JSONB name_i18n has incomplete languages.",
+      "impact": "App behavior undefined if Thai translation file is missing. Data import may fail silently if translations incomplete.",
+      "fix": "Add section 5.4.1 with rules: (1) Database INSERT enforces all 3 languages via CHECK constraints, (2) Frontend falls back to Chinese if i18n file load fails, (3) Show warning banner to user."
+    },
+    {
+      "id": "MEDIUM-2",
+      "severity": "MEDIUM",
+      "title": "Cost Calculation Dependencies Not Sequenced",
+      "location": "Section 3.3 Cost Calculation",
+      "description": "Cost calculation queries material_library.unit_price and workers.daily_wage but does not specify behavior when lookup returns NULL or table is empty.",
+      "impact": "Cost report may show NaN or throw errors. Default wage of 500 THB not clearly specified as system-wide or per-project.",
+      "fix": "Add section 3.3.1 specifying: (1) Missing material price → treat as 0, include in missing_prices array, (2) No workers → use 500 THB default, (3) planned=0 → variance_percentage=NULL."
+    },
+    {
+      "id": "MEDIUM-3",
+      "severity": "MEDIUM",
+      "title": "Photo Watermarking GPS Timeout Unclear",
+      "location": "Section 5.5 Watermark",
+      "description": "GPS timeout is 10s with enableHighAccuracy=false, but design does not specify if photo upload proceeds without GPS or if GPS is required for approval.",
+      "impact": "Workers could fake location by denying GPS permission. Boss approval process unclear.",
+      "fix": "Add section 5.5.1 specifying: (1) GPS timeout → proceed with 'GPS: 不可用' watermark, (2) GPS optional for submission, boss can request re-submission, (3) enableHighAccuracy=false uses 50-500m accuracy."
+    },
+    {
+      "id": "MEDIUM-4",
+      "severity": "MEDIUM",
+      "title": "Material Variance Trigger Logic Incomplete",
+      "location": "Design-database.md section 4.1",
+      "description": "Trigger calculates variance using planned_quantity field, but this field is not in material_records schema. Unclear how planned_quantity is populated.",
+      "impact": "Trigger will fail at runtime. Variance percentage cannot be calculated.",
+      "fix": "Add material_records.planned_quantity field to schema. Specify that backend copies value from node_records.calculated_materials when process is approved."
+    },
+    {
+      "id": "MEDIUM-5",
+      "severity": "MEDIUM",
+      "title": "Integration Test Coverage Gaps",
+      "location": "Section 6.2",
+      "description": "Design shows only 1 integration test (checkin with photos) but AC-5 requires full flow: create project → 31 processes → approve → report. Missing tests for sequential unlocking, i18n parameters, cost report edge cases.",
+      "impact": "Incomplete test coverage. Critical flows not verified before deployment.",
+      "fix": "Add section 6.2.1 with E2E test suite covering: (1) Full 31-process lifecycle, (2) Previous process approval check, (3) Language parameter on GET /api/processes, (4) Cost report with 0 attendance."
+    },
+    {
+      "id": "NIT-1",
+      "severity": "NIT",
+      "title": "Inconsistent Field Naming Convention",
+      "location": "Throughout database schema",
+      "description": "Mix of snake_case (worker_quota) and camelCase (lossRate) in JSONB fields. PostgreSQL columns use snake_case but JavaScript variables in design use camelCase.",
+      "impact": "Code readability. No functional issue.",
+      "fix": "Document convention: PostgreSQL columns and JSONB keys use snake_case, JavaScript variables use camelCase, API responses transform to camelCase."
+    },
+    {
+      "id": "NIT-2",
+      "severity": "NIT",
+      "title": "Missing Index on process_nodes.name_i18n",
+      "location": "Design-database.md section 7",
+      "description": "material_library has GIN index on category_i18n but process_nodes.name_i18n has no index despite being queried with language parameter.",
+      "impact": "Potential slow query on GET /api/processes if table grows beyond 31 rows (unlikely but good practice).",
+      "fix": "Add: CREATE INDEX idx_process_nodes_name_i18n ON process_nodes USING GIN (name_i18n);"
+    },
+    {
+      "id": "NIT-3",
+      "severity": "NIT",
+      "title": "Hardcoded Bangkok Timezone in Watermark",
+      "location": "Section 5.5",
+      "description": "Watermark timestamp uses hardcoded 'Asia/Bangkok' timezone. If system expands to other countries, this breaks.",
+      "impact": "Future scalability. No current issue for Thailand-only deployment.",
+      "fix": "Use project-level timezone field: req.project?.timeZone || 'Asia/Bangkok'"
+    },
+    {
+      "id": "NIT-4",
+      "severity": "NIT",
+      "title": "process_nodes.estimated_days Defaults to 1",
+      "location": "Design-database.md section 2.1",
+      "description": "Default value of 1 day may hide missing data during import. If estimated_days is not set, worker calculations will be incorrect.",
+      "impact": "Data quality. If import script forgets to set estimated_days, all 31 processes show 1-day estimate.",
+      "fix": "Remove DEFAULT 1, make field NOT NULL without default. Force explicit values during data import."
+    }
+  ],
+  "verifiedAssumptions": [
+    "ResponseUtil.success/error exists at backend/src/utils/response.js",
+    "JWT auth middleware exists at backend/src/middlewares/auth.js",
+    "Database connection config exists at backend/src/config/db.js",
+    "31 processes data complete in design-data-31-processes.json",
+    "50 materials data complete in design-data-50-materials.json with prices",
+    "30 tools data exists in design-data-30-tools.json",
+    "Database CHECK constraints for i18n completeness are specified",
+    "Multer middleware compatible with design"
+  ],
+  "unverifiedAssumptions": [
+    "auth.js extracts projectId from JWT token (actual code only extracts userId, username, role)",
+    "Existing system has 16 processes to extend to 31 (cannot verify without database access)",
+    "Materialized view refresh scheduled every hour (no cron job or pg_cron config in design)",
+    "PM2 manages backend with --max-old-space-size=768 (deployment detail, no ecosystem.config.js provided)"
+  ],
+  "wrongAssumptions": [
+    "Design claims to reuse process.service.js, worker.service.js, report.service.js - these files DO NOT EXIST",
+    "material_records.planned_quantity field used in trigger but NOT in schema definition"
+  ],
+  "recommendations": [
+    "Resolve all HIGH findings before implementation starts",
+    "Add database migration rollback script to design-database.md",
+    "Expand integration test suite to cover AC-5 full flow",
+    "Add API reference doc with cURL examples for all endpoints",
+    "Consider adding UI flow diagram showing navigation between 12 frontend modules"
+  ],
+  "reviewDoc": "e:\\3XBANG\\.agents\\tasks\\construction-mgmt-v2\\design-review.md"
+}

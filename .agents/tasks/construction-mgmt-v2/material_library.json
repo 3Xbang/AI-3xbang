@@ -1,0 +1,452 @@
+[
+  {
+    "material_code": "M001",
+    "name_i18n": {"zh": "普通硅酸盐水泥", "th": "ปูนซีเมนต์ปอร์ตแลนด์", "en": "Ordinary Portland Cement"},
+    "specification_i18n": {"zh": "P.O 42.5", "th": "P.O 42.5", "en": "P.O 42.5"},
+    "unit_i18n": {"zh": "吨", "th": "ตัน", "en": "Ton"},
+    "category": "水泥类",
+    "reference_price": 3500.00,
+    "variance_threshold_pct": 5.00
+  },
+  {
+    "material_code": "M002",
+    "name_i18n": {"zh": "螺纹钢筋", "th": "เหล็กเสริมข้ออ้อย", "en": "Deformed Steel Bar"},
+    "specification_i18n": {"zh": "HRB400 Φ12-25mm", "th": "HRB400 Φ12-25mm", "en": "HRB400 Φ12-25mm"},
+    "unit_i18n": {"zh": "吨", "th": "ตัน", "en": "Ton"},
+    "category": "钢筋类",
+    "reference_price": 22000.00,
+    "variance_threshold_pct": 3.00
+  },
+  {
+    "material_code": "M003",
+    "name_i18n": {"zh": "盘圆钢筋", "th": "เหล็กเสริมเรียบ", "en": "Plain Steel Bar"},
+    "specification_i18n": {"zh": "HPB300 Φ6-10mm", "th": "HPB300 Φ6-10mm", "en": "HPB300 Φ6-10mm"},
+    "unit_i18n": {"zh": "吨", "th": "ตัน", "en": "Ton"},
+    "category": "钢筋类",
+    "reference_price": 21000.00,
+    "variance_threshold_pct": 3.00
+  },
+  {
+    "material_code": "M004",
+    "name_i18n": {"zh": "河砂", "th": "ทรายแม่น้ำ", "en": "River Sand"},
+    "specification_i18n": {"zh": "中砂", "th": "ทรายขนาดกลาง", "en": "Medium Sand"},
+    "unit_i18n": {"zh": "立方米", "th": "ลูกบาศก์เมตร", "en": "Cubic Meter"},
+    "category": "砂石料类",
+    "reference_price": 250.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M005",
+    "name_i18n": {"zh": "碎石", "th": "หินย่อย", "en": "Gravel"},
+    "specification_i18n": {"zh": "5-25mm", "th": "5-25mm", "en": "5-25mm"},
+    "unit_i18n": {"zh": "立方米", "th": "ลูกบาศก์เมตร", "en": "Cubic Meter"},
+    "category": "砂石料类",
+    "reference_price": 280.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M006",
+    "name_i18n": {"zh": "铁丝", "th": "ลวดเหล็ก", "en": "Steel Wire"},
+    "specification_i18n": {"zh": "22#镀锌铁丝", "th": "ลวดเหล็กชุบสังกะสี 22#", "en": "22# Galvanized Wire"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "辅材类",
+    "reference_price": 25.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M007",
+    "name_i18n": {"zh": "木模板", "th": "แม่แบบไม้", "en": "Plywood Formwork"},
+    "specification_i18n": {"zh": "1220×2440×18mm", "th": "1220×2440×18mm", "en": "1220×2440×18mm"},
+    "unit_i18n": {"zh": "张", "th": "แผ่น", "en": "Sheet"},
+    "category": "模板类",
+    "reference_price": 180.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M008",
+    "name_i18n": {"zh": "方木", "th": "ไม้เหลี่ยม", "en": "Timber Square"},
+    "specification_i18n": {"zh": "50×100mm", "th": "50×100mm", "en": "50×100mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "模板类",
+    "reference_price": 45.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M009",
+    "name_i18n": {"zh": "模板支撑", "th": "เสาค้ำแม่แบบ", "en": "Formwork Support"},
+    "specification_i18n": {"zh": "钢管支撑3.5m", "th": "เสาเหล็กค้ำ 3.5m", "en": "Steel Prop 3.5m"},
+    "unit_i18n": {"zh": "根", "th": "อัน", "en": "Piece"},
+    "category": "模板类",
+    "reference_price": 220.00,
+    "variance_threshold_pct": 5.00
+  },
+  {
+    "material_code": "M010",
+    "name_i18n": {"zh": "红砖", "th": "อิฐแดง", "en": "Red Brick"},
+    "specification_i18n": {"zh": "240×115×53mm", "th": "240×115×53mm", "en": "240×115×53mm"},
+    "unit_i18n": {"zh": "块", "th": "ก้อน", "en": "Piece"},
+    "category": "砖瓦类",
+    "reference_price": 2.50,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M011",
+    "name_i18n": {"zh": "加气混凝土砌块", "th": "บล็อกคอนกรีตมวลเบา", "en": "AAC Block"},
+    "specification_i18n": {"zh": "600×200×200mm", "th": "600×200×200mm", "en": "600×200×200mm"},
+    "unit_i18n": {"zh": "块", "th": "ก้อน", "en": "Piece"},
+    "category": "砖瓦类",
+    "reference_price": 12.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M012",
+    "name_i18n": {"zh": "防水卷材", "th": "แผ่นกันซึม", "en": "Waterproof Membrane"},
+    "specification_i18n": {"zh": "SBS改性沥青 3mm", "th": "ยางมะตอยดัดแปลง SBS 3mm", "en": "SBS Modified Bitumen 3mm"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "防水材料",
+    "reference_price": 85.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M013",
+    "name_i18n": {"zh": "聚合物防水涂料", "th": "สีกันซึมพอลิเมอร์", "en": "Polymer Waterproofing"},
+    "specification_i18n": {"zh": "JS-II型", "th": "JS-II", "en": "JS-II Type"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "防水材料",
+    "reference_price": 35.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M014",
+    "name_i18n": {"zh": "防水砂浆", "th": "มอร์ตาร์กันซึม", "en": "Waterproof Mortar"},
+    "specification_i18n": {"zh": "聚合物防水砂浆", "th": "มอร์ตาร์กันซึมพอลิเมอร์", "en": "Polymer Waterproof Mortar"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "防水材料",
+    "reference_price": 28.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M015",
+    "name_i18n": {"zh": "土方外运", "th": "ขนดินออก", "en": "Soil Removal"},
+    "specification_i18n": {"zh": "弃土外运", "th": "ขนดินทิ้ง", "en": "Waste Soil Removal"},
+    "unit_i18n": {"zh": "立方米", "th": "ลูกบาศก์เมตร", "en": "Cubic Meter"},
+    "category": "土方类",
+    "reference_price": 45.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M016",
+    "name_i18n": {"zh": "PPR给水管", "th": "ท่อน้ำ PPR", "en": "PPR Water Pipe"},
+    "specification_i18n": {"zh": "PN25 Φ20-63mm", "th": "PN25 Φ20-63mm", "en": "PN25 Φ20-63mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "管材管件",
+    "reference_price": 28.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M017",
+    "name_i18n": {"zh": "PVC排水管", "th": "ท่อ PVC ระบายน้ำ", "en": "PVC Drainage Pipe"},
+    "specification_i18n": {"zh": "Φ50-160mm", "th": "Φ50-160mm", "en": "Φ50-160mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "管材管件",
+    "reference_price": 22.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M018",
+    "name_i18n": {"zh": "PVC电线管", "th": "ท่อร้อยสาย PVC", "en": "PVC Conduit"},
+    "specification_i18n": {"zh": "Φ16-32mm", "th": "Φ16-32mm", "en": "Φ16-32mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "管材管件",
+    "reference_price": 8.50,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M019",
+    "name_i18n": {"zh": "电线", "th": "สายไฟ", "en": "Electric Wire"},
+    "specification_i18n": {"zh": "BV线 2.5-6mm²", "th": "สาย BV 2.5-6mm²", "en": "BV Wire 2.5-6mm²"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "电气材料",
+    "reference_price": 5.80,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M020",
+    "name_i18n": {"zh": "管道配件", "th": "ข้อต่อท่อ", "en": "Pipe Fittings"},
+    "specification_i18n": {"zh": "弯头、三通、直接等", "th": "ข้อโค้ง ข้อสาม ข้อตรง", "en": "Elbow, Tee, Coupling"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "管材管件",
+    "reference_price": 150.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M021",
+    "name_i18n": {"zh": "石灰膏", "th": "ปูนขาว", "en": "Lime Paste"},
+    "specification_i18n": {"zh": "熟石灰膏", "th": "ปูนขาวสุก", "en": "Slaked Lime Paste"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "抹灰材料",
+    "reference_price": 3.50,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M022",
+    "name_i18n": {"zh": "墙砖", "th": "กระเบื้องผนัง", "en": "Wall Tile"},
+    "specification_i18n": {"zh": "300×600mm", "th": "300×600mm", "en": "300×600mm"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "瓷砖类",
+    "reference_price": 120.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M023",
+    "name_i18n": {"zh": "瓷砖胶", "th": "กาวปูกระเบื้อง", "en": "Tile Adhesive"},
+    "specification_i18n": {"zh": "强力型", "th": "ชนิดแรงยึดสูง", "en": "High-Strength Type"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "辅材类",
+    "reference_price": 12.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M024",
+    "name_i18n": {"zh": "填缝剂", "th": "ยาแนวกระเบื้อง", "en": "Grout"},
+    "specification_i18n": {"zh": "美缝剂", "th": "ยาแนวสวยงาม", "en": "Beautiful Seam Grout"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "辅材类",
+    "reference_price": 35.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M025",
+    "name_i18n": {"zh": "地砖", "th": "กระเบื้องพื้น", "en": "Floor Tile"},
+    "specification_i18n": {"zh": "800×800mm", "th": "800×800mm", "en": "800×800mm"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "瓷砖类",
+    "reference_price": 95.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M026",
+    "name_i18n": {"zh": "轻钢龙骨", "th": "โครงเหล็กเบา", "en": "Light Steel Keel"},
+    "specification_i18n": {"zh": "主龙骨50×15mm", "th": "โครงหลัก 50×15mm", "en": "Main Keel 50×15mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "吊顶材料",
+    "reference_price": 12.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M027",
+    "name_i18n": {"zh": "吊杆", "th": "ลวดแขวน", "en": "Hanger"},
+    "specification_i18n": {"zh": "Φ8吊杆", "th": "ลวดแขวน Φ8", "en": "Φ8 Hanger"},
+    "unit_i18n": {"zh": "根", "th": "อัน", "en": "Piece"},
+    "category": "吊顶材料",
+    "reference_price": 8.50,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M028",
+    "name_i18n": {"zh": "石膏板", "th": "แผ่นยิปซั่ม", "en": "Gypsum Board"},
+    "specification_i18n": {"zh": "1200×2400×9.5mm", "th": "1200×2400×9.5mm", "en": "1200×2400×9.5mm"},
+    "unit_i18n": {"zh": "张", "th": "แผ่น", "en": "Sheet"},
+    "category": "吊顶材料",
+    "reference_price": 45.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M029",
+    "name_i18n": {"zh": "自攻螺钉", "th": "สกรูเกลียวปล่อย", "en": "Self-Tapping Screw"},
+    "specification_i18n": {"zh": "3.5×25mm", "th": "3.5×25mm", "en": "3.5×25mm"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "辅材类",
+    "reference_price": 18.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M030",
+    "name_i18n": {"zh": "腻子粉", "th": "ปูนพลาสเตอร์", "en": "Putty Powder"},
+    "specification_i18n": {"zh": "内墙耐水腻子", "th": "ปูนพลาสเตอร์กันน้ำภายใน", "en": "Interior Water-Resistant Putty"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "涂料类",
+    "reference_price": 8.50,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M031",
+    "name_i18n": {"zh": "乳胶漆底漆", "th": "สีรองพื้นอะคริลิก", "en": "Latex Primer"},
+    "specification_i18n": {"zh": "内墙底漆", "th": "รองพื้นผนังภายใน", "en": "Interior Wall Primer"},
+    "unit_i18n": {"zh": "升", "th": "ลิตร", "en": "Liter"},
+    "category": "涂料类",
+    "reference_price": 120.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M032",
+    "name_i18n": {"zh": "乳胶漆面漆", "th": "สีหน้าอะคริลิก", "en": "Latex Topcoat"},
+    "specification_i18n": {"zh": "内墙面漆", "th": "สีหน้าผนังภายใน", "en": "Interior Wall Topcoat"},
+    "unit_i18n": {"zh": "升", "th": "ลิตร", "en": "Liter"},
+    "category": "涂料类",
+    "reference_price": 180.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M033",
+    "name_i18n": {"zh": "铝合金门窗", "th": "ประตูหน้าต่างอลูมิเนียม", "en": "Aluminum Door/Window"},
+    "specification_i18n": {"zh": "断桥铝合金", "th": "อลูมิเนียมกันความร้อน", "en": "Thermal Break Aluminum"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "门窗类",
+    "reference_price": 850.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M034",
+    "name_i18n": {"zh": "玻璃", "th": "กระจก", "en": "Glass"},
+    "specification_i18n": {"zh": "中空钢化玻璃 5+12A+5", "th": "กระจกกันความร้อนสองชั้น 5+12A+5", "en": "Insulated Tempered Glass 5+12A+5"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "门窗类",
+    "reference_price": 220.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M035",
+    "name_i18n": {"zh": "马桶", "th": "สุขภัณฑ์", "en": "Toilet"},
+    "specification_i18n": {"zh": "连体座便器", "th": "โถสุขภัณฑ์แบบชิ้นเดียว", "en": "One-Piece Toilet"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "洁具类",
+    "reference_price": 2200.00,
+    "variance_threshold_pct": 5.00
+  },
+  {
+    "material_code": "M036",
+    "name_i18n": {"zh": "洗手盆", "th": "อ่างล้างหน้า", "en": "Wash Basin"},
+    "specification_i18n": {"zh": "台上盆+龙头", "th": "อ่างวางบนพร้อมก๊อก", "en": "Above-Counter Basin + Faucet"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "洁具类",
+    "reference_price": 1500.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M037",
+    "name_i18n": {"zh": "花洒", "th": "ฝักบัว", "en": "Shower"},
+    "specification_i18n": {"zh": "淋浴花洒套装", "th": "ชุดฝักบัวอาบน้ำ", "en": "Shower Set"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "洁具类",
+    "reference_price": 1800.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M038",
+    "name_i18n": {"zh": "LED筒灯", "th": "ดาวน์ไลท์ LED", "en": "LED Downlight"},
+    "specification_i18n": {"zh": "3W-12W", "th": "3W-12W", "en": "3W-12W"},
+    "unit_i18n": {"zh": "个", "th": "ตัว", "en": "Piece"},
+    "category": "灯具类",
+    "reference_price": 85.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M039",
+    "name_i18n": {"zh": "开关插座", "th": "สวิตช์ปลั๊ก", "en": "Switch/Socket"},
+    "specification_i18n": {"zh": "86型五孔插座", "th": "ปลั๊กห้ารู 86mm", "en": "86mm 5-Pin Socket"},
+    "unit_i18n": {"zh": "个", "th": "ตัว", "en": "Piece"},
+    "category": "电气材料",
+    "reference_price": 35.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M040",
+    "name_i18n": {"zh": "配电箱", "th": "ตู้เบรกเกอร์", "en": "Distribution Box"},
+    "specification_i18n": {"zh": "12-24回路", "th": "12-24 ช่อง", "en": "12-24 Circuit"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "电气材料",
+    "reference_price": 850.00,
+    "variance_threshold_pct": 5.00
+  },
+  {
+    "material_code": "M041",
+    "name_i18n": {"zh": "地漏", "th": "ตะแกรงกันกลิ่น", "en": "Floor Drain"},
+    "specification_i18n": {"zh": "防臭地漏", "th": "ตะแกรงกันกลิ่น", "en": "Deodorant Floor Drain"},
+    "unit_i18n": {"zh": "个", "th": "ตัว", "en": "Piece"},
+    "category": "洁具类",
+    "reference_price": 45.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M042",
+    "name_i18n": {"zh": "角阀", "th": "วาล์วมุม", "en": "Angle Valve"},
+    "specification_i18n": {"zh": "全铜角阀", "th": "วาล์วมุมทองเหลือง", "en": "Full Brass Angle Valve"},
+    "unit_i18n": {"zh": "个", "th": "ตัว", "en": "Piece"},
+    "category": "洁具类",
+    "reference_price": 28.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M043",
+    "name_i18n": {"zh": "软管", "th": "สายน้ำอ่อน", "en": "Flexible Hose"},
+    "specification_i18n": {"zh": "不锈钢软管", "th": "สายน้ำสแตนเลส", "en": "Stainless Steel Hose"},
+    "unit_i18n": {"zh": "根", "th": "เส้น", "en": "Piece"},
+    "category": "洁具类",
+    "reference_price": 22.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M044",
+    "name_i18n": {"zh": "保温材料", "th": "ฉนวนกันความร้อน", "en": "Insulation Material"},
+    "specification_i18n": {"zh": "挤塑板 50mm", "th": "โฟมฉนวน 50mm", "en": "XPS Board 50mm"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "保温材料",
+    "reference_price": 65.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M045",
+    "name_i18n": {"zh": "网格布", "th": "ตาข่ายไฟเบอร์กลาส", "en": "Fiberglass Mesh"},
+    "specification_i18n": {"zh": "耐碱网格布", "th": "ตาข่ายทนด่าง", "en": "Alkali-Resistant Mesh"},
+    "unit_i18n": {"zh": "平方米", "th": "ตารางเมตร", "en": "Square Meter"},
+    "category": "辅材类",
+    "reference_price": 8.50,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M046",
+    "name_i18n": {"zh": "界面剂", "th": "น้ำยาเพิ่มยึดเกาะ", "en": "Interface Agent"},
+    "specification_i18n": {"zh": "混凝土界面剂", "th": "น้ำยาเพิ่มยึดเกาะคอนกรีต", "en": "Concrete Interface Agent"},
+    "unit_i18n": {"zh": "千克", "th": "กิโลกรัม", "en": "Kilogram"},
+    "category": "辅材类",
+    "reference_price": 18.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M047",
+    "name_i18n": {"zh": "PVC线槽", "th": "รางเก็บสาย PVC", "en": "PVC Cable Trunking"},
+    "specification_i18n": {"zh": "40×25mm", "th": "40×25mm", "en": "40×25mm"},
+    "unit_i18n": {"zh": "米", "th": "เมตร", "en": "Meter"},
+    "category": "电气材料",
+    "reference_price": 12.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M048",
+    "name_i18n": {"zh": "门锁五金", "th": "กลอนประตู", "en": "Door Lock Hardware"},
+    "specification_i18n": {"zh": "执手锁", "th": "กลอนประตูมือจับ", "en": "Lever Lock"},
+    "unit_i18n": {"zh": "套", "th": "ชุด", "en": "Set"},
+    "category": "五金类",
+    "reference_price": 280.00,
+    "variance_threshold_pct": 10.00
+  },
+  {
+    "material_code": "M049",
+    "name_i18n": {"zh": "合页铰链", "th": "บานพับ", "en": "Door Hinge"},
+    "specification_i18n": {"zh": "不锈钢合页", "th": "บานพับสแตนเลส", "en": "Stainless Steel Hinge"},
+    "unit_i18n": {"zh": "副", "th": "คู่", "en": "Pair"},
+    "category": "五金类",
+    "reference_price": 45.00,
+    "variance_threshold_pct": 15.00
+  },
+  {
+    "material_code": "M050",
+    "name_i18n": {"zh": "清洁用品", "th": "อุปกรณ์ทำความสะอาด", "en": "Cleaning Supplies"},
+    "specification_i18n": {"zh": "扫帚、拖把等", "th": "ไม้กวาด ผ้าถูพื้น ฯลฯ", "en": "Broom, Mop, etc."},
+    "unit_i18n": {"zh": "批", "th": "ชุด", "en": "Lot"},
+    "category": "辅材类",
+    "reference_price": 500.00,
+    "variance_threshold_pct": 20.00
+  }
+]

@@ -1,0 +1,212 @@
+[
+  {
+    "tool_code": "T001",
+    "name_i18n": {"zh": "挖掘机", "th": "รถขุด", "en": "Excavator"},
+    "specification_i18n": {"zh": "20吨级", "th": "ขนาด 20 ตัน", "en": "20-Ton Class"},
+    "category": "土方机械",
+    "daily_rental_cost": 3500.00
+  },
+  {
+    "tool_code": "T002",
+    "name_i18n": {"zh": "装载机", "th": "รถตักหน้า", "en": "Loader"},
+    "specification_i18n": {"zh": "5吨级", "th": "ขนาด 5 ตัน", "en": "5-Ton Class"},
+    "category": "土方机械",
+    "daily_rental_cost": 2800.00
+  },
+  {
+    "tool_code": "T003",
+    "name_i18n": {"zh": "运输车", "th": "รถบรรทุก", "en": "Dump Truck"},
+    "specification_i18n": {"zh": "15吨自卸车", "th": "รถดั้มพ์ 15 ตัน", "en": "15-Ton Dump Truck"},
+    "category": "运输工具",
+    "daily_rental_cost": 1800.00
+  },
+  {
+    "tool_code": "T004",
+    "name_i18n": {"zh": "混凝土搅拌机", "th": "เครื่องผสมคอนกรีต", "en": "Concrete Mixer"},
+    "specification_i18n": {"zh": "350L", "th": "350 ลิตร", "en": "350L"},
+    "category": "混凝土设备",
+    "daily_rental_cost": 350.00
+  },
+  {
+    "tool_code": "T005",
+    "name_i18n": {"zh": "全站仪", "th": "เครื่องมือวัดระดับ", "en": "Total Station"},
+    "specification_i18n": {"zh": "电子测距仪", "th": "เครื่องวัดระยะอิเล็กทรอนิกส์", "en": "Electronic Distance Meter"},
+    "category": "测量工具",
+    "daily_rental_cost": 450.00
+  },
+  {
+    "tool_code": "T006",
+    "name_i18n": {"zh": "振动棒", "th": "เครื่องสั่นคอนกรีต", "en": "Concrete Vibrator"},
+    "specification_i18n": {"zh": "插入式振动棒", "th": "เครื่องสั่นแบบใส่", "en": "Immersion Vibrator"},
+    "category": "混凝土设备",
+    "daily_rental_cost": 180.00
+  },
+  {
+    "tool_code": "T007",
+    "name_i18n": {"zh": "水准仪", "th": "กล้องระดับ", "en": "Level"},
+    "specification_i18n": {"zh": "自动安平水准仪", "th": "กล้องระดับออโต้", "en": "Automatic Level"},
+    "category": "测量工具",
+    "daily_rental_cost": 120.00
+  },
+  {
+    "tool_code": "T008",
+    "name_i18n": {"zh": "混凝土泵车", "th": "รถปั๊มคอนกรีต", "en": "Concrete Pump"},
+    "specification_i18n": {"zh": "车载泵", "th": "ปั้มติดรถ", "en": "Truck-Mounted Pump"},
+    "category": "混凝土设备",
+    "daily_rental_cost": 4500.00
+  },
+  {
+    "tool_code": "T009",
+    "name_i18n": {"zh": "钢筋切断机", "th": "เครื่องตัดเหล็ก", "en": "Rebar Cutter"},
+    "specification_i18n": {"zh": "40mm以内", "th": "ภายใน 40mm", "en": "Up to 40mm"},
+    "category": "钢筋工具",
+    "daily_rental_cost": 220.00
+  },
+  {
+    "tool_code": "T010",
+    "name_i18n": {"zh": "夯实机", "th": "เครื่องอัดดิน", "en": "Tamper"},
+    "specification_i18n": {"zh": "平板夯", "th": "เครื่องอัดแผ่น", "en": "Plate Compactor"},
+    "category": "土方机械",
+    "daily_rental_cost": 280.00
+  },
+  {
+    "tool_code": "T011",
+    "name_i18n": {"zh": "脚手架", "th": "นั่งร้าน", "en": "Scaffolding"},
+    "specification_i18n": {"zh": "钢管脚手架", "th": "นั่งร้านเหล็ก", "en": "Steel Pipe Scaffolding"},
+    "category": "支撑工具",
+    "daily_rental_cost": 12.00
+  },
+  {
+    "tool_code": "T012",
+    "name_i18n": {"zh": "砂浆搅拌机", "th": "เครื่องผสมมอร์ตาร์", "en": "Mortar Mixer"},
+    "specification_i18n": {"zh": "200L", "th": "200 ลิตร", "en": "200L"},
+    "category": "砌筑工具",
+    "daily_rental_cost": 250.00
+  },
+  {
+    "tool_code": "T013",
+    "name_i18n": {"zh": "砌块切割机", "th": "เครื่องตัดบล็อก", "en": "Block Cutter"},
+    "specification_i18n": {"zh": "手持切割机", "th": "เครื่องตัดแบบถือ", "en": "Handheld Cutter"},
+    "category": "砌筑工具",
+    "daily_rental_cost": 150.00
+  },
+  {
+    "tool_code": "T014",
+    "name_i18n": {"zh": "热风枪", "th": "ปืนลมร้อน", "en": "Heat Gun"},
+    "specification_i18n": {"zh": "防水施工用", "th": "สำหรับงานกันซึม", "en": "For Waterproofing"},
+    "category": "防水工具",
+    "daily_rental_cost": 120.00
+  },
+  {
+    "tool_code": "T015",
+    "name_i18n": {"zh": "涂料喷涂机", "th": "เครื่องพ่นสี", "en": "Paint Sprayer"},
+    "specification_i18n": {"zh": "无气喷涂机", "th": "เครื่องพ่นแบบไร้อากาศ", "en": "Airless Sprayer"},
+    "category": "涂装工具",
+    "daily_rental_cost": 280.00
+  },
+  {
+    "tool_code": "T016",
+    "name_i18n": {"zh": "防水卷材铺贴工具", "th": "เครื่องมือปูแผ่นกันซึม", "en": "Membrane Laying Tools"},
+    "specification_i18n": {"zh": "火焰喷枪+压辊", "th": "ปืนไฟ+ลูกกลิ้ง", "en": "Flame Gun + Roller"},
+    "category": "防水工具",
+    "daily_rental_cost": 180.00
+  },
+  {
+    "tool_code": "T017",
+    "name_i18n": {"zh": "管道切割机", "th": "เครื่องตัดท่อ", "en": "Pipe Cutter"},
+    "specification_i18n": {"zh": "PVC/PPR管切割器", "th": "เครื่องตัดท่อ PVC/PPR", "en": "PVC/PPR Pipe Cutter"},
+    "category": "水电工具",
+    "daily_rental_cost": 80.00
+  },
+  {
+    "tool_code": "T018",
+    "name_i18n": {"zh": "热熔机", "th": "เครื่องเชื่อมท่อ", "en": "Heat Fusion Machine"},
+    "specification_i18n": {"zh": "PPR管热熔器", "th": "เครื่องเชื่อมท่อ PPR", "en": "PPR Pipe Welder"},
+    "category": "水电工具",
+    "daily_rental_cost": 150.00
+  },
+  {
+    "tool_code": "T019",
+    "name_i18n": {"zh": "电工工具套装", "th": "ชุดเครื่องมือไฟฟ้า", "en": "Electrician Tool Set"},
+    "specification_i18n": {"zh": "剥线钳、压线钳、万用表等", "th": "คีมปอกสาย คีมย้ำสาย มัลติมิเตอร์", "en": "Wire Stripper, Crimper, Multimeter"},
+    "category": "水电工具",
+    "daily_rental_cost": 120.00
+  },
+  {
+    "tool_code": "T020",
+    "name_i18n": {"zh": "电钻", "th": "สว่านไฟฟ้า", "en": "Electric Drill"},
+    "specification_i18n": {"zh": "冲击钻", "th": "สว่านกระแทก", "en": "Impact Drill"},
+    "category": "水电工具",
+    "daily_rental_cost": 100.00
+  },
+  {
+    "tool_code": "T021",
+    "name_i18n": {"zh": "抹灰机", "th": "เครื่องฉาบปูน", "en": "Plastering Machine"},
+    "specification_i18n": {"zh": "自动抹灰机", "th": "เครื่องฉาบปูนอัตโนมัติ", "en": "Auto Plastering Machine"},
+    "category": "抹灰工具",
+    "daily_rental_cost": 350.00
+  },
+  {
+    "tool_code": "T022",
+    "name_i18n": {"zh": "激光水平仪", "th": "เลเซอร์วัดระดับ", "en": "Laser Level"},
+    "specification_i18n": {"zh": "旋转激光水平仪", "th": "เลเซอร์วัดระดับหมุน", "en": "Rotating Laser Level"},
+    "category": "测量工具",
+    "daily_rental_cost": 180.00
+  },
+  {
+    "tool_code": "T023",
+    "name_i18n": {"zh": "地面打磨机", "th": "เครื่องขัดพื้น", "en": "Floor Grinder"},
+    "specification_i18n": {"zh": "混凝土打磨机", "th": "เครื่องขัดคอนกรีต", "en": "Concrete Grinder"},
+    "category": "抹灰工具",
+    "daily_rental_cost": 420.00
+  },
+  {
+    "tool_code": "T024",
+    "name_i18n": {"zh": "瓷砖切割机", "th": "เครื่องตัดกระเบื้อง", "en": "Tile Cutter"},
+    "specification_i18n": {"zh": "手动/电动切割机", "th": "เครื่องตัดมือ/ไฟฟ้า", "en": "Manual/Electric Cutter"},
+    "category": "瓷砖工具",
+    "daily_rental_cost": 180.00
+  },
+  {
+    "tool_code": "T025",
+    "name_i18n": {"zh": "瓷砖找平器", "th": "ที่ปรับระดับกระเบื้อง", "en": "Tile Leveling System"},
+    "specification_i18n": {"zh": "调平器+楔子", "th": "คลิปปรับระดับ+ลิ่ม", "en": "Clip + Wedge"},
+    "category": "瓷砖工具",
+    "daily_rental_cost": 50.00
+  },
+  {
+    "tool_code": "T026",
+    "name_i18n": {"zh": "空鼓锤", "th": "ค้อนตรวจเสียงกลวง", "en": "Hollowness Hammer"},
+    "specification_i18n": {"zh": "检测空鼓用", "th": "สำหรับตรวจเสียงกลวง", "en": "For Hollowness Check"},
+    "category": "瓷砖工具",
+    "daily_rental_cost": 30.00
+  },
+  {
+    "tool_code": "T027",
+    "name_i18n": {"zh": "吊顶工具套装", "th": "ชุดเครื่องมือติดเพดาน", "en": "Ceiling Tool Set"},
+    "specification_i18n": {"zh": "吊杆、膨胀螺栓等", "th": "ลวดแขวน สกรูขยาย ฯลฯ", "en": "Hanger, Expansion Bolt, etc."},
+    "category": "吊顶工具",
+    "daily_rental_cost": 100.00
+  },
+  {
+    "tool_code": "T028",
+    "name_i18n": {"zh": "电动螺丝刀", "th": "ไขควงไฟฟ้า", "en": "Electric Screwdriver"},
+    "specification_i18n": {"zh": "无线电钻/起子", "th": "สว่าน/ไขควงไร้สาย", "en": "Cordless Drill/Driver"},
+    "category": "吊顶工具",
+    "daily_rental_cost": 120.00
+  },
+  {
+    "tool_code": "T029",
+    "name_i18n": {"zh": "滚筒刷", "th": "ลูกกลิ้งทาสี", "en": "Roller Brush"},
+    "specification_i18n": {"zh": "9寸涂料滚筒", "th": "ลูกกลิ้ง 9 นิ้ว", "en": "9-Inch Paint Roller"},
+    "category": "涂装工具",
+    "daily_rental_cost": 35.00
+  },
+  {
+    "tool_code": "T030",
+    "name_i18n": {"zh": "工具箱", "th": "กล่องเครื่องมือ", "en": "Tool Box"},
+    "specification_i18n": {"zh": "手动工具套装", "th": "ชุดเครื่องมือมือ", "en": "Hand Tool Set"},
+    "category": "通用工具",
+    "daily_rental_cost": 80.00
+  }
+]

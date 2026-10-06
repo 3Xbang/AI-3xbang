@@ -1,0 +1,687 @@
+[
+  {
+    "process_code": "P001",
+    "name_i18n": {
+      "zh": "地基开挖",
+      "th": "การขุดฐานราก",
+      "en": "Foundation Excavation"
+    },
+    "category": "地基工程",
+    "description_i18n": {
+      "zh": "场地平整、基坑开挖，需拍摄开挖深度、边坡、土质照片",
+      "th": "การปรับพื้นที่และขุดหลุมฐานราก ถ่ายภาพความลึก ความลาดชัน และคุณภาพดิน",
+      "en": "Site leveling and foundation pit excavation, photograph depth, slope, and soil quality"
+    },
+    "worker_formula_type": "PER_VOLUME",
+    "worker_formula_config": {"coefficient": 0.5, "description": "工人数 = 体积(m³) × 0.5"},
+    "material_codes": ["M015", "M050"],
+    "tool_codes": ["T001", "T002", "T003"],
+    "base_data_schema": {
+      "length": {"type": "number", "unit": "m", "label_i18n": {"zh": "长度", "th": "ความยาว", "en": "Length"}},
+      "width": {"type": "number", "unit": "m", "label_i18n": {"zh": "宽度", "th": "ความกว้าง", "en": "Width"}},
+      "depth": {"type": "number", "unit": "m", "label_i18n": {"zh": "深度", "th": "ความลึก", "en": "Depth"}}
+    },
+    "sort_order": 1
+  },
+  {
+    "process_code": "P002",
+    "name_i18n": {
+      "zh": "垫层浇筑",
+      "th": "การเทคอนกรีตชั้นรอง",
+      "en": "Foundation Cushion Pouring"
+    },
+    "category": "地基工程",
+    "description_i18n": {
+      "zh": "混凝土垫层浇筑，需拍摄浇筑过程、厚度、养护照片",
+      "th": "เทคอนกรีตชั้นรอง ถ่ายภาพกระบวนการเท ความหนา และการบ่ม",
+      "en": "Pour concrete cushion, photograph process, thickness, and curing"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.02, "description": "工人数 = 面积(m²) × 0.02"},
+    "material_codes": ["M001", "M004", "M005"],
+    "tool_codes": ["T004", "T006", "T008"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "面积", "th": "พื้นที่", "en": "Area"}},
+      "thickness": {"type": "number", "unit": "cm", "label_i18n": {"zh": "厚度", "th": "ความหนา", "en": "Thickness"}}
+    },
+    "sort_order": 2
+  },
+  {
+    "process_code": "P003",
+    "name_i18n": {
+      "zh": "基础钢筋绑扎",
+      "th": "การผูกเหล็กเสริมฐานราก",
+      "en": "Foundation Rebar Binding"
+    },
+    "category": "地基工程",
+    "description_i18n": {
+      "zh": "基础底板钢筋绑扎，需拍摄钢筋规格、间距、保护层照片",
+      "th": "ผูกเหล็กเสริมแผ่นฐาน ถ่ายภาพขนาดเหล็ก ระยะห่าง และชั้นป้องกัน",
+      "en": "Bind foundation slab rebar, photograph steel specs, spacing, and cover"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.03, "description": "工人数 = 面积(m²) × 0.03"},
+    "material_codes": ["M002", "M003", "M006"],
+    "tool_codes": ["T005", "T007", "T009"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "面积", "th": "พื้นที่", "en": "Area"}}
+    },
+    "sort_order": 3
+  },
+  {
+    "process_code": "P004",
+    "name_i18n": {
+      "zh": "基础混凝土浇筑",
+      "th": "การเทคอนกรีตฐานราก",
+      "en": "Foundation Concrete Pouring"
+    },
+    "category": "地基工程",
+    "description_i18n": {
+      "zh": "基础底板混凝土浇筑，需拍摄坍落度、浇筑过程、振捣照片",
+      "th": "เทคอนกรีตแผ่นฐาน ถ่ายภาพการทรุด กระบวนการเท และการสั่น",
+      "en": "Pour foundation concrete, photograph slump, process, and vibration"
+    },
+    "worker_formula_type": "PER_VOLUME",
+    "worker_formula_config": {"coefficient": 0.6, "description": "工人数 = 体积(m³) × 0.6"},
+    "material_codes": ["M001", "M004", "M005"],
+    "tool_codes": ["T004", "T006", "T008"],
+    "base_data_schema": {
+      "volume": {"type": "number", "unit": "m³", "label_i18n": {"zh": "体积", "th": "ปริมาตร", "en": "Volume"}}
+    },
+    "sort_order": 4
+  },
+  {
+    "process_code": "P005",
+    "name_i18n": {
+      "zh": "地基回填",
+      "th": "การถมดินกลับ",
+      "en": "Foundation Backfilling"
+    },
+    "category": "地基工程",
+    "description_i18n": {
+      "zh": "基坑回填夯实，需拍摄回填材料、压实度测试照片",
+      "th": "ถมดินกลับและอัด ถ่ายภาพวัสดุถมและการทดสอบความแน่น",
+      "en": "Backfill and compact, photograph materials and compaction test"
+    },
+    "worker_formula_type": "PER_VOLUME",
+    "worker_formula_config": {"coefficient": 0.4, "description": "工人数 = 体积(m³) × 0.4"},
+    "material_codes": ["M015", "M050"],
+    "tool_codes": ["T001", "T010"],
+    "base_data_schema": {
+      "volume": {"type": "number", "unit": "m³", "label_i18n": {"zh": "体积", "th": "ปริมาตร", "en": "Volume"}}
+    },
+    "sort_order": 5
+  },
+  {
+    "process_code": "P006",
+    "name_i18n": {
+      "zh": "主体柱模板",
+      "th": "แม่แบบเสาโครงสร้าง",
+      "en": "Column Formwork"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "主体结构柱子模板安装，需拍摄模板垂直度、固定方式照片",
+      "th": "ติดตั้งแม่แบบเสาโครงสร้าง ถ่ายภาพความตั้งฉากและการยึด",
+      "en": "Install column formwork, photograph verticality and fixing"
+    },
+    "worker_formula_type": "FIXED",
+    "worker_formula_config": {"value": 4, "description": "固定4人"},
+    "material_codes": ["M007", "M008", "M009"],
+    "tool_codes": ["T005", "T007", "T011"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "根", "label_i18n": {"zh": "柱子数量", "th": "จำนวนเสา", "en": "Column Count"}}
+    },
+    "sort_order": 6
+  },
+  {
+    "process_code": "P007",
+    "name_i18n": {
+      "zh": "主体柱钢筋",
+      "th": "เหล็กเสริมเสาโครงสร้าง",
+      "en": "Column Rebar"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "主体柱钢筋绑扎，需拍摄钢筋直径、箍筋间距、搭接长度照片",
+      "th": "ผูกเหล็กเสริมเสา ถ่ายภาพเส้นผ่านศูนย์กลาง ระยะห่างห่วง และความยาวต่อ",
+      "en": "Bind column rebar, photograph diameter, stirrup spacing, lap length"
+    },
+    "worker_formula_type": "FIXED",
+    "worker_formula_config": {"value": 5, "description": "固定5人"},
+    "material_codes": ["M002", "M003", "M006"],
+    "tool_codes": ["T005", "T007", "T009"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "根", "label_i18n": {"zh": "柱子数量", "th": "จำนวนเสา", "en": "Column Count"}}
+    },
+    "sort_order": 7
+  },
+  {
+    "process_code": "P008",
+    "name_i18n": {
+      "zh": "主体柱混凝土",
+      "th": "คอนกรีตเสาโครงสร้าง",
+      "en": "Column Concrete"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "主体柱混凝土浇筑，需拍摄浇筑高度、振捣过程、表面平整照片",
+      "th": "เทคอนกรีตเสา ถ่ายภาพความสูงการเท กระบวนการสั่น และพื้นผิวเรียบ",
+      "en": "Pour column concrete, photograph height, vibration, surface smoothness"
+    },
+    "worker_formula_type": "COMPOSITE",
+    "worker_formula_config": {"base": 3, "perUnit": 0.5, "description": "工人数 = 3 + 柱子数 × 0.5"},
+    "material_codes": ["M001", "M004", "M005"],
+    "tool_codes": ["T004", "T006", "T008"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "根", "label_i18n": {"zh": "柱子数量", "th": "จำนวนเสา", "en": "Column Count"}}
+    },
+    "sort_order": 8
+  },
+  {
+    "process_code": "P009",
+    "name_i18n": {
+      "zh": "主体梁模板",
+      "th": "แม่แบบคานโครงสร้าง",
+      "en": "Beam Formwork"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "主体梁模板安装，需拍摄模板标高、支撑系统照片",
+      "th": "ติดตั้งแม่แบบคาน ถ่ายภาพระดับสูงและระบบค้ำจุน",
+      "en": "Install beam formwork, photograph elevation and support system"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.025, "description": "工人数 = 面积(m²) × 0.025"},
+    "material_codes": ["M007", "M008", "M009"],
+    "tool_codes": ["T005", "T007", "T011"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "梁底面积", "th": "พื้นที่ใต้คาน", "en": "Beam Area"}}
+    },
+    "sort_order": 9
+  },
+  {
+    "process_code": "P010",
+    "name_i18n": {
+      "zh": "主体梁钢筋",
+      "th": "เหล็กเสริมคานโครงสร้าง",
+      "en": "Beam Rebar"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "主体梁钢筋绑扎，需拍摄主筋位置、箍筋加密区照片",
+      "th": "ผูกเหล็กเสริมคาน ถ่ายภาพตำแหน่งเหล็กหลักและพื้นที่ห่วงหนาแน่น",
+      "en": "Bind beam rebar, photograph main bar position, dense stirrup zone"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.03, "description": "工人数 = 面积(m²) × 0.03"},
+    "material_codes": ["M002", "M003", "M006"],
+    "tool_codes": ["T005", "T007", "T009"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "梁底面积", "th": "พื้นที่ใต้คาน", "en": "Beam Area"}}
+    },
+    "sort_order": 10
+  },
+  {
+    "process_code": "P011",
+    "name_i18n": {
+      "zh": "楼板模板",
+      "th": "แม่แบบพื้น",
+      "en": "Slab Formwork"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "楼板模板铺设，需拍摄模板标高、平整度照片",
+      "th": "ปูแม่แบบพื้น ถ่ายภาพระดับสูงและความเรียบ",
+      "en": "Lay slab formwork, photograph elevation and levelness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.015, "description": "工人数 = 面积(m²) × 0.015"},
+    "material_codes": ["M007", "M008", "M009"],
+    "tool_codes": ["T005", "T007", "T011"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "楼板面积", "th": "พื้นที่พื้น", "en": "Slab Area"}}
+    },
+    "sort_order": 11
+  },
+  {
+    "process_code": "P012",
+    "name_i18n": {
+      "zh": "楼板钢筋",
+      "th": "เหล็กเสริมพื้น",
+      "en": "Slab Rebar"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "楼板钢筋绑扎，需拍摄双层钢筋马凳、负筋位置照片",
+      "th": "ผูกเหล็กเสริมพื้น ถ่ายภาพขาตั้งเหล็กสองชั้นและตำแหน่งเหล็กแรงดึง",
+      "en": "Bind slab rebar, photograph double-layer chair, negative moment bar position"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.02, "description": "工人数 = 面积(m²) × 0.02"},
+    "material_codes": ["M002", "M003", "M006"],
+    "tool_codes": ["T005", "T007", "T009"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "楼板面积", "th": "พื้นที่พื้น", "en": "Slab Area"}}
+    },
+    "sort_order": 12
+  },
+  {
+    "process_code": "P013",
+    "name_i18n": {
+      "zh": "楼板混凝土",
+      "th": "คอนกรีตพื้น",
+      "en": "Slab Concrete"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "楼板混凝土浇筑，需拍摄浇筑顺序、振捣、表面收光照片",
+      "th": "เทคอนกรีตพื้น ถ่ายภาพลำดับการเท การสั่น และการเกลาผิว",
+      "en": "Pour slab concrete, photograph sequence, vibration, surface finishing"
+    },
+    "worker_formula_type": "PER_VOLUME",
+    "worker_formula_config": {"coefficient": 0.8, "description": "工人数 = 体积(m³) × 0.8"},
+    "material_codes": ["M001", "M004", "M005"],
+    "tool_codes": ["T004", "T006", "T008"],
+    "base_data_schema": {
+      "volume": {"type": "number", "unit": "m³", "label_i18n": {"zh": "体积", "th": "ปริมาตร", "en": "Volume"}}
+    },
+    "sort_order": 13
+  },
+  {
+    "process_code": "P014",
+    "name_i18n": {
+      "zh": "砌体墙",
+      "th": "ผนังก่ออิฐ",
+      "en": "Masonry Wall"
+    },
+    "category": "主体结构",
+    "description_i18n": {
+      "zh": "砌体墙砌筑，需拍摄砂浆饱满度、墙体垂直度、拉结筋照片",
+      "th": "ก่อผนังอิฐ ถ่ายภาพความอิ่มของมอร์ตาร์ ความตั้งฉาก และเหล็กเชื่อม",
+      "en": "Build masonry wall, photograph mortar fullness, verticality, tie bars"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.04, "description": "工人数 = 面积(m²) × 0.04"},
+    "material_codes": ["M010", "M011", "M001"],
+    "tool_codes": ["T012", "T005", "T013"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "墙体面积", "th": "พื้นที่ผนัง", "en": "Wall Area"}}
+    },
+    "sort_order": 14
+  },
+  {
+    "process_code": "P015",
+    "name_i18n": {
+      "zh": "屋面防水",
+      "th": "กันซึมหลังคา",
+      "en": "Roof Waterproofing"
+    },
+    "category": "防水工程",
+    "description_i18n": {
+      "zh": "屋面防水卷材铺贴，需拍摄基层处理、搭接宽度、节点照片",
+      "th": "ปูวัสดุกันซึมหลังคา ถ่ายภาพการเตรียมผิว ความกว้างซ้อน และจุดต่อ",
+      "en": "Lay roof waterproofing, photograph base prep, overlap width, joints"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.025, "description": "工人数 = 面积(m²) × 0.025"},
+    "material_codes": ["M012", "M013", "M014"],
+    "tool_codes": ["T014", "T015", "T016"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "屋面面积", "th": "พื้นที่หลังคา", "en": "Roof Area"}}
+    },
+    "sort_order": 15
+  },
+  {
+    "process_code": "P016",
+    "name_i18n": {
+      "zh": "卫生间防水",
+      "th": "กันซึมห้องน้ำ",
+      "en": "Bathroom Waterproofing"
+    },
+    "category": "防水工程",
+    "description_i18n": {
+      "zh": "卫生间防水涂料涂刷，需拍摄涂刷层数、墙角加强、闭水试验照片",
+      "th": "ทาสีกันซึมห้องน้ำ ถ่ายภาพจำนวนชั้น การเสริมมุม และการทดสอบกั้นน้ำ",
+      "en": "Apply bathroom waterproofing, photograph layers, corner reinforcement, water test"
+    },
+    "worker_formula_type": "FIXED",
+    "worker_formula_config": {"value": 2, "description": "固定2人"},
+    "material_codes": ["M013", "M014"],
+    "tool_codes": ["T015", "T016"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "间", "label_i18n": {"zh": "卫生间数量", "th": "จำนวนห้องน้ำ", "en": "Bathroom Count"}}
+    },
+    "sort_order": 16
+  },
+  {
+    "process_code": "P017",
+    "name_i18n": {
+      "zh": "水电预埋",
+      "th": "ฝังท่อน้ำไฟ",
+      "en": "Plumbing/Electrical Embedding"
+    },
+    "category": "水电工程",
+    "description_i18n": {
+      "zh": "水电管线预埋，需拍摄管线走向、开槽深度、固定方式照片",
+      "th": "ฝังท่อน้ำไฟ ถ่ายภาพทิศทางท่อ ความลึกร่อง และวิธียึด",
+      "en": "Embed pipes, photograph routing, groove depth, fixing method"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.035, "description": "工人数 = 面积(m²) × 0.035"},
+    "material_codes": ["M016", "M017", "M018", "M019"],
+    "tool_codes": ["T017", "T018", "T019"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 17
+  },
+  {
+    "process_code": "P018",
+    "name_i18n": {
+      "zh": "给水管安装",
+      "th": "ติดตั้งท่อน้ำประปา",
+      "en": "Water Supply Installation"
+    },
+    "category": "水电工程",
+    "description_i18n": {
+      "zh": "给水管道安装，需拍摄管材规格、连接方式、试压照片",
+      "th": "ติดตั้งท่อน้ำประปา ถ่ายภาพขนาดท่อ การเชื่อม และการทดสอบแรงดัน",
+      "en": "Install water pipes, photograph specs, connections, pressure test"
+    },
+    "worker_formula_type": "COMPOSITE",
+    "worker_formula_config": {"base": 2, "perArea": 0.01, "description": "工人数 = 2 + 面积 × 0.01"},
+    "material_codes": ["M016", "M020"],
+    "tool_codes": ["T017", "T018"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 18
+  },
+  {
+    "process_code": "P019",
+    "name_i18n": {
+      "zh": "排水管安装",
+      "th": "ติดตั้งท่อระบายน้ำ",
+      "en": "Drainage Installation"
+    },
+    "category": "水电工程",
+    "description_i18n": {
+      "zh": "排水管道安装，需拍摄管道坡度、检查口、通水试验照片",
+      "th": "ติดตั้งท่อระบายน้ำ ถ่ายภาพความลาด ปากบ่อ และการทดสอบน้ำไหล",
+      "en": "Install drainage, photograph slope, inspection port, flow test"
+    },
+    "worker_formula_type": "COMPOSITE",
+    "worker_formula_config": {"base": 2, "perArea": 0.01, "description": "工人数 = 2 + 面积 × 0.01"},
+    "material_codes": ["M017"],
+    "tool_codes": ["T017", "T018"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 19
+  },
+  {
+    "process_code": "P020",
+    "name_i18n": {
+      "zh": "电线穿管",
+      "th": "ร้อยสายไฟ",
+      "en": "Wire Threading"
+    },
+    "category": "水电工程",
+    "description_i18n": {
+      "zh": "电线穿管，需拍摄线缆规格、颜色标识、绝缘测试照片",
+      "th": "ร้อยสายไฟ ถ่ายภาพขนาดสาย การแยกสี และการทดสอบฉนวน",
+      "en": "Thread wires, photograph specs, color coding, insulation test"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.02, "description": "工人数 = 面积(m²) × 0.02"},
+    "material_codes": ["M018", "M019"],
+    "tool_codes": ["T019", "T020"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 20
+  },
+  {
+    "process_code": "P021",
+    "name_i18n": {
+      "zh": "内墙抹灰",
+      "th": "ฉาบผนังภายใน",
+      "en": "Internal Wall Plastering"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "内墙水泥砂浆抹灰，需拍摄基层处理、抹灰厚度、平整度照片",
+      "th": "ฉาบปูนผนังภายใน ถ่ายภาพการเตรียมผิว ความหนา และความเรียบ",
+      "en": "Plaster internal walls, photograph prep, thickness, smoothness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.03, "description": "工人数 = 面积(m²) × 0.03"},
+    "material_codes": ["M001", "M004", "M021"],
+    "tool_codes": ["T012", "T021", "T022"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "墙面面积", "th": "พื้นที่ผนัง", "en": "Wall Area"}}
+    },
+    "sort_order": 21
+  },
+  {
+    "process_code": "P022",
+    "name_i18n": {
+      "zh": "地面找平",
+      "th": "ปรับระดับพื้น",
+      "en": "Floor Leveling"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "地面水泥砂浆找平，需拍摄标高控制、坡度、平整度照片",
+      "th": "ปรับระดับพื้นด้วยมอร์ตาร์ ถ่ายภาพการควบคุมระดับ ความลาด และความเรียบ",
+      "en": "Level floor with mortar, photograph elevation control, slope, smoothness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.02, "description": "工人数 = 面积(m²) × 0.02"},
+    "material_codes": ["M001", "M004"],
+    "tool_codes": ["T021", "T022", "T023"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "地面面积", "th": "พื้นที่พื้น", "en": "Floor Area"}}
+    },
+    "sort_order": 22
+  },
+  {
+    "process_code": "P023",
+    "name_i18n": {
+      "zh": "墙面贴砖",
+      "th": "ปูกระเบื้องผนัง",
+      "en": "Wall Tiling"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "墙面瓷砖铺贴，需拍摄砖缝宽度、平整度、空鼓检测照片",
+      "th": "ปูกระเบื้องผนัง ถ่ายภาพความกว้างรอยต่อ ความเรียบ และการตรวจเสียงกลวง",
+      "en": "Tile walls, photograph joint width, levelness, hollowness check"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.035, "description": "工人数 = 面积(m²) × 0.035"},
+    "material_codes": ["M022", "M023", "M024"],
+    "tool_codes": ["T024", "T025", "T026"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "墙面面积", "th": "พื้นที่ผนัง", "en": "Wall Area"}}
+    },
+    "sort_order": 23
+  },
+  {
+    "process_code": "P024",
+    "name_i18n": {
+      "zh": "地面铺砖",
+      "th": "ปูกระเบื้องพื้น",
+      "en": "Floor Tiling"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "地面瓷砖铺贴，需拍摄留缝、坡度、平整度照片",
+      "th": "ปูกระเบื้องพื้น ถ่ายภาพการเว้นช่องว่าง ความลาด และความเรียบ",
+      "en": "Tile floor, photograph joints, slope, levelness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.03, "description": "工人数 = 面积(m²) × 0.03"},
+    "material_codes": ["M025", "M023", "M024"],
+    "tool_codes": ["T024", "T025", "T026"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "地面面积", "th": "พื้นที่พื้น", "en": "Floor Area"}}
+    },
+    "sort_order": 24
+  },
+  {
+    "process_code": "P025",
+    "name_i18n": {
+      "zh": "吊顶龙骨",
+      "th": "โครงเพดาน",
+      "en": "Ceiling Frame"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "吊顶龙骨安装，需拍摄吊杆间距、主次龙骨、平整度照片",
+      "th": "ติดตั้งโครงเพดาน ถ่ายภาพระยะห่างแขวน โครงหลัก-รอง และความเรียบ",
+      "en": "Install ceiling frame, photograph hanger spacing, main/cross tee, levelness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.02, "description": "工人数 = 面积(m²) × 0.02"},
+    "material_codes": ["M026", "M027"],
+    "tool_codes": ["T027", "T005", "T028"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "吊顶面积", "th": "พื้นที่เพดาน", "en": "Ceiling Area"}}
+    },
+    "sort_order": 25
+  },
+  {
+    "process_code": "P026",
+    "name_i18n": {
+      "zh": "吊顶封板",
+      "th": "ปิดแผ่นเพดาน",
+      "en": "Ceiling Boarding"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "吊顶石膏板封板，需拍摄板材固定、接缝处理、平整度照片",
+      "th": "ปิดแผ่นยิปซั่มเพดาน ถ่ายภาพการยึด การต่อรอยต่อ และความเรียบ",
+      "en": "Board ceiling, photograph fixing, joint treatment, levelness"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.025, "description": "工人数 = 面积(m²) × 0.025"},
+    "material_codes": ["M028", "M029"],
+    "tool_codes": ["T028", "T030"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "吊顶面积", "th": "พื้นที่เพดาน", "en": "Ceiling Area"}}
+    },
+    "sort_order": 26
+  },
+  {
+    "process_code": "P027",
+    "name_i18n": {
+      "zh": "墙面涂料",
+      "th": "ทาสีผนัง",
+      "en": "Wall Painting"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "墙面乳胶漆涂刷，需拍摄腻子打磨、底漆、面漆效果照片",
+      "th": "ทาสีผนัง ถ่ายภาพการขัดพื้นผิว รองพื้น และผลสำเร็จสีหน้า",
+      "en": "Paint walls, photograph putty sanding, primer, topcoat finish"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.015, "description": "工人数 = 面积(m²) × 0.015"},
+    "material_codes": ["M030", "M031", "M032"],
+    "tool_codes": ["T029", "T030"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "墙面面积", "th": "พื้นที่ผนัง", "en": "Wall Area"}}
+    },
+    "sort_order": 27
+  },
+  {
+    "process_code": "P028",
+    "name_i18n": {
+      "zh": "门窗安装",
+      "th": "ติดตั้งประตูหน้าต่าง",
+      "en": "Door/Window Installation"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "成品门窗安装，需拍摄门框水平垂直、五金配件、密封照片",
+      "th": "ติดตั้งประตูหน้าต่าง ถ่ายภาพความระดับและตั้งฉากของวงกบ ชิ้นส่วนโลหะ และการปิดผนึก",
+      "en": "Install doors/windows, photograph frame level/plumb, hardware, sealing"
+    },
+    "worker_formula_type": "FIXED",
+    "worker_formula_config": {"value": 2, "description": "固定2人"},
+    "material_codes": ["M033", "M034"],
+    "tool_codes": ["T028", "T005"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "樘", "label_i18n": {"zh": "门窗数量", "th": "จำนวนประตูหน้าต่าง", "en": "Door/Window Count"}}
+    },
+    "sort_order": 28
+  },
+  {
+    "process_code": "P029",
+    "name_i18n": {
+      "zh": "洁具安装",
+      "th": "ติดตั้งสุขภัณฑ์",
+      "en": "Sanitary Ware Installation"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "马桶、洗手盆、花洒安装，需拍摄安装位置、密封、通水测试照片",
+      "th": "ติดตั้งสุขภัณฑ์ ถ่ายภาพตำแหน่ง การปิดผนึก และการทดสอบน้ำ",
+      "en": "Install sanitary ware, photograph position, sealing, water test"
+    },
+    "worker_formula_type": "COMPOSITE",
+    "worker_formula_config": {"base": 1, "perUnit": 0.5, "description": "工人数 = 1 + 件数 × 0.5"},
+    "material_codes": ["M035", "M036", "M037"],
+    "tool_codes": ["T017", "T018"],
+    "base_data_schema": {
+      "count": {"type": "number", "unit": "件", "label_i18n": {"zh": "洁具件数", "th": "จำนวนชิ้นสุขภัณฑ์", "en": "Sanitary Item Count"}}
+    },
+    "sort_order": 29
+  },
+  {
+    "process_code": "P030",
+    "name_i18n": {
+      "zh": "灯具安装",
+      "th": "ติดตั้งโคมไฟ",
+      "en": "Light Fixture Installation"
+    },
+    "category": "装修工程",
+    "description_i18n": {
+      "zh": "灯具、开关插座安装，需拍摄安装位置、接线、通电测试照片",
+      "th": "ติดตั้งโคมไฟและสวิตช์ปลั๊ก ถ่ายภาพตำแหน่ง การต่อสาย และการทดสอบไฟ",
+      "en": "Install lights/switches, photograph position, wiring, power test"
+    },
+    "worker_formula_type": "PER_AREA",
+    "worker_formula_config": {"coefficient": 0.015, "description": "工人数 = 面积(m²) × 0.015"},
+    "material_codes": ["M038", "M039", "M040"],
+    "tool_codes": ["T019", "T020"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 30
+  },
+  {
+    "process_code": "P031",
+    "name_i18n": {
+      "zh": "工程验收",
+      "th": "ตรวจรับงาน",
+      "en": "Final Acceptance"
+    },
+    "category": "验收工程",
+    "description_i18n": {
+      "zh": "最终清洁验收，需拍摄各房间全景、细节、功能测试照片",
+      "th": "การทำความสะอาดและตรวจรับขั้นสุดท้าย ถ่ายภาพรวมห้อง รายละเอียด และการทดสอบการทำงาน",
+      "en": "Final cleaning and acceptance, photograph room panoramas, details, functionality"
+    },
+    "worker_formula_type": "COMPOSITE",
+    "worker_formula_config": {"base": 2, "perArea": 0.005, "description": "工人数 = 2 + 面积 × 0.005"},
+    "material_codes": ["M050"],
+    "tool_codes": ["T030"],
+    "base_data_schema": {
+      "area": {"type": "number", "unit": "m²", "label_i18n": {"zh": "建筑面积", "th": "พื้นที่อาคาร", "en": "Building Area"}}
+    },
+    "sort_order": 31
+  }
+]

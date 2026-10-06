@@ -1,7 +1,6 @@
 /**
  * 认证服务
  */
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
@@ -17,7 +16,7 @@ class AuthService {
   async login(username, password) {
     // 查询用户
     const result = await db.query(
-      'SELECT id, username, password_hash, full_name, role, is_active FROM users WHERE username = $1',
+      'SELECT user_id, username, password_hash, full_name, role, is_active FROM users WHERE username = $1',
       [username]
     );
     
@@ -48,7 +47,7 @@ class AuthService {
     // 生成 JWT Token
     const token = jwt.sign(
       {
-        userId: user.id,
+        userId: user.user_id,
         username: user.username,
         role: user.role,
         projectId: 1  // TODO: 多项目时从用户-项目关联表获取
@@ -61,7 +60,7 @@ class AuthService {
     return {
       token,
       user: {
-        id: user.id,
+        id: user.user_id,
         username: user.username,
         fullName: user.full_name,
         role: user.role
@@ -76,7 +75,7 @@ class AuthService {
    */
   async getCurrentUser(userId) {
     const result = await db.query(
-      'SELECT id, username, full_name, role, phone, created_at FROM users WHERE id = $1',
+      'SELECT user_id, username, full_name, role, phone, created_at FROM users WHERE user_id = $1',
       [userId]
     );
     

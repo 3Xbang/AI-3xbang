@@ -4,9 +4,9 @@
 
 // API 基础地址
 // 开发环境：http://localhost:3000/api
-// 生产环境：https://winaii.com/api
+// 生产环境：http://18.206.11.7/api
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://winaii.com/api'
+  ? 'http://18.206.11.7/api'
   : 'http://localhost:3000/api';
 
 // 请求拦截器

@@ -428,9 +428,9 @@
             
             processLibrary.forEach(process => {
                 const option = document.createElement('option');
-                option.value = process.code;
-                option.textContent = `${process.name.zh} (${process.code})`;
-                option.dataset.name = process.name.zh;
+                option.value = process.node_code;
+                option.textContent = `${process.node_name} (${process.node_code})`;
+                option.dataset.name = process.node_name;
                 select.appendChild(option);
             });
         }
@@ -629,4 +629,5 @@
     </script>
 </body>
 </html>
+
 

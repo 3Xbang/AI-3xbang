@@ -3,18 +3,15 @@ const router = express.Router();
 const workerController = require('../controllers/worker.controller');
 const { authenticate } = require('../middlewares/auth');
 
-// 所有路由都需要认证
-router.use(authenticate);
-
 // 工人管理
-router.get('/project/:projectId', workerController.getWorkers);
-router.post('/project/:projectId', workerController.addWorker);
-router.put('/:workerId', workerController.updateWorker);
-router.delete('/:workerId', workerController.deleteWorker);
+router.get('/project/:projectId', authenticate, workerController.getWorkers);
+router.post('/project/:projectId', authenticate, workerController.addWorker);
+router.put('/:workerId', authenticate, workerController.updateWorker);
+router.delete('/:workerId', authenticate, workerController.deleteWorker);
 
 // 考勤管理
-router.get('/project/:projectId/attendance', workerController.getAttendance);
-router.post('/project/:projectId/attendance', workerController.recordAttendance);
-router.post('/project/:projectId/attendance/batch', workerController.batchRecordAttendance);
+router.get('/project/:projectId/attendance', authenticate, workerController.getAttendance);
+router.post('/project/:projectId/attendance', authenticate, workerController.recordAttendance);
+router.post('/project/:projectId/attendance/batch', authenticate, workerController.batchRecordAttendance);
 
 module.exports = router;

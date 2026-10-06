@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工人管理 - Winaii施工管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .navbar h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        /* 统计卡片 */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* 工人列表 */
+        .workers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .worker-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .worker-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .worker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .worker-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .worker-info {
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .worker-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .worker-role {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .worker-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status-inactive {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .worker-details {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            color: #999;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        /* 加载和空状态 */
+        .loading, .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .navbar h1 {
+                font-size: 16px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .workers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+        <div class="navbar-left">
+            <button class="btn-back" onclick="goBack()">←</button>
+            <h1>工人管理</h1>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 页面标题和操作 -->
+        <div class="page-header">
+            <h2 class="page-title">项目工人</h2>
+            <button class="btn-primary" onclick="showAddModal()">+ 添加工人</button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">总工人数</div>
+                <div class="stat-value" id="totalWorkers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">在岗工人</div>
+                <div class="stat-value" id="activeWorkers">0</div>
+            </div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <div>加载中...</div>
+        </div>
+
+        <!-- 工人列表 -->
+        <div id="workersGrid" class="workers-grid" style="display: none;">
+            <!-- 动态生成 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div style="font-size: 48px; margin-bottom: 16px;">👷</div>
+            <div>还没有工人，点击"添加工人"开始吧</div>
+        </div>
+    </div>
+
+    <!-- 添加工人模态框 -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">添加工人</div>
+            <form id="addForm" onsubmit="addWorker(event)">
+                <div class="form-group">
+                    <label class="form-label">姓名 *</label>
+                    <input type="text" class="form-input" name="name" required placeholder="请输入工人姓名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">工种 *</label>
+                    <select class="form-select" name="role" required>
+                        <option value="">请选择工种</option>
+                        <option value="carpenter">木工 (Carpenter)</option>
+                        <option value="electrician">电工 (Electrician)</option>
+                        <option value="plumber">水暖工 (Plumber)</option>
+                        <option value="mason">泥瓦工 (Mason)</option>
+                        <option value="painter">油漆工 (Painter)</option>
+                        <option value="welder">焊工 (Welder)</option>
+                        <option value="steel_worker">钢筋工 (Steel Worker)</option>
+                        <option value="laborer">普工 (Laborer)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">联系电话</label>
+                    <input type="tel" class="form-input" name="phone" placeholder="请输入联系电话">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">日薪（元）</label>
+                    <input type="number" class="form-input" name="daily_wage" placeholder="请输入日薪" value="300">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="hideAddModal()">取消</button>
+                    <button type="submit" class="btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const token = localStorage.getItem('token');
+        let projectId = null;
+
+        // 工种名称映射
+        const roleNames = {
+            'carpenter': '木工',
+            'electrician': '电工',
+            'plumber': '水暖工',
+            'mason': '泥瓦工',
+            'painter': '油漆工',
+            'welder': '焊工',
+            'steel_worker': '钢筋工',
+            'laborer': '普工'
+        };
+
+        // 获取URL参数
+        function getProjectId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // 检查认证
+        function checkAuth() {
+            if (!token) {
+                window.location.href = '/index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // 加载工人列表
+        async function loadWorkers() {
+            projectId = getProjectId();
+            
+            if (!projectId) {
+                alert('缺少项目ID');
+                goBack();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/workers`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayWorkers(result.data);
+                } else {
+                    alert('加载失败：' + result.message);
+                }
+            } catch (error) {
+                console.error('加载工人列表失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 显示工人列表
+        function displayWorkers(workers) {
+            const loadingState = document.getElementById('loadingState');
+            const workersGrid = document.getElementById('workersGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            loadingState.style.display = 'none';
+
+            // 更新统计
+            document.getElementById('totalWorkers').textContent = workers.length;
+            document.getElementById('activeWorkers').textContent = 
+                workers.filter(w => w.status === 'active').length;
+
+            if (workers.length === 0) {
+                emptyState.style.display = 'block';
+                workersGrid.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            workersGrid.style.display = 'grid';
+
+            workersGrid.innerHTML = workers.map(worker => {
+                const initial = worker.name.charAt(0);
+                const roleName = roleNames[worker.role] || worker.role;
+                
+                return `
+                    <div class="worker-card">
+                        <div class="worker-header">
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                <div class="worker-avatar">${initial}</div>
+                                <div class="worker-info">
+                                    <div class="worker-name">${worker.name}</div>
+                                    <div class="worker-role">${roleName}</div>
+                                </div>
+                            </div>
+                            <span class="worker-status status-${worker.status}">
+                                ${worker.status === 'active' ? '在岗' : '离岗'}
+                            </span>
+                        </div>
+                        <div class="worker-details">
+                            ${worker.phone ? `
+                            <div class="detail-row">
+                                <span class="detail-label">📞 电话</span>
+                                <span class="detail-value">${worker.phone}</span>
+                            </div>
+                            ` : ''}
+                            <div class="detail-row">
+                                <span class="detail-label">💰 日薪</span>
+                                <span class="detail-value">¥${parseFloat(worker.daily_wage || 0).toFixed(0)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">📅 入职</span>
+                                <span class="detail-value">${new Date(worker.join_date).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 显示添加模态框
+        function showAddModal() {
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        // 隐藏添加模态框
+        function hideAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('addForm').reset();
+        }
+
+        // 添加工人
+        async function addWorker(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = {
+                name: formData.get('name'),
+                role: formData.get('role'),
+                phone: formData.get('phone') || null,
+                daily_wage: parseFloat(formData.get('daily_wage')) || 0
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/workers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('添加成功！');
+                    hideAddModal();
+                    loadWorkers();
+                } else {
+                    alert('添加失败：' + result.message);
+                }
+            } catch (error) {
+                console.error('添加工人失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 返回
+        function goBack() {
+            window.location.href = `/project-detail.html?id=${projectId}`;
+        }
+
+        // 页面加载
+        window.onload = function() {
+            if (checkAuth()) {
+                loadWorkers();
+            }
+        };
+    </script>
+</body>
+</html>

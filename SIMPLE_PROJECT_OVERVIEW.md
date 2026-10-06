@@ -1,5 +1,12 @@
 # 极简工程项目管理系统 - 反形式主义设计
 
+## 🌐 系统定位
+
+**响应式 Web 应用** - 一个网址，所有终端通用（PC、平板、手机浏览器）
+- 域名：**winaii.com**
+- 部署：AWS EC2 云服务器
+- 无需下载 APP，打开浏览器即可使用
+
 ## 🎯 核心理念
 
 **"拍照即交付，确认即流转"** - 废除繁琐报表，只管控关键节点。
@@ -17,11 +24,28 @@
 - **老板**：只需 2 个动作，看照片点【通过/驳回】
 - **系统**：自动卡点，前置节点未确认，后续节点无法提交
 
-## 📱 现场人员移动端（4个核心功能）
+## 🖥️ 用户界面（响应式 Web）
+
+**PC 端**：
+- 大屏展示，适合管理端操作
+- 多窗口查看，同时处理多个待确认事项
+- 数据统计图表展示
+
+**平板端**：
+- 现场检查时使用
+- 触屏操作，方便拍照上传
+- 便携性好
+
+**手机端**：
+- 现场工人主力设备
+- 竖屏优化，单手操作
+- 拍照上传最便捷
+
+所有终端访问同一网址 **winaii.com**，系统自动适配屏幕尺寸。
 
 ```
 ┌─────────────────────────────────────┐
-│        工地管理助手                  │
+│        工地管理系统 - winaii.com     │
 ├─────────────────────────────────────┤
 │                                     │
 │   📸  节点打卡       📦  材料进场   │
@@ -38,11 +62,11 @@
 操作流程：
 1. 点击"节点打卡"
 2. 选择当前完成的节点（如：水电布管完成）
-3. 系统自动打开相机，连拍3张
+3. 浏览器调用设备相机/文件选择，上传3张照片
    - 全景照（整体效果）
    - 细节照1（关键部位）
    - 细节照2（验收点）
-4. Canvas自动加水印（时间、GPS、项目名、操作人）
+4. 前端自动添加水印（时间、GPS、项目名、操作人）
 5. 点击【提交】，完成！
 
 系统自动：
@@ -95,7 +119,7 @@
 - 老板确认后，立即解锁
 ```
 
-## 💼 老板/管理端（PC + 移动端）
+## 💼 管理端（所有终端浏览器）
 
 ### 1. 待确认列表（核心页面）
 ```
@@ -249,29 +273,59 @@ if (!photos || photos.length < 3) {
      - `voice_text` (语音转文字内容)
      - `boss_reply` (老板回复)
 
+## 🚀 技术栈
+
+### 前端（响应式 Web）
+- **HTML5 + CSS3 + JavaScript** - 原生 Web 技术
+- **响应式设计** - 支持 PC/平板/手机所有屏幕尺寸
+- **PWA 支持** - 可添加到主屏幕，类 APP 体验
+- **Canvas API** - 前端水印处理
+
+### 后端
+- **Node.js + Express** - 轻量高效
+- **PostgreSQL** - 可靠的关系型数据库
+- **JWT 认证** - 安全的用户身份验证
+
+### 部署
+- **AWS EC2** - t2.micro 云服务器
+- **域名** - winaii.com
+- **Nginx** - 反向代理和静态文件服务
+- **PM2** - Node.js 进程管理
+
 ## 🚀 技术亮点
 
-### 1. 前端水印处理（Uni-app Canvas）
+### 1. 前端水印处理（Canvas API）
 ```javascript
-// 移动端拍照后，自动加水印
-function addWatermark(imagePath) {
-  const canvas = uni.createCanvasContext('watermark-canvas');
+// 浏览器端拍照/上传后，自动加水印
+function addWatermark(imageFile) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
   
-  // 绘制原图
-  canvas.drawImage(imagePath, 0, 0, width, height);
-  
-  // 添加半透明遮罩
-  canvas.setFillStyle('rgba(0, 0, 0, 0.4)');
-  canvas.fillRect(0, height - 80, width, 80);
-  
-  // 添加水印文字
-  canvas.setFontSize(14);
-  canvas.setFillStyle('#ffffff');
-  canvas.fillText(`📍 ${gps.lat}, ${gps.lng}`, 10, height - 60);
-  canvas.fillText(`🕐 ${timestamp}`, 10, height - 40);
-  canvas.fillText(`📌 ${projectName} | ${userName}`, 10, height - 20);
-  
-  canvas.draw();
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    // 绘制原图
+    ctx.drawImage(img, 0, 0);
+    
+    // 添加半透明遮罩
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+    
+    // 添加水印文字
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`📍 ${gps.lat}, ${gps.lng}`, 10, canvas.height - 60);
+    ctx.fillText(`🕐 ${timestamp}`, 10, canvas.height - 40);
+    ctx.fillText(`📌 ${projectName} | ${userName}`, 10, canvas.height - 20);
+    
+    // 导出带水印的图片
+    canvas.toBlob(blob => {
+      uploadToServer(blob);
+    }, 'image/jpeg', 0.9);
+  };
+  img.src = URL.createObjectURL(imageFile);
 }
 ```
 

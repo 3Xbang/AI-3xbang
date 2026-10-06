@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 极简工程管理系统 - API 测试</h1>
+
+    <div class="test-section">
+        <h2>1. 用户登录</h2>
+        <input type="text" id="username" placeholder="用户名" value="admin">
+        <input type="password" id="password" placeholder="密码" value="123456">
+        <button onclick="testLogin()">测试登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 项目列表</h2>
+        <button onclick="testProjects()">获取项目列表</button>
+        <div id="projectsResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 工序列表</h2>
+        <input type="number" id="projectId" placeholder="项目ID" value="1">
+        <button onclick="testProcesses()">获取工序列表</button>
+        <div id="processesResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. 材料库</h2>
+        <button onclick="testMaterials()">获取材料库</button>
+        <div id="materialsResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. 工人列表</h2>
+        <button onclick="testWorkers()">获取工人列表</button>
+        <div id="workersResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let authToken = '';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.token) {
+                    authToken = data.data.token;
+                    showResult('loginResult', { success: true, message: '登录成功！Token已保存', user: data.data.user });
+                } else {
+                    showResult('loginResult', data, true);
+                }
+            } catch (error) {
+                showResult('loginResult', { error: error.message }, true);
+            }
+        }
+
+        async function testProjects() {
+            if (!authToken) {
+                alert('请先登录！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/projects`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('projectsResult', data, !data.success);
+            } catch (error) {
+                showResult('projectsResult', { error: error.message }, true);
+            }
+        }
+
+        async function testProcesses() {
+            if (!authToken) {
+                alert('请先登录！');
+                return;
+            }
+
+            const projectId = document.getElementById('projectId').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/processes`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('processesResult', data, !data.success);
+            } catch (error) {
+                showResult('processesResult', { error: error.message }, true);
+            }
+        }
+
+        async function testMaterials() {
+            if (!authToken) {
+                alert('请先登录！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/materials/library`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('materialsResult', data, !data.success);
+            } catch (error) {
+                showResult('materialsResult', { error: error.message }, true);
+            }
+        }
+
+        async function testWorkers() {
+            if (!authToken) {
+                alert('请先登录！');
+                return;
+            }
+
+            const projectId = document.getElementById('projectId').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/workers`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('workersResult', data, !data.success);
+            } catch (error) {
+                showResult('workersResult', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>

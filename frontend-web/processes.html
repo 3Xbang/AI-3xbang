@@ -407,7 +407,7 @@
         // 加载工序库
         async function loadProcessLibrary() {
             try {
-                const response = await fetch(${API_BASE}/processes`, {
+                const response = await fetch(`${API_BASE}/processes`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const result = await response.json();
@@ -544,7 +544,7 @@
             }
 
             try {
-                const response = await fetch(${API_BASE}/projects/${projectId}/processes/${nodeId}/checkin`, {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/processes/${nodeId}/checkin`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -629,5 +629,6 @@
     </script>
 </body>
 </html>
+
 
 

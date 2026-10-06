@@ -1,0 +1,81 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "工地管理助手",
+        "navigationBarBackgroundColor": "#1890ff",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/node/submit",
+      "style": {
+        "navigationBarTitleText": "工序打卡",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/material/submit",
+      "style": {
+        "navigationBarTitleText": "材料进场",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/issue/submit",
+      "style": {
+        "navigationBarTitleText": "问题上报",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/task/list",
+      "style": {
+        "navigationBarTitleText": "我的任务",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/pending/list",
+      "style": {
+        "navigationBarTitleText": "待审批",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "工地管理助手",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#1890ff",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/task/list",
+        "iconPath": "static/tabbar/task.png",
+        "selectedIconPath": "static/tabbar/task-active.png",
+        "text": "任务"
+      }
+    ]
+  }
+}

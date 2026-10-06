@@ -19,10 +19,13 @@ const app = express();
 
 // CORS 跨域配置
 const allowedOrigins = [
-  'http://localhost:5173',  // 本地开发
-  'http://localhost:3000',  // 本地开发
-  'https://winaii.com',     // 生产环境
-  'https://www.winaii.com', // 生产环境（www）
+  'http://localhost:5173',      // 本地开发
+  'http://localhost:3000',      // 本地开发
+  'http://18.206.11.7',         // AWS 服务器 IP
+  'https://winaii.com',         // 生产环境
+  'https://www.winaii.com',     // 生产环境（www）
+  'http://winaii.com',          // 生产环境（HTTP）
+  'http://www.winaii.com',      // 生产环境（www HTTP）
 ];
 
 app.use(cors({

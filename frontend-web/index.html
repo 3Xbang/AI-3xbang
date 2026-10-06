@@ -197,17 +197,10 @@
                     
                     showSuccess('登录成功！正在跳转...');
                     
-                    // 跳转到主页面（暂时显示信息）
+                    // 跳转到项目列表页
                     setTimeout(() => {
-                        document.body.innerHTML = `
-                            <div style="text-align: center; padding: 50px; color: white;">
-                                <h1>✅ 登录成功</h1>
-                                <p style="margin-top: 20px; font-size: 18px;">欢迎，${data.data.user.fullName}（${data.data.user.role}）</p>
-                                <p style="margin-top: 10px;">Token: ${data.data.token.substring(0, 50)}...</p>
-                                <p style="margin-top: 20px; color: #ffeb3b;">🚧 主界面开发中...</p>
-                            </div>
-                        `;
-                    }, 1000);
+                        window.location.href = '/projects.html';
+                    }, 500);
                 } else {
                     showError(data.message || '登录失败');
                 }

@@ -54,7 +54,15 @@ const i18n = {
             },
             measurements: '尺寸测量',
             workers: '分配工人',
-            notes: '备注'
+            notes: '备注',
+            units: {
+                square_meter: '平米',
+                cubic_meter: '立方米',
+                meter: '米',
+                piece: '件',
+                point: '点位',
+                ton: '吨'
+            }
         },
         materials: {
             title: '材料管理',
@@ -154,7 +162,15 @@ const i18n = {
             },
             measurements: 'ขนาด',
             workers: 'คนงาน',
-            notes: 'หมายเหตุ'
+            notes: 'หมายเหตุ',
+            units: {
+                square_meter: 'ตร.ม.',
+                cubic_meter: 'ลบ.ม.',
+                meter: 'เมตร',
+                piece: 'ชิ้น',
+                point: 'จุด',
+                ton: 'ตัน'
+            }
         },
         materials: {
             title: 'จัดการวัสดุ',
@@ -234,4 +250,11 @@ function getI18nField(obj, field) {
     const value = obj[field];
     if (typeof value === 'string') return value;
     return value[currentLang] || value.zh || value.th || '';
+}
+
+// 获取单位翻译
+function getUnitText(unit) {
+    if (!unit) return '';
+    const key = `processes.units.${unit}`;
+    return t(key) !== key ? t(key) : unit;
 }

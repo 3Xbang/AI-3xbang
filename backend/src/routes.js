@@ -4,6 +4,7 @@ const pool = require('./config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authenticate = require('./middleware-auth');
+const { STANDARD_PROCESSES } = require('./process-templates');
 const multer = require('multer');
 const path = require('path');
 
@@ -81,16 +82,53 @@ router.get('/projects', authenticate, async (req, res) => {
 });
 
 router.post('/projects', authenticate, async (req, res) => {
+  const client = await pool.connect();
+  
   try {
+    await client.query('BEGIN');
+    
     const { name, location, client_name, start_date, planned_end_date } = req.body;
-    const result = await pool.query(
+    
+    // 1. 创建项目
+    const projectResult = await client.query(
       `INSERT INTO projects (name, location, client_name, start_date, planned_end_date, status) 
        VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
       [name, location, client_name, start_date, planned_end_date]
     );
-    res.json({ success: true, data: result.rows[0] });
+    
+    const project = projectResult.rows[0];
+    
+    // 2. 自动创建16个标准工序节点
+    for (const template of STANDARD_PROCESSES) {
+      // 插入工序节点
+      const nodeResult = await client.query(
+        `INSERT INTO process_nodes 
+         (project_id, process_code, process_name, sequence_number) 
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [project.id, template.code, JSON.stringify(template.name), template.sequence]
+      );
+      
+      // 为每个节点创建执行记录
+      await client.query(
+        `INSERT INTO process_execution 
+         (process_node_id, status, quantity_unit) 
+         VALUES ($1, 'not_started', $2)`,
+        [nodeResult.rows[0].id, template.typical_unit]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    res.json({ 
+      success: true, 
+      data: project,
+      message: '项目创建成功，已自动生成16个标准工序'
+    });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 

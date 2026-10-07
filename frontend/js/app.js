@@ -293,13 +293,14 @@ const app = {
     renderTaskSection(containerId, tasks) {
         const container = document.getElementById(containerId);
         if (!tasks || tasks.length === 0) {
-            container.innerHTML = `<p class="empty-hint">${t('common.noData')}</p>`;
+            container.innerHTML = `<p class="empty-hint">${t('common.noData') || '暂无数据'}</p>`;
             return;
         }
 
         container.innerHTML = tasks.map(task => {
             const percentage = Math.round(task.completion_percentage || 0);
             const progressColor = percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#f59e0b';
+            const unit = getUnitText(task.quantity_unit || '');
             
             return `
                 <div class="task-card" onclick="app.showTaskDetail(${task.id})">
@@ -315,11 +316,11 @@ const app = {
                     </div>
                     <div class="task-info">
                         ${task.assigned_workers ? `<div>👷 ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
-                        ${task.planned_quantity ? `<div>📊 ${t('daily.todayPlan')}: ${task.planned_quantity} ${task.quantity_unit || ''}</div>` : ''}
-                        ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${task.quantity_unit || ''}</div>` : ''}
+                        ${task.planned_quantity ? `<div>📊 ${t('daily.todayPlan')}: ${task.planned_quantity} ${unit}</div>` : ''}
+                        ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
                     </div>
                     <div class="task-actions">
-                        <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id})">${t('daily.updateProgress')}</button>
+                        <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id}, '${task.quantity_unit || ''}')">${t('daily.updateProgress')}</button>
                     </div>
                 </div>
             `;
@@ -327,13 +328,16 @@ const app = {
     },
 
     // 显示进度更新表单
-    showProgressForm(processExecutionId) {
+    showProgressForm(processExecutionId, unit) {
+        const unitText = getUnitText(unit);
+        
         const modal = this.createModal(t('daily.updateProgress'), `
             <form id="progress-form">
                 <input type="hidden" id="process-execution-id" value="${processExecutionId}">
+                <input type="hidden" id="quantity-unit" value="${unit}">
                 <div class="form-group">
-                    <label>${t('daily.quantityCompleted')}</label>
-                    <input type="number" step="0.01" id="quantity-completed" required>
+                    <label>${t('daily.quantityCompleted')} ${unitText ? '(' + unitText + ')' : ''}</label>
+                    <input type="number" step="0.01" id="quantity-completed" required placeholder="0">
                 </div>
                 <div class="form-group">
                     <label>${t('daily.workStatus')}</label>
@@ -341,12 +345,12 @@ const app = {
                         <option value="normal">${t('daily.normal')}</option>
                         <option value="waiting_material">${t('daily.waitingMaterial')}</option>
                         <option value="weather_stop">${t('daily.weatherStop')}</option>
-                        <option value="problem">${t('common.problem')}</option>
+                        <option value="problem">${t('common.error')}</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>${t('common.notes')}</label>
-                    <textarea id="progress-notes" rows="3"></textarea>
+                    <textarea id="progress-notes" rows="3" placeholder="${t('common.notes')}..."></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
@@ -366,7 +370,7 @@ const app = {
         const data = {
             process_execution_id: parseInt(document.getElementById('process-execution-id').value),
             quantity_completed: parseFloat(document.getElementById('quantity-completed').value),
-            unit: 'unit', // TODO: 从工序获取单位
+            unit: document.getElementById('quantity-unit').value,
             work_status: document.getElementById('work-status').value,
             notes: { [currentLang]: document.getElementById('progress-notes').value }
         };

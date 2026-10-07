@@ -97,11 +97,11 @@ router.get('/projects/:id/summary', authenticate, async (req, res) => {
     const project = await pool.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);
     
     const processes = await pool.query(`
-      SELECT pe.*, pn.node_code, pn.node_name
+      SELECT pe.*, pn.process_code, pn.process_name, pn.sequence_number
       FROM process_execution pe
       JOIN process_nodes pn ON pe.process_node_id = pn.id
-      WHERE pe.project_id = $1
-      ORDER BY pn.sort_order
+      WHERE pn.project_id = $1
+      ORDER BY pn.sequence_number
     `, [req.params.id]);
     
     const issues = processes.rows.filter(p => p.status === 'waiting_material' || p.status === 'weather_stop');
@@ -130,10 +130,11 @@ router.get('/projects/:id/summary', authenticate, async (req, res) => {
 router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT pe.*, pn.node_code, pn.node_name, pn.sort_order
+      SELECT pe.*, pn.process_code, pn.process_name, pn.sequence_number
       FROM process_nodes pn
-      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id AND pe.project_id = $1
-      ORDER BY pn.sort_order
+      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
+      WHERE pn.project_id = $1
+      ORDER BY pn.sequence_number
     `, [req.params.projectId]);
     res.json({ success: true, data: result.rows });
   } catch (error) {

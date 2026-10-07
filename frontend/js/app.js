@@ -423,6 +423,8 @@ const app = {
         container.innerHTML = processes.map(process => {
             const statusClass = process.status || 'not_started';
             const statusText = t(`processes.status.${statusClass}`);
+            const percentage = Math.round(process.completion_percentage || 0);
+            const progressColor = percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#f59e0b';
             
             return `
                 <div class="process-item status-${statusClass}">
@@ -431,10 +433,19 @@ const app = {
                         <h4>${getI18nField(process, 'process_name')}</h4>
                         <span class="process-status">${statusText}</span>
                     </div>
+                    <div class="process-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%; background: ${progressColor}"></div>
+                        </div>
+                        <span class="progress-text">${percentage}%</span>
+                    </div>
                     <div class="process-details">
                         ${process.assigned_workers ? `<div><strong>${t('processes.workers')}:</strong> ${JSON.stringify(process.assigned_workers)}</div>` : ''}
                         ${process.actual_start_date ? `<div><strong>开始:</strong> ${process.actual_start_date}</div>` : ''}
                         ${process.actual_end_date ? `<div><strong>完成:</strong> ${process.actual_end_date}</div>` : ''}
+                    </div>
+                    <div class="process-actions">
+                        <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">${t('subtasks.view')}</button>
                     </div>
                 </div>
             `;

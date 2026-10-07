@@ -394,6 +394,31 @@ body {
     color: var(--text-secondary);
 }
 
+.process-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.process-progress .progress-bar {
+    flex: 1;
+}
+
+.process-progress .progress-text {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 50px;
+    text-align: right;
+}
+
+.process-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
 /* 模态框 */
 .modal {
     display: none;

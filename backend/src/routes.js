@@ -31,7 +31,7 @@ const upload = multer({
 router.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const result = await pool.query('SELECT * FROM users WHERE username = $1 AND is_active = TRUE', [username]);
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, message: '用户名或密码错误' });

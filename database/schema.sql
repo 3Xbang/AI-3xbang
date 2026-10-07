@@ -95,8 +95,11 @@ CREATE INDEX idx_material_usage_process ON material_usage(process_execution_id);
 CREATE INDEX idx_photos_process ON photos(process_execution_id);
 
 -- 插入默认管理员用户 (password: admin123)
+-- 哈希值通过bcrypt生成: await bcrypt.hash('admin123', 10)
 INSERT INTO users (username, password_hash, role) 
-VALUES ('admin', '$2b$10$9w9cI0wr1MQ5ceK0.LQhJu37cH2WCewSFT7MFsPsZ6tUk5hMYclRK', 'admin');
+VALUES ('admin', '$2b$10$.iORE4XTXc3mNVadMGITYORv/LTzx9t56i6UyFumcGjsv89OEH4Xe', 'admin')
+ON CONFLICT (username) DO UPDATE 
+SET password_hash = EXCLUDED.password_hash;
 
 -- 插入标准16工序模板（供创建项目时复制）
 -- 这些是参考数据，实际工序通过API创建项目时自动生成

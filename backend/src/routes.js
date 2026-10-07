@@ -329,3 +329,191 @@ function calculateMaterials(dimensions) {
 }
 
 module.exports = router;
+
+
+// ============ 每日进度接口 ============
+
+// 获取今日任务看板
+router.get('/projects/:projectId/daily-tasks', authenticate, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 获取所有进行中的工序
+    const result = await pool.query(`
+      SELECT 
+        pe.*,
+        pn.process_code,
+        pn.process_name,
+        pn.sequence_number,
+        dp.quantity_completed as today_completed,
+        dp.work_status as today_status
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      LEFT JOIN daily_progress dp ON pe.id = dp.process_execution_id AND dp.date = $1
+      WHERE pn.project_id = $2
+      ORDER BY pn.sequence_number
+    `, [today, req.params.projectId]);
+    
+    // 按状态分组
+    const tasks = {
+      in_progress: [],
+      waiting_material: [],
+      weather_stop: [],
+      completed: [],
+      not_started: []
+    };
+    
+    result.rows.forEach(row => {
+      const status = row.status || 'not_started';
+      if (tasks[status]) {
+        tasks[status].push(row);
+      }
+    });
+    
+    res.json({ success: true, data: tasks });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 提交每日进度
+router.post('/daily-progress', authenticate, async (req, res) => {
+  try {
+    const {
+      process_execution_id,
+      quantity_completed,
+      unit,
+      work_status,
+      notes,
+      photos,
+      material_used
+    } = req.body;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 获取工序信息
+    const processInfo = await pool.query(
+      'SELECT total_completed, planned_quantity FROM process_execution WHERE id = $1',
+      [process_execution_id]
+    );
+    
+    if (processInfo.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    // 计算累计完成量和百分比
+    const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
+    const newTotal = previousTotal + parseFloat(quantity_completed);
+    const plannedQty = parseFloat(processInfo.rows[0].planned_quantity) || 1;
+    const percentage = (newTotal / plannedQty) * 100;
+    
+    // 插入每日进度记录
+    const progressResult = await pool.query(`
+      INSERT INTO daily_progress 
+      (process_execution_id, date, quantity_completed, unit, total_completed, 
+       total_planned, completion_percentage, work_status, notes, photos, 
+       material_used, updated_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `, [
+      process_execution_id,
+      today,
+      quantity_completed,
+      unit,
+      newTotal,
+      plannedQty,
+      percentage,
+      work_status,
+      notes ? JSON.stringify(notes) : null,
+      photos ? JSON.stringify(photos) : null,
+      material_used ? JSON.stringify(material_used) : null,
+      req.user.id
+    ]);
+    
+    // 更新工序执行表的累计数据
+    await pool.query(`
+      UPDATE process_execution 
+      SET total_completed = $1, 
+          completion_percentage = $2,
+          status = CASE 
+            WHEN $2 >= 100 THEN 'completed'
+            WHEN $2 > 0 THEN 'in_progress'
+            ELSE status
+          END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+    `, [newTotal, percentage, process_execution_id]);
+    
+    res.json({ 
+      success: true, 
+      data: progressResult.rows[0],
+      message: '进度更新成功'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取工序的历史进度
+router.get('/process-execution/:id/progress-history', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM daily_progress 
+      WHERE process_execution_id = $1 
+      ORDER BY date DESC
+      LIMIT 30
+    `, [req.params.id]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新工序计划总量
+router.put('/process-execution/:id/plan', authenticate, async (req, res) => {
+  try {
+    const { planned_quantity, quantity_unit } = req.body;
+    
+    const result = await pool.query(`
+      UPDATE process_execution 
+      SET planned_quantity = $1, 
+          quantity_unit = $2,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `, [planned_quantity, quantity_unit, req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新项目工人信息
+router.put('/projects/:id/workers', authenticate, async (req, res) => {
+  try {
+    const { total_workers, worker_skills } = req.body;
+    
+    const result = await pool.query(`
+      UPDATE projects 
+      SET total_workers = $1,
+          worker_skills = $2,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `, [total_workers, worker_skills ? JSON.stringify(worker_skills) : null, req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '项目不存在' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});

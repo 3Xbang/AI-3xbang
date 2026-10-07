@@ -9,7 +9,8 @@ const i18n = {
             projects: '项目管理',
             processes: '工序进度',
             materials: '材料管理',
-            photos: '现场照片'
+            photos: '现场照片',
+            dailyTasks: '今日任务'
         },
         login: {
             username: '用户名',
@@ -75,6 +76,28 @@ const i18n = {
             process: '关联工序',
             time: '拍摄时间',
             notes: '说明'
+        },
+        daily: {
+            title: '今日任务',
+            date: '日期',
+            inProgress: '进行中',
+            waitingMaterial: '等待材料',
+            weatherStop: '天气停工',
+            completed: '今日完成',
+            notStarted: '未开始',
+            todayPlan: '今日计划',
+            todayCompleted: '今日完成',
+            updateProgress: '更新进度',
+            reportIssue: '上报问题',
+            quantityCompleted: '完成数量',
+            workStatus: '工作状态',
+            normal: '正常进行',
+            totalProgress: '总进度',
+            workers: '人员',
+            materialStock: '材料库存',
+            sufficient: '充足',
+            insufficient: '不足',
+            progressHistory: '历史进度'
         }
     },
     th: {
@@ -86,7 +109,8 @@ const i18n = {
             projects: 'จัดการโครงการ',
             processes: 'ความคืบหน้างาน',
             materials: 'จัดการวัสดุ',
-            photos: 'รูปถ่ายหน้างาน'
+            photos: 'รูปถ่ายหน้างาน',
+            dailyTasks: 'งานวันนี้'
         },
         login: {
             username: 'ชื่อผู้ใช้',
@@ -152,6 +176,28 @@ const i18n = {
             process: 'เกี่ยวกับงาน',
             time: 'เวลาถ่าย',
             notes: 'รายละเอียด'
+        },
+        daily: {
+            title: 'งานวันนี้',
+            date: 'วันที่',
+            inProgress: 'กำลังทำงาน',
+            waitingMaterial: 'รอวัสดุ',
+            weatherStop: 'หยุดเพราะอากาศ',
+            completed: 'เสร็จวันนี้',
+            notStarted: 'ยังไม่เริ่ม',
+            todayPlan: 'เป้าหมายวันนี้',
+            todayCompleted: 'ทำเสร็จวันนี้',
+            updateProgress: 'อัพเดทความคืบหน้า',
+            reportIssue: 'รายงานปัญหา',
+            quantityCompleted: 'จำนวนที่ทำเสร็จ',
+            workStatus: 'สถานะงาน',
+            normal: 'ปกติ',
+            totalProgress: 'ความคืบหน้ารวม',
+            workers: 'คนงาน',
+            materialStock: 'คงเหลือวัสดุ',
+            sufficient: 'เพียงพอ',
+            insufficient: 'ไม่พอ',
+            progressHistory: 'ประวัติความคืบหน้า'
         }
     }
 };

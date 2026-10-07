@@ -53,6 +53,7 @@
             <!-- 侧边导航 -->
             <nav class="sidebar">
                 <ul>
+                    <li><a href="#" onclick="app.showView('daily-tasks')" data-i18n="nav.dailyTasks">今日任务</a></li>
                     <li><a href="#" onclick="app.showView('projects')" data-i18n="nav.projects">项目管理</a></li>
                     <li><a href="#" onclick="app.showView('processes')" data-i18n="nav.processes">工序进度</a></li>
                     <li><a href="#" onclick="app.showView('materials')" data-i18n="nav.materials">材料管理</a></li>
@@ -62,8 +63,40 @@
 
             <!-- 内容区域 -->
             <main class="content">
+                <!-- 今日任务视图 -->
+                <div id="daily-tasks-view" class="view active">
+                    <div class="view-header">
+                        <h3 data-i18n="daily.title">今日任务</h3>
+                        <select id="daily-project-selector" onchange="app.loadDailyTasks(this.value)">
+                            <option value="" data-i18n="projects.selectProject">选择项目</option>
+                        </select>
+                    </div>
+                    <div class="daily-date">
+                        📅 <span id="today-date"></span>
+                    </div>
+                    <div id="daily-tasks-container">
+                        <!-- 进行中的任务 -->
+                        <div class="task-section">
+                            <h4>🔵 <span data-i18n="daily.inProgress">进行中</span></h4>
+                            <div id="tasks-in-progress"></div>
+                        </div>
+                        
+                        <!-- 等待材料 -->
+                        <div class="task-section">
+                            <h4>🟡 <span data-i18n="daily.waitingMaterial">等待材料</span></h4>
+                            <div id="tasks-waiting-material"></div>
+                        </div>
+                        
+                        <!-- 今日完成 -->
+                        <div class="task-section">
+                            <h4>🟢 <span data-i18n="daily.completed">今日完成</span></h4>
+                            <div id="tasks-completed"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 项目列表视图 -->
-                <div id="projects-view" class="view active">
+                <div id="projects-view" class="view">
                     <div class="view-header">
                         <h3 data-i18n="projects.title">项目管理</h3>
                         <button onclick="app.showProjectForm()" class="btn-primary" data-i18n="projects.add">+ 新建项目</button>

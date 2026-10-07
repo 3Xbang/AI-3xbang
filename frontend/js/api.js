@@ -102,5 +102,25 @@ const api = {
             body: formData
         });
         return response.json();
-    }
+    },
+
+    // 每日进度
+    getDailyTasks: (projectId) => apiRequest(`/api/projects/${projectId}/daily-tasks`),
+
+    submitDailyProgress: (data) => apiRequest('/api/daily-progress', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+
+    getProgressHistory: (processExecutionId) => apiRequest(`/api/process-execution/${processExecutionId}/progress-history`),
+
+    updateProcessPlan: (processExecutionId, data) => apiRequest(`/api/process-execution/${processExecutionId}/plan`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+
+    updateProjectWorkers: (projectId, data) => apiRequest(`/api/projects/${projectId}/workers`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    })
 };

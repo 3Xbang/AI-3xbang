@@ -9,7 +9,7 @@ const app = {
         if (authToken) {
             this.showMainPage();
             this.loadUserInfo();
-            this.loadProjects();
+            this.showView('daily-tasks'); // 默认显示今日任务
         } else {
             this.showLoginPage();
         }
@@ -19,6 +19,17 @@ const app = {
             e.preventDefault();
             this.handleLogin();
         });
+
+        // 显示今天日期
+        const today = new Date();
+        const dateStr = today.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'th-TH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+        });
+        const dateEl = document.getElementById('today-date');
+        if (dateEl) dateEl.textContent = dateStr;
 
         // 应用翻译
         updateTranslations();
@@ -91,6 +102,9 @@ const app = {
 
         // 加载视图数据
         switch(viewName) {
+            case 'daily-tasks':
+                this.loadProjectSelectors();
+                break;
             case 'projects':
                 this.loadProjects();
                 break;
@@ -233,7 +247,7 @@ const app = {
         try {
             const result = await api.getProjects();
             if (result.success) {
-                const selectors = ['project-selector', 'material-project-selector', 'photo-project-selector'];
+                const selectors = ['project-selector', 'material-project-selector', 'photo-project-selector', 'daily-project-selector'];
                 selectors.forEach(id => {
                     const select = document.getElementById(id);
                     if (select) {
@@ -244,6 +258,135 @@ const app = {
             }
         } catch (error) {
             console.error('Failed to load project selectors:', error);
+        }
+    },
+
+    // 加载今日任务
+    async loadDailyTasks(projectId) {
+        if (!projectId) return;
+        
+        try {
+            this.showLoading();
+            const result = await api.getDailyTasks(projectId);
+            if (result.success) {
+                this.renderDailyTasks(result.data);
+            }
+        } catch (error) {
+            console.error('Failed to load daily tasks:', error);
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
+    },
+
+    // 渲染今日任务
+    renderDailyTasks(tasks) {
+        // 渲染进行中的任务
+        this.renderTaskSection('tasks-in-progress', tasks.in_progress);
+        // 渲染等待材料的任务
+        this.renderTaskSection('tasks-waiting-material', tasks.waiting_material);
+        // 渲染已完成的任务
+        this.renderTaskSection('tasks-completed', tasks.completed);
+    },
+
+    // 渲染任务区块
+    renderTaskSection(containerId, tasks) {
+        const container = document.getElementById(containerId);
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = `<p class="empty-hint">${t('common.noData')}</p>`;
+            return;
+        }
+
+        container.innerHTML = tasks.map(task => {
+            const percentage = Math.round(task.completion_percentage || 0);
+            const progressColor = percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#f59e0b';
+            
+            return `
+                <div class="task-card" onclick="app.showTaskDetail(${task.id})">
+                    <div class="task-header">
+                        <span class="task-code">${task.process_code}</span>
+                        <h4>${getI18nField(task, 'process_name')}</h4>
+                    </div>
+                    <div class="task-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%; background: ${progressColor}"></div>
+                        </div>
+                        <span class="progress-text">${percentage}%</span>
+                    </div>
+                    <div class="task-info">
+                        ${task.assigned_workers ? `<div>👷 ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
+                        ${task.planned_quantity ? `<div>📊 ${t('daily.todayPlan')}: ${task.planned_quantity} ${task.quantity_unit || ''}</div>` : ''}
+                        ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${task.quantity_unit || ''}</div>` : ''}
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id})">${t('daily.updateProgress')}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    // 显示进度更新表单
+    showProgressForm(processExecutionId) {
+        const modal = this.createModal(t('daily.updateProgress'), `
+            <form id="progress-form">
+                <input type="hidden" id="process-execution-id" value="${processExecutionId}">
+                <div class="form-group">
+                    <label>${t('daily.quantityCompleted')}</label>
+                    <input type="number" step="0.01" id="quantity-completed" required>
+                </div>
+                <div class="form-group">
+                    <label>${t('daily.workStatus')}</label>
+                    <select id="work-status">
+                        <option value="normal">${t('daily.normal')}</option>
+                        <option value="waiting_material">${t('daily.waitingMaterial')}</option>
+                        <option value="weather_stop">${t('daily.weatherStop')}</option>
+                        <option value="problem">${t('common.problem')}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>${t('common.notes')}</label>
+                    <textarea id="progress-notes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
+                    <button type="submit" class="btn-primary">${t('common.save')}</button>
+                </div>
+            </form>
+        `);
+
+        document.getElementById('progress-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleSubmitProgress();
+        });
+    },
+
+    // 提交进度更新
+    async handleSubmitProgress() {
+        const data = {
+            process_execution_id: parseInt(document.getElementById('process-execution-id').value),
+            quantity_completed: parseFloat(document.getElementById('quantity-completed').value),
+            unit: 'unit', // TODO: 从工序获取单位
+            work_status: document.getElementById('work-status').value,
+            notes: { [currentLang]: document.getElementById('progress-notes').value }
+        };
+
+        try {
+            this.showLoading();
+            const result = await api.submitDailyProgress(data);
+            if (result.success) {
+                this.closeModal();
+                this.showToast(result.message || t('common.success'));
+                // 重新加载今日任务
+                const projectId = document.getElementById('daily-project-selector').value;
+                if (projectId) {
+                    this.loadDailyTasks(projectId);
+                }
+            }
+        } catch (error) {
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
         }
     },
 

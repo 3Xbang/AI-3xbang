@@ -1,7 +1,7 @@
 // API配置
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001'
-    : '/api';
+    : '';  // 生产环境使用相对路径，nginx会代理/api/*
 
 // 存储token
 let authToken = localStorage.getItem('authToken');

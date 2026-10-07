@@ -320,6 +320,7 @@ const app = {
                         ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
                     </div>
                     <div class="task-actions">
+                        <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">${t('subtasks.view')}</button>
                         <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id}, '${task.quantity_unit || ''}')">${t('daily.updateProgress')}</button>
                     </div>
                 </div>
@@ -489,6 +490,261 @@ const app = {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    },
+
+    // ===== 子任务功能 =====
+    
+    // 显示子任务列表
+    async showSubtasks(processExecutionId) {
+        try {
+            this.showLoading();
+            const result = await api.getSubtasks(processExecutionId);
+            
+            if (!result.success) {
+                this.showToast(t('common.error'), 'error');
+                return;
+            }
+
+            const subtasks = result.data || [];
+            const modal = this.createModal(t('subtasks.title'), `
+                <div class="subtasks-container">
+                    <div class="subtasks-header">
+                        <button class="btn-sm btn-primary" onclick="app.showAddSubtaskForm(${processExecutionId})">
+                            + ${t('subtasks.add')}
+                        </button>
+                    </div>
+                    <div id="subtasks-list" class="subtasks-list">
+                        ${this.renderSubtasksList(subtasks, processExecutionId)}
+                    </div>
+                </div>
+            `);
+        } catch (error) {
+            console.error('Failed to load subtasks:', error);
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
+    },
+
+    // 渲染子任务列表
+    renderSubtasksList(subtasks, processExecutionId) {
+        if (!subtasks || subtasks.length === 0) {
+            return `<p class="empty-hint">${t('subtasks.empty')}</p>`;
+        }
+
+        return subtasks.map(subtask => {
+            const percentage = Math.round(subtask.completion_percentage || 0);
+            const isCompleted = subtask.status === 'completed';
+            const statusClass = isCompleted ? 'completed' : (percentage > 0 ? 'in-progress' : 'not-started');
+            
+            return `
+                <div class="subtask-item ${statusClass}">
+                    <div class="subtask-header">
+                        <div class="subtask-info">
+                            <h5>${getI18nField(subtask, 'name')}</h5>
+                            ${subtask.description ? `<p class="subtask-desc">${getI18nField(subtask, 'description') || ''}</p>` : ''}
+                        </div>
+                        <span class="subtask-status">${percentage}%</span>
+                    </div>
+                    <div class="subtask-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%; background: ${isCompleted ? '#10b981' : '#3b82f6'}"></div>
+                        </div>
+                    </div>
+                    <div class="subtask-footer">
+                        ${subtask.estimated_quantity ? `<span>📊 ${subtask.estimated_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
+                        ${subtask.actual_quantity ? `<span>✅ ${subtask.actual_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
+                        <div class="subtask-actions">
+                            <button class="btn-xs btn-primary" onclick="event.stopPropagation(); app.showUpdateSubtaskForm(${subtask.id}, ${processExecutionId})">
+                                ${t('subtasks.update')}
+                            </button>
+                            ${!isCompleted ? `<button class="btn-xs btn-success" onclick="event.stopPropagation(); app.completeSubtask(${subtask.id}, ${processExecutionId})">${t('subtasks.complete')}</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    // 显示添加子任务表单
+    showAddSubtaskForm(processExecutionId) {
+        const modal = this.createModal(t('subtasks.add'), `
+            <form id="add-subtask-form">
+                <input type="hidden" id="subtask-process-id" value="${processExecutionId}">
+                <div class="form-group">
+                    <label>${t('subtasks.name')} (${t('common.chinese')})</label>
+                    <input type="text" id="subtask-name-zh" required placeholder="${t('subtasks.namePlaceholder')}">
+                </div>
+                <div class="form-group">
+                    <label>${t('subtasks.name')} (${t('common.thai')})</label>
+                    <input type="text" id="subtask-name-th" required placeholder="${t('subtasks.namePlaceholder')}">
+                </div>
+                <div class="form-group">
+                    <label>${t('subtasks.description')} (${t('common.chinese')})</label>
+                    <textarea id="subtask-desc-zh" rows="2" placeholder="${t('subtasks.descPlaceholder')}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>${t('subtasks.description')} (${t('common.thai')})</label>
+                    <textarea id="subtask-desc-th" rows="2" placeholder="${t('subtasks.descPlaceholder')}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>${t('subtasks.estimatedQuantity')}</label>
+                    <input type="number" step="0.01" id="subtask-quantity" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>${t('subtasks.unit')}</label>
+                    <select id="subtask-unit">
+                        <option value="sqm">${t('units.sqm')}</option>
+                        <option value="cbm">${t('units.cbm')}</option>
+                        <option value="item">${t('units.item')}</option>
+                        <option value="point">${t('units.point')}</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
+                    <button type="submit" class="btn-primary">${t('common.save')}</button>
+                </div>
+            </form>
+        `);
+
+        document.getElementById('add-subtask-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleAddSubtask();
+        });
+    },
+
+    // 处理添加子任务
+    async handleAddSubtask() {
+        const processExecutionId = parseInt(document.getElementById('subtask-process-id').value);
+        const data = {
+            process_execution_id: processExecutionId,
+            name: {
+                zh: document.getElementById('subtask-name-zh').value,
+                th: document.getElementById('subtask-name-th').value
+            },
+            description: {
+                zh: document.getElementById('subtask-desc-zh').value || null,
+                th: document.getElementById('subtask-desc-th').value || null
+            },
+            estimated_quantity: parseFloat(document.getElementById('subtask-quantity').value) || null,
+            unit: document.getElementById('subtask-unit').value || null
+        };
+
+        try {
+            this.showLoading();
+            const result = await api.createSubtask(data);
+            if (result.success) {
+                this.closeModal();
+                this.showToast(t('common.success'));
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
+            }
+        } catch (error) {
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
+    },
+
+    // 显示更新子任务表单
+    async showUpdateSubtaskForm(subtaskId, processExecutionId) {
+        try {
+            this.showLoading();
+            const result = await api.getSubtasks(processExecutionId);
+            const subtask = result.data.find(s => s.id === subtaskId);
+            
+            if (!subtask) {
+                this.showToast(t('common.error'), 'error');
+                return;
+            }
+
+            const modal = this.createModal(t('subtasks.update'), `
+                <form id="update-subtask-form">
+                    <input type="hidden" id="update-subtask-id" value="${subtaskId}">
+                    <input type="hidden" id="update-process-id" value="${processExecutionId}">
+                    <div class="form-group">
+                        <label>${t('subtasks.actualQuantity')} ${getUnitText(subtask.unit || '')}</label>
+                        <input type="number" step="0.01" id="update-actual-quantity" 
+                               value="${subtask.actual_quantity || 0}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>${t('common.notes')}</label>
+                        <textarea id="update-subtask-notes" rows="3" placeholder="${t('common.notes')}...">${getI18nField(subtask, 'notes') || ''}</textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
+                        <button type="submit" class="btn-primary">${t('common.save')}</button>
+                    </div>
+                </form>
+            `);
+
+            document.getElementById('update-subtask-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.handleUpdateSubtask();
+            });
+        } catch (error) {
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
+    },
+
+    // 处理更新子任务
+    async handleUpdateSubtask() {
+        const subtaskId = parseInt(document.getElementById('update-subtask-id').value);
+        const processExecutionId = parseInt(document.getElementById('update-process-id').value);
+        const data = {
+            actual_quantity: parseFloat(document.getElementById('update-actual-quantity').value),
+            notes: {
+                [currentLang]: document.getElementById('update-subtask-notes').value || null
+            }
+        };
+
+        try {
+            this.showLoading();
+            const result = await api.updateSubtask(subtaskId, data);
+            if (result.success) {
+                this.closeModal();
+                this.showToast(t('common.success'));
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
+                // 重新加载今日任务以更新进度
+                const projectId = document.getElementById('daily-project-selector').value;
+                if (projectId) {
+                    this.loadDailyTasks(projectId);
+                }
+            }
+        } catch (error) {
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
+    },
+
+    // 完成子任务
+    async completeSubtask(subtaskId, processExecutionId) {
+        if (!confirm(t('subtasks.confirmComplete'))) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            const result = await api.completeSubtask(subtaskId);
+            if (result.success) {
+                this.showToast(t('common.success'));
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
+                // 重新加载今日任务
+                const projectId = document.getElementById('daily-project-selector').value;
+                if (projectId) {
+                    this.loadDailyTasks(projectId);
+                }
+            }
+        } catch (error) {
+            this.showToast(t('common.error'), 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 };
 

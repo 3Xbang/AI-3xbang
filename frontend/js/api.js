@@ -122,5 +122,27 @@ const api = {
     updateProjectWorkers: (projectId, data) => apiRequest(`/api/projects/${projectId}/workers`, {
         method: 'PUT',
         body: JSON.stringify(data)
+    }),
+
+    // 子任务
+    getSubtasks: (processExecutionId) => apiRequest(`/api/process-execution/${processExecutionId}/subtasks`),
+
+    createSubtask: (processExecutionId, data) => apiRequest(`/api/process-execution/${processExecutionId}/subtasks`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+
+    updateSubtask: (subtaskId, data) => apiRequest(`/api/subtasks/${subtaskId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+
+    deleteSubtask: (subtaskId) => apiRequest(`/api/subtasks/${subtaskId}`, {
+        method: 'DELETE'
+    }),
+
+    submitSubtaskProgress: (subtaskId, data) => apiRequest(`/api/subtasks/${subtaskId}/progress`, {
+        method: 'POST',
+        body: JSON.stringify(data)
     })
 };

@@ -555,3 +555,240 @@ router.put('/projects/:id/workers', authenticate, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+
+// ============ 工序子任务接口 ============
+
+// 获取工序的所有子任务
+router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM process_subtasks 
+      WHERE process_execution_id = $1 
+      ORDER BY sequence_number, id
+    `, [req.params.id]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 创建子任务
+router.post('/process-execution/:id/subtasks', authenticate, async (req, res) => {
+  try {
+    const {
+      subtask_name,
+      description,
+      planned_quantity,
+      quantity_unit,
+      sequence_number,
+      assigned_workers,
+      planned_start_date,
+      planned_end_date
+    } = req.body;
+    
+    const result = await pool.query(`
+      INSERT INTO process_subtasks 
+      (process_execution_id, subtask_name, description, planned_quantity, 
+       quantity_unit, sequence_number, assigned_workers, planned_start_date, 
+       planned_end_date, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `, [
+      req.params.id,
+      JSON.stringify(subtask_name),
+      description ? JSON.stringify(description) : null,
+      planned_quantity,
+      quantity_unit,
+      sequence_number || 0,
+      assigned_workers ? JSON.stringify(assigned_workers) : null,
+      planned_start_date,
+      planned_end_date,
+      req.user.id
+    ]);
+    
+    res.json({ 
+      success: true, 
+      data: result.rows[0],
+      message: '子任务创建成功'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新子任务
+router.put('/subtasks/:id', authenticate, async (req, res) => {
+  try {
+    const {
+      subtask_name,
+      description,
+      planned_quantity,
+      quantity_unit,
+      status,
+      assigned_workers
+    } = req.body;
+    
+    const result = await pool.query(`
+      UPDATE process_subtasks 
+      SET subtask_name = COALESCE($1, subtask_name),
+          description = COALESCE($2, description),
+          planned_quantity = COALESCE($3, planned_quantity),
+          quantity_unit = COALESCE($4, quantity_unit),
+          status = COALESCE($5, status),
+          assigned_workers = COALESCE($6, assigned_workers),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING *
+    `, [
+      subtask_name ? JSON.stringify(subtask_name) : null,
+      description ? JSON.stringify(description) : null,
+      planned_quantity,
+      quantity_unit,
+      status,
+      assigned_workers ? JSON.stringify(assigned_workers) : null,
+      req.params.id
+    ]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '子任务不存在' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 删除子任务
+router.delete('/subtasks/:id', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'DELETE FROM process_subtasks WHERE id = $1 RETURNING id',
+      [req.params.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '子任务不存在' });
+    }
+    
+    res.json({ success: true, message: '子任务已删除' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新子任务进度
+router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
+  try {
+    const { quantity_completed, work_status, notes, photos } = req.body;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 获取子任务信息
+    const subtaskInfo = await pool.query(
+      'SELECT * FROM process_subtasks WHERE id = $1',
+      [req.params.id]
+    );
+    
+    if (subtaskInfo.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '子任务不存在' });
+    }
+    
+    const subtask = subtaskInfo.rows[0];
+    const previousTotal = parseFloat(subtask.total_completed) || 0;
+    const newTotal = previousTotal + parseFloat(quantity_completed);
+    const plannedQty = parseFloat(subtask.planned_quantity) || 1;
+    const percentage = Math.min((newTotal / plannedQty) * 100, 100);
+    
+    // 更新子任务进度
+    await pool.query(`
+      UPDATE process_subtasks 
+      SET total_completed = $1,
+          completion_percentage = $2,
+          status = CASE 
+            WHEN $2 >= 100 THEN 'completed'
+            WHEN $2 > 0 THEN 'in_progress'
+            ELSE status
+          END,
+          actual_start_date = COALESCE(actual_start_date, CURRENT_DATE),
+          actual_end_date = CASE WHEN $2 >= 100 THEN CURRENT_DATE ELSE actual_end_date END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+    `, [newTotal, percentage, req.params.id]);
+    
+    // 插入每日进度记录（关联子任务）
+    const progressResult = await pool.query(`
+      INSERT INTO daily_progress 
+      (process_execution_id, subtask_id, date, quantity_completed, unit, 
+       total_completed, total_planned, completion_percentage, work_status, 
+       notes, photos, updated_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `, [
+      subtask.process_execution_id,
+      req.params.id,
+      today,
+      quantity_completed,
+      subtask.quantity_unit,
+      newTotal,
+      plannedQty,
+      percentage,
+      work_status || 'normal',
+      notes ? JSON.stringify(notes) : null,
+      photos ? JSON.stringify(photos) : null,
+      req.user.id
+    ]);
+    
+    // 重新计算大工序的总进度（所有子任务的加权平均）
+    await recalculateProcessProgress(subtask.process_execution_id);
+    
+    res.json({ 
+      success: true, 
+      data: progressResult.rows[0],
+      message: '进度更新成功'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 辅助函数：重新计算大工序进度
+async function recalculateProcessProgress(processExecutionId) {
+  const subtasks = await pool.query(
+    'SELECT planned_quantity, total_completed FROM process_subtasks WHERE process_execution_id = $1',
+    [processExecutionId]
+  );
+  
+  if (subtasks.rows.length === 0) {
+    // 没有子任务，不更新
+    return;
+  }
+  
+  let totalPlanned = 0;
+  let totalCompleted = 0;
+  
+  subtasks.rows.forEach(st => {
+    const planned = parseFloat(st.planned_quantity) || 0;
+    const completed = parseFloat(st.total_completed) || 0;
+    totalPlanned += planned;
+    totalCompleted += completed;
+  });
+  
+  const percentage = totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0;
+  
+  await pool.query(`
+    UPDATE process_execution 
+    SET total_completed = $1,
+        planned_quantity = $2,
+        completion_percentage = $3,
+        status = CASE 
+          WHEN $3 >= 100 THEN 'completed'
+          WHEN $3 > 0 THEN 'in_progress'
+          ELSE status
+        END,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = $4
+  `, [totalCompleted, totalPlanned, percentage, processExecutionId]);
+}

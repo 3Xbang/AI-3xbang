@@ -27,7 +27,11 @@ const i18n = {
             confirm: '确认',
             loading: '加载中...',
             success: '操作成功',
-            error: '操作失败'
+            error: '操作失败',
+            notes: '备注',
+            noData: '暂无数据',
+            chinese: '中文',
+            thai: '泰语'
         },
         projects: {
             title: '项目管理',
@@ -105,7 +109,34 @@ const i18n = {
             materialStock: '材料库存',
             sufficient: '充足',
             insufficient: '不足',
-            progressHistory: '历史进度'
+            progressHistory: '历史进度',
+            viewSubtasks: '查看子任务',
+            addSubtask: '添加子任务',
+            subtaskName: '子任务名称',
+            noSubtasks: '暂无子任务',
+            subtaskDetail: '子任务详情'
+        },
+        subtasks: {
+            title: '子任务管理',
+            view: '查看子任务',
+            add: '添加子任务',
+            update: '更新进度',
+            complete: '标记完成',
+            name: '子任务名称',
+            description: '描述',
+            estimatedQuantity: '预计数量',
+            actualQuantity: '实际完成',
+            unit: '单位',
+            empty: '暂无子任务，点击上方按钮添加',
+            namePlaceholder: '例如：浇筑东侧基础',
+            descPlaceholder: '详细说明（可选）',
+            confirmComplete: '确认标记此子任务为完成状态？'
+        },
+        units: {
+            sqm: '平米',
+            cbm: '立方米',
+            item: '件',
+            point: '点位'
         }
     },
     th: {
@@ -135,7 +166,11 @@ const i18n = {
             confirm: 'ยืนยัน',
             loading: 'กำลังโหลด...',
             success: 'สำเร็จ',
-            error: 'ผิดพลาด'
+            error: 'ผิดพลาด',
+            notes: 'หมายเหตุ',
+            noData: 'ไม่มีข้อมูล',
+            chinese: 'จีน',
+            thai: 'ไทย'
         },
         projects: {
             title: 'จัดการโครงการ',
@@ -213,7 +248,34 @@ const i18n = {
             materialStock: 'คงเหลือวัสดุ',
             sufficient: 'เพียงพอ',
             insufficient: 'ไม่พอ',
-            progressHistory: 'ประวัติความคืบหน้า'
+            progressHistory: 'ประวัติความคืบหน้า',
+            viewSubtasks: 'ดูงานย่อย',
+            addSubtask: 'เพิ่มงานย่อย',
+            subtaskName: 'ชื่องานย่อย',
+            noSubtasks: 'ยังไม่มีงานย่อย',
+            subtaskDetail: 'รายละเอียดงานย่อย'
+        },
+        subtasks: {
+            title: 'จัดการงานย่อย',
+            view: 'ดูงานย่อย',
+            add: 'เพิ่มงานย่อย',
+            update: 'อัพเดทความคืบหน้า',
+            complete: 'ทำเสร็จแล้ว',
+            name: 'ชื่องานย่อย',
+            description: 'รายละเอียด',
+            estimatedQuantity: 'จำนวนโดยประมาณ',
+            actualQuantity: 'จำนวนที่ทำจริง',
+            unit: 'หน่วย',
+            empty: 'ยังไม่มีงานย่อย คลิกปุ่มด้านบนเพื่อเพิ่ม',
+            namePlaceholder: 'ตัวอย่าง: เทคอนกรีตฐานรากด้านตะวันออก',
+            descPlaceholder: 'รายละเอียดเพิ่มเติม (ไม่บังคับ)',
+            confirmComplete: 'ยืนยันว่างานย่อยนี้เสร็จแล้ว?'
+        },
+        units: {
+            sqm: 'ตร.ม.',
+            cbm: 'ลบ.ม.',
+            item: 'ชิ้น',
+            point: 'จุด'
         }
     }
 };

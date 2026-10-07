@@ -307,9 +307,10 @@ tar -czf uploads_backup_$(date +%Y%m%d).tar.gz ~/AI-3xbang/backend/uploads/
 
 ## 开发团队
 
-- 为泰国20人施工队定制
+- 为泰国施工队定制
 - 极简设计，专注核心功能
 - 中泰双语支持
+- 工人数量可根据项目灵活配置
 
 ---
 

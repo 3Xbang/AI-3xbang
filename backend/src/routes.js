@@ -69,7 +69,8 @@ router.get('/projects', authenticate, async (req, res) => {
       SELECT p.*,
         COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
       FROM projects p
-      LEFT JOIN process_execution pe ON p.id = pe.project_id
+      LEFT JOIN process_nodes pn ON p.id = pn.project_id
+      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
       GROUP BY p.id
       ORDER BY p.created_at DESC
     `);
@@ -81,10 +82,11 @@ router.get('/projects', authenticate, async (req, res) => {
 
 router.post('/projects', authenticate, async (req, res) => {
   try {
-    const { project_name, location, start_date, total_workers } = req.body;
+    const { name, location, client_name, start_date, planned_end_date } = req.body;
     const result = await pool.query(
-      'INSERT INTO projects (project_name, location, start_date, total_workers) VALUES ($1, $2, $3, $4) RETURNING *',
-      [project_name, location, start_date, total_workers]
+      `INSERT INTO projects (name, location, client_name, start_date, planned_end_date, status) 
+       VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
+      [name, location, client_name, start_date, planned_end_date]
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {

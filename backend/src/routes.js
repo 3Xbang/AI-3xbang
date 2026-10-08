@@ -366,6 +366,137 @@ function calculateMaterials(dimensions) {
   ];
 }
 
+
+// ============ 子任务模板功能 ============
+const { SUBTASK_TEMPLATES } = require('./subtask-templates');
+
+// 获取工序的子任务模板
+router.get('/process-execution/:id/subtask-templates', authenticate, async (req, res) => {
+  try {
+    // 获取工序信息
+    const processResult = await pool.query(`
+      SELECT pe.*, pn.process_code
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1
+    `, [req.params.id]);
+    
+    if (processResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const processCode = processResult.rows[0].process_code;
+    const templates = SUBTASK_TEMPLATES[processCode] || [];
+    
+    // 检查哪些子任务已经创建
+    const existingResult = await pool.query(`
+      SELECT subtask_name FROM process_subtasks WHERE process_execution_id = $1
+    `, [req.params.id]);
+    
+    const existingNames = existingResult.rows.map(row => {
+      const name = typeof row.subtask_name === 'string' ? JSON.parse(row.subtask_name) : row.subtask_name;
+      return name.zh; // 用中文名称做比对
+    });
+    
+    // 标记哪些已创建
+    const templatesWithStatus = templates.map(template => ({
+      ...template,
+      isCreated: existingNames.includes(template.name.zh)
+    }));
+    
+    res.json({ 
+      success: true, 
+      data: {
+        process_code: processCode,
+        templates: templatesWithStatus
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 批量创建子任务（从模板激活）
+router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { selectedSubtasks } = req.body; // 数组，包含要创建的子任务索引
+    
+    if (!Array.isArray(selectedSubtasks) || selectedSubtasks.length === 0) {
+      return res.status(400).json({ success: false, message: '请选择至少一个子任务' });
+    }
+    
+    // 获取工序信息
+    const processResult = await client.query(`
+      SELECT pe.*, pn.process_code, pe.planned_quantity as parent_quantity
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1
+    `, [req.params.id]);
+    
+    if (processResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const processCode = processResult.rows[0].process_code;
+    const parentQuantity = processResult.rows[0].parent_quantity || 100; // 父工序的计划数量
+    const templates = SUBTASK_TEMPLATES[processCode] || [];
+    
+    if (templates.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '该工序没有子任务模板' });
+    }
+    
+    const createdSubtasks = [];
+    
+    // 按选中的索引创建子任务
+    for (const index of selectedSubtasks) {
+      if (index < 0 || index >= templates.length) continue;
+      
+      const template = templates[index];
+      
+      // 根据模板的typical_percentage计算该子任务的预计数量
+      const estimated_quantity = Math.round(parentQuantity * template.typical_percentage / 100);
+      
+      const result = await client.query(`
+        INSERT INTO process_subtasks 
+        (process_execution_id, subtask_name, description, planned_quantity, 
+         quantity_unit, sequence_number, status, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, 'not_started', $7)
+        RETURNING *
+      `, [
+        req.params.id,
+        JSON.stringify(template.name),
+        template.description ? JSON.stringify(template.description) : null,
+        estimated_quantity,
+        template.unit,
+        index,
+        req.user.id
+      ]);
+      
+      createdSubtasks.push(result.rows[0]);
+    }
+    
+    await client.query('COMMIT');
+    
+    res.json({ 
+      success: true, 
+      data: createdSubtasks,
+      message: `成功创建${createdSubtasks.length}个子任务`
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;
 
 

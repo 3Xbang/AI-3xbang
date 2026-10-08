@@ -1,24 +1,26 @@
-﻿// 涓诲簲鐢ㄩ€昏緫
+// 主应用逻辑
 const app = {
     currentView: 'projects',
     currentProject: null,
 
-    // 鍒濆鍖?    init() {
-        // 妫€鏌ョ櫥褰曠姸鎬?        if (authToken) {
+    // 初始化
+    init() {
+        // 检查登录状态
+        if (authToken) {
             this.showMainPage();
             this.loadUserInfo();
-            this.showView('daily-tasks'); // 榛樿鏄剧ず浠婃棩浠诲姟
+            this.showView('daily-tasks'); // 默认显示今日任务
         } else {
             this.showLoginPage();
         }
 
-        // 缁戝畾鐧诲綍琛ㄥ崟
+        // 绑定登录表单
         document.getElementById('login-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleLogin();
         });
 
-        // 鏄剧ず浠婂ぉ鏃ユ湡
+        // 显示今天日期
         const today = new Date();
         const dateStr = today.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'th-TH', {
             year: 'numeric',
@@ -29,21 +31,23 @@ const app = {
         const dateEl = document.getElementById('today-date');
         if (dateEl) dateEl.textContent = dateStr;
 
-        // 搴旂敤缈昏瘧
+        // 应用翻译
         updateTranslations();
     },
 
-    // 鏄剧ず鐧诲綍椤?    showLoginPage() {
+    // 显示登录页
+    showLoginPage() {
         document.getElementById('login-page').classList.add('active');
         document.getElementById('main-page').classList.remove('active');
     },
 
-    // 鏄剧ず涓婚〉闈?    showMainPage() {
+    // 显示主页面
+    showMainPage() {
         document.getElementById('login-page').classList.remove('active');
         document.getElementById('main-page').classList.add('active');
     },
 
-    // 澶勭悊鐧诲綍
+    // 处理登录
     async handleLogin() {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
@@ -64,37 +68,39 @@ const app = {
         }
     },
 
-    // 鍔犺浇鐢ㄦ埛淇℃伅
+    // 加载用户信息
     loadUserInfo() {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         document.getElementById('user-name').textContent = user.username || '';
     },
 
-    // 閫€鍑虹櫥褰?    logout() {
+    // 退出登录
+    logout() {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         window.location.reload();
     },
 
-    // 鍒囨崲璇█
+    // 切换语言
     setLanguage(lang) {
         currentLang = lang;
         localStorage.setItem('language', lang);
         updateTranslations(lang);
-        // 閲嶆柊鍔犺浇褰撳墠瑙嗗浘鏁版嵁
+        // 重新加载当前视图数据
         this.refreshCurrentView();
     },
 
-    // 鏄剧ず瑙嗗浘
+    // 显示视图
     showView(viewName) {
-        // 闅愯棌鎵€鏈夎鍥?        document.querySelectorAll('.view').forEach(view => {
+        // 隐藏所有视图
+        document.querySelectorAll('.view').forEach(view => {
             view.classList.remove('active');
         });
-        // 鏄剧ず鐩爣瑙嗗浘
+        // 显示目标视图
         document.getElementById(`${viewName}-view`).classList.add('active');
         this.currentView = viewName;
 
-        // 鍔犺浇瑙嗗浘鏁版嵁
+        // 加载视图数据
         switch(viewName) {
             case 'daily-tasks':
                 this.loadProjectSelectors();
@@ -114,12 +120,12 @@ const app = {
         }
     },
 
-    // 鍒锋柊褰撳墠瑙嗗浘
+    // 刷新当前视图
     refreshCurrentView() {
         this.showView(this.currentView);
     },
 
-    // 鍔犺浇椤圭洰鍒楄〃
+    // 加载项目列表
     async loadProjects() {
         try {
             this.showLoading();
@@ -134,7 +140,7 @@ const app = {
         }
     },
 
-    // 娓叉煋椤圭洰鍒楄〃
+    // 渲染项目列表
     renderProjects(projects) {
         const container = document.getElementById('projects-list');
         if (projects.length === 0) {
@@ -160,7 +166,7 @@ const app = {
         `).join('');
     },
 
-    // 鏄剧ず椤圭洰琛ㄥ崟
+    // 显示项目表单
     showProjectForm() {
         const modal = this.createModal(t('projects.add'), `
             <form id="project-form">
@@ -205,7 +211,7 @@ const app = {
         });
     },
 
-    // 澶勭悊鍒涘缓椤圭洰
+    // 处理创建项目
     async handleCreateProject() {
         const data = {
             name: {
@@ -236,7 +242,8 @@ const app = {
         }
     },
 
-    // 鍔犺浇椤圭洰閫夋嫨鍣?    async loadProjectSelectors() {
+    // 加载项目选择器
+    async loadProjectSelectors() {
         try {
             const result = await api.getProjects();
             if (result.success) {
@@ -254,7 +261,7 @@ const app = {
         }
     },
 
-    // 鍔犺浇浠婃棩浠诲姟
+    // 加载今日任务
     async loadDailyTasks(projectId) {
         if (!projectId) return;
         
@@ -272,20 +279,21 @@ const app = {
         }
     },
 
-    // 娓叉煋浠婃棩浠诲姟
+    // 渲染今日任务
     renderDailyTasks(tasks) {
-        // 娓叉煋杩涜涓殑浠诲姟
+        // 渲染进行中的任务
         this.renderTaskSection('tasks-in-progress', tasks.in_progress);
-        // 娓叉煋绛夊緟鏉愭枡鐨勪换鍔?        this.renderTaskSection('tasks-waiting-material', tasks.waiting_material);
-        // 娓叉煋宸插畬鎴愮殑浠诲姟
+        // 渲染等待材料的任务
+        this.renderTaskSection('tasks-waiting-material', tasks.waiting_material);
+        // 渲染已完成的任务
         this.renderTaskSection('tasks-completed', tasks.completed);
     },
 
-    // 娓叉煋浠诲姟鍖哄潡
+    // 渲染任务区块
     renderTaskSection(containerId, tasks) {
         const container = document.getElementById(containerId);
         if (!tasks || tasks.length === 0) {
-            container.innerHTML = `<p class="empty-hint">${t('common.noData') || '鏆傛棤鏁版嵁'}</p>`;
+            container.innerHTML = `<p class="empty-hint">${t('common.noData') || '暂无数据'}</p>`;
             return;
         }
 
@@ -307,9 +315,9 @@ const app = {
                         <span class="progress-text">${percentage}%</span>
                     </div>
                     <div class="task-info">
-                        ${task.assigned_workers ? `<div>馃懛 ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
-                        ${task.planned_quantity ? `<div>馃搳 ${t('daily.todayPlan')}: ${task.planned_quantity} ${unit}</div>` : ''}
-                        ${task.today_completed ? `<div>鉁?${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
+                        ${task.assigned_workers ? `<div>👷 ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
+                        ${task.planned_quantity ? `<div>📊 ${t('daily.todayPlan')}: ${task.planned_quantity} ${unit}</div>` : ''}
+                        ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
                     </div>
                     <div class="task-actions">
                         <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">${t('subtasks.view')}</button>
@@ -320,7 +328,7 @@ const app = {
         }).join('');
     },
 
-    // 鏄剧ず杩涘害鏇存柊琛ㄥ崟
+    // 显示进度更新表单
     showProgressForm(processExecutionId, unit) {
         const unitText = getUnitText(unit);
         
@@ -358,7 +366,7 @@ const app = {
         });
     },
 
-    // 鎻愪氦杩涘害鏇存柊
+    // 提交进度更新
     async handleSubmitProgress() {
         const data = {
             process_execution_id: parseInt(document.getElementById('process-execution-id').value),
@@ -374,7 +382,7 @@ const app = {
             if (result.success) {
                 this.closeModal();
                 this.showToast(result.message || t('common.success'));
-                // 閲嶆柊鍔犺浇浠婃棩浠诲姟
+                // 重新加载今日任务
                 const projectId = document.getElementById('daily-project-selector').value;
                 if (projectId) {
                     this.loadDailyTasks(projectId);
@@ -387,7 +395,7 @@ const app = {
         }
     },
 
-    // 鍔犺浇宸ュ簭
+    // 加载工序
     async loadProcesses(projectId) {
         if (!projectId) return;
         
@@ -404,11 +412,11 @@ const app = {
         }
     },
 
-    // 娓叉煋宸ュ簭鍒楄〃
+    // 渲染工序列表
     renderProcesses(processes) {
         const container = document.getElementById('processes-list');
         if (!processes || processes.length === 0) {
-            container.innerHTML = `<p class="empty-state">鏆傛棤宸ュ簭鏁版嵁</p>`;
+            container.innerHTML = `<p class="empty-state">暂无工序数据</p>`;
             return;
         }
 
@@ -433,8 +441,8 @@ const app = {
                     </div>
                     <div class="process-details">
                         ${process.assigned_workers ? `<div><strong>${t('processes.workers')}:</strong> ${JSON.stringify(process.assigned_workers)}</div>` : ''}
-                        ${process.actual_start_date ? `<div><strong>寮€濮?</strong> ${process.actual_start_date}</div>` : ''}
-                        ${process.actual_end_date ? `<div><strong>瀹屾垚:</strong> ${process.actual_end_date}</div>` : ''}
+                        ${process.actual_start_date ? `<div><strong>开始:</strong> ${process.actual_start_date}</div>` : ''}
+                        ${process.actual_end_date ? `<div><strong>完成:</strong> ${process.actual_end_date}</div>` : ''}
                     </div>
                     <div class="process-actions">
                         <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">${t('subtasks.view')}</button>
@@ -444,7 +452,7 @@ const app = {
         }).join('');
     },
 
-    // 鍒涘缓妯℃€佹
+    // 创建模态框
     createModal(title, content) {
         const modal = document.createElement('div');
         modal.className = 'modal active';
@@ -463,20 +471,22 @@ const app = {
         return modal;
     },
 
-    // 鍏抽棴妯℃€佹
+    // 关闭模态框
     closeModal() {
         document.getElementById('modal-container').innerHTML = '';
     },
 
-    // 鏄剧ず鍔犺浇鐘舵€?    showLoading() {
+    // 显示加载状态
+    showLoading() {
         document.getElementById('loading').classList.add('active');
     },
 
-    // 闅愯棌鍔犺浇鐘舵€?    hideLoading() {
+    // 隐藏加载状态
+    hideLoading() {
         document.getElementById('loading').classList.remove('active');
     },
 
-    // 鏄剧ず鎻愮ず娑堟伅
+    // 显示提示消息
     showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -493,9 +503,10 @@ const app = {
         }, 3000);
     },
 
-    // ===== 瀛愪换鍔″姛鑳?=====
+    // ===== 子任务功能 =====
     
-    // 鏄剧ず瀛愪换鍔″垪琛?    async showSubtasks(processExecutionId) {
+    // 显示子任务列表
+    async showSubtasks(processExecutionId) {
         try {
             this.showLoading();
             const result = await api.getSubtasks(processExecutionId);
@@ -526,7 +537,8 @@ const app = {
         }
     },
 
-    // 娓叉煋瀛愪换鍔″垪琛?    renderSubtasksList(subtasks, processExecutionId) {
+    // 渲染子任务列表
+    renderSubtasksList(subtasks, processExecutionId) {
         if (!subtasks || subtasks.length === 0) {
             return `<p class="empty-hint">${t('subtasks.empty')}</p>`;
         }
@@ -551,8 +563,8 @@ const app = {
                         </div>
                     </div>
                     <div class="subtask-footer">
-                        ${subtask.estimated_quantity ? `<span>馃搳 ${subtask.estimated_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
-                        ${subtask.actual_quantity ? `<span>鉁?${subtask.actual_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
+                        ${subtask.estimated_quantity ? `<span>📊 ${subtask.estimated_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
+                        ${subtask.actual_quantity ? `<span>✅ ${subtask.actual_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
                         <div class="subtask-actions">
                             <button class="btn-xs btn-primary" onclick="event.stopPropagation(); app.showUpdateSubtaskForm(${subtask.id}, ${processExecutionId})">
                                 ${t('subtasks.update')}
@@ -565,7 +577,8 @@ const app = {
         }).join('');
     },
 
-    // 鏄剧ず娣诲姞瀛愪换鍔¤〃鍗?    showAddSubtaskForm(processExecutionId) {
+    // 显示添加子任务表单
+    showAddSubtaskForm(processExecutionId) {
         const modal = this.createModal(t('subtasks.add'), `
             <form id="add-subtask-form">
                 <input type="hidden" id="subtask-process-id" value="${processExecutionId}">
@@ -611,7 +624,8 @@ const app = {
         });
     },
 
-    // 澶勭悊娣诲姞瀛愪换鍔?    async handleAddSubtask() {
+    // 处理添加子任务
+    async handleAddSubtask() {
         const processExecutionId = parseInt(document.getElementById('subtask-process-id').value);
         const data = {
             process_execution_id: processExecutionId,
@@ -633,7 +647,8 @@ const app = {
             if (result.success) {
                 this.closeModal();
                 this.showToast(t('common.success'));
-                // 閲嶆柊鏄剧ず瀛愪换鍔″垪琛?                await this.showSubtasks(processExecutionId);
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
             }
         } catch (error) {
             this.showToast(t('common.error'), 'error');
@@ -642,7 +657,8 @@ const app = {
         }
     },
 
-    // 鏄剧ず鏇存柊瀛愪换鍔¤〃鍗?    async showUpdateSubtaskForm(subtaskId, processExecutionId) {
+    // 显示更新子任务表单
+    async showUpdateSubtaskForm(subtaskId, processExecutionId) {
         try {
             this.showLoading();
             const result = await api.getSubtasks(processExecutionId);
@@ -684,7 +700,8 @@ const app = {
         }
     },
 
-    // 澶勭悊鏇存柊瀛愪换鍔?    async handleUpdateSubtask() {
+    // 处理更新子任务
+    async handleUpdateSubtask() {
         const subtaskId = parseInt(document.getElementById('update-subtask-id').value);
         const processExecutionId = parseInt(document.getElementById('update-process-id').value);
         const data = {
@@ -700,8 +717,10 @@ const app = {
             if (result.success) {
                 this.closeModal();
                 this.showToast(t('common.success'));
-                // 閲嶆柊鏄剧ず瀛愪换鍔″垪琛?                await this.showSubtasks(processExecutionId);
-                // 閲嶆柊鍔犺浇浠婃棩浠诲姟浠ユ洿鏂拌繘搴?                const projectId = document.getElementById('daily-project-selector').value;
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
+                // 重新加载今日任务以更新进度
+                const projectId = document.getElementById('daily-project-selector').value;
                 if (projectId) {
                     this.loadDailyTasks(projectId);
                 }
@@ -713,7 +732,8 @@ const app = {
         }
     },
 
-    // 瀹屾垚瀛愪换鍔?    async completeSubtask(subtaskId, processExecutionId) {
+    // 完成子任务
+    async completeSubtask(subtaskId, processExecutionId) {
         if (!confirm(t('subtasks.confirmComplete'))) {
             return;
         }
@@ -723,8 +743,9 @@ const app = {
             const result = await api.completeSubtask(subtaskId);
             if (result.success) {
                 this.showToast(t('common.success'));
-                // 閲嶆柊鏄剧ず瀛愪换鍔″垪琛?                await this.showSubtasks(processExecutionId);
-                // 閲嶆柊鍔犺浇浠婃棩浠诲姟
+                // 重新显示子任务列表
+                await this.showSubtasks(processExecutionId);
+                // 重新加载今日任务
                 const projectId = document.getElementById('daily-project-selector').value;
                 if (projectId) {
                     this.loadDailyTasks(projectId);
@@ -736,108 +757,9 @@ const app = {
             this.hideLoading();
         }
     }
-
-    // === 新增：子任务模板功能 ===
-    // 显示子任务模板选择界面
-    async showSubtaskTemplates(processExecutionId) {
-        try {
-            this.showLoading();
-            const result = await api.getSubtaskTemplates(processExecutionId);
-            
-            if (!result.success || !result.data.templates || result.data.templates.length === 0) {
-                this.showToast('该工序没有预定义子任务模板', 'error');
-                this.showSubtasksList(processExecutionId, []);
-                return;
-            }
-            
-            const templates = result.data.templates;
-            
-            const modal = this.createModal('选择要创建的子任务', `
-                <div class="subtasks-container">
-                    <div class="template-hint">
-                        <p style="background: #eff6ff; padding: 1rem; border-radius: 0.5rem; color: #1e40af; margin-bottom: 1rem;">
-                            ✨ 请勾选需要的子任务，系统将自动创建
-                        </p>
-                    </div>
-                    <div class="template-list" style="max-height: 400px; overflow-y: auto;">
-                        ${templates.map((template, index) => `
-                            <div class="template-item ${template.isCreated ? 'disabled' : ''}" style="margin-bottom: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; ${template.isCreated ? 'opacity: 0.6; background: #f9fafb;' : 'cursor: pointer;'}">
-                                <label class="template-checkbox" style="display: flex; gap: 1rem; cursor: ${template.isCreated ? 'not-allowed' : 'pointer'};">
-                                    <input type="checkbox" 
-                                           class="template-check" 
-                                           value="${index}"
-                                           ${template.isCreated ? 'disabled checked' : ''}
-                                           style="width: 20px; height: 20px; cursor: pointer;">
-                                    <div class="template-content" style="flex: 1;">
-                                        <h5 style="margin: 0 0 0.25rem 0; font-size: 1rem;">${getI18nField(template, 'name')}</h5>
-                                        ${template.description ? `<p class="template-desc" style="color: #6b7280; font-size: 0.875rem; margin: 0.25rem 0;">${getI18nField(template, 'description')}</p>` : ''}
-                                        <div class="template-info" style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
-                                            <span>📊 占比 ${template.typical_percentage}%</span>
-                                            <span>📦 ${getUnitText(template.unit)}</span>
-                                            ${template.isCreated ? '<span style="color: #10b981; font-weight: 600;">✓ 已创建</span>' : ''}
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="form-actions" style="margin-top: 1.5rem;">
-                        <button type="button" class="btn-secondary" onclick="app.closeModal()">取消</button>
-                        <button type="button" class="btn-primary" onclick="app.confirmSubtaskSelection(${processExecutionId})">创建选中的子任务</button>
-                    </div>
-                </div>
-            `);
-            this.hideLoading();
-        } catch (error) {
-            this.showToast('加载失败', 'error');
-            this.hideLoading();
-        }
-    },
-
-    // 确认选择并创建子任务
-    async confirmSubtaskSelection(processExecutionId) {
-        const checkboxes = document.querySelectorAll('.template-check:checked:not(:disabled)');
-        const selectedIndexes = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        
-        if (selectedIndexes.length === 0) {
-            this.showToast('请至少选择一个子任务', 'error');
-            return;
-        }
-        
-        try {
-            this.showLoading();
-            const result = await api.batchCreateSubtasks(processExecutionId, selectedIndexes);
-            
-            if (result.success) {
-                this.closeModal();
-                this.showToast(result.message || '创建成功');
-                // 重新加载子任务列表
-                const subtasksResult = await api.getSubtasks(processExecutionId);
-                this.showSubtasksList(processExecutionId, subtasksResult.data || []);
-            }
-        } catch (error) {
-            this.showToast('创建失败', 'error');
-        } finally {
-            this.hideLoading();
-        }
-    },
-
-    // 显示子任务列表（已有子任务时）
-    showSubtasksList(processExecutionId, subtasks) {
-        const modal = this.createModal('子任务管理', `
-            <div class="subtasks-container">
-                <div class="subtasks-header">
-                    <button class="btn-sm btn-secondary" onclick="app.showSubtaskTemplates(${processExecutionId})">+ 添加更多</button>
-                </div>
-                <div id="subtasks-list" class="subtasks-list">
-                    ${this.renderSubtasksList(subtasks, processExecutionId)}
-                </div>
-            </div>
-        `);
-    },
 };
 
-// 椤甸潰鍔犺浇瀹屾垚鍚庡垵濮嬪寲
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });

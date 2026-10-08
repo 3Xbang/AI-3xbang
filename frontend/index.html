@@ -1,138 +1,138 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工管理系统 | Construction Management</title>
+    <title>鏂藉伐绠＄悊绯荤粺 | Construction Management</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/process-colors.css">
 </head>
 <body>
-    <!-- 登录页面 -->
+    <!-- 鐧诲綍椤甸潰 -->
     <div id="login-page" class="page active">
         <div class="login-container">
             <div class="logo">
-                <h1 data-i18n="app.title">施工管理系统</h1>
+                <h1 data-i18n="app.title">鏂藉伐绠＄悊绯荤粺</h1>
                 <p data-i18n="app.subtitle">Construction Management</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
-                    <label data-i18n="login.username">用户名</label>
+                    <label data-i18n="login.username">鐢ㄦ埛鍚?/label>
                     <input type="text" id="username" required>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="login.password">密码</label>
+                    <label data-i18n="login.password">瀵嗙爜</label>
                     <input type="password" id="password" required>
                 </div>
-                <button type="submit" class="btn-primary" data-i18n="login.submit">登录</button>
+                <button type="submit" class="btn-primary" data-i18n="login.submit">鐧诲綍</button>
                 <div id="login-error" class="error-message"></div>
             </form>
             <div class="language-switch">
-                <button onclick="app.setLanguage('zh')" class="lang-btn">中文</button>
-                <button onclick="app.setLanguage('th')" class="lang-btn">ไทย</button>
+                <button onclick="app.setLanguage('zh')" class="lang-btn">涓枃</button>
+                <button onclick="app.setLanguage('th')" class="lang-btn">喙勦笚喔?/button>
             </div>
         </div>
     </div>
 
-    <!-- 主页面 -->
+    <!-- 涓婚〉闈?-->
     <div id="main-page" class="page">
-        <!-- 顶部导航 -->
+        <!-- 椤堕儴瀵艰埅 -->
         <header class="header">
             <div class="header-left">
-                <h2 data-i18n="app.title">施工管理系统</h2>
+                <h2 data-i18n="app.title">鏂藉伐绠＄悊绯荤粺</h2>
             </div>
             <div class="header-right">
                 <span id="user-name"></span>
-                <button onclick="app.setLanguage('zh')" class="lang-btn-small">中</button>
-                <button onclick="app.setLanguage('th')" class="lang-btn-small">ไทย</button>
-                <button onclick="app.logout()" class="btn-link" data-i18n="common.logout">退出</button>
+                <button onclick="app.setLanguage('zh')" class="lang-btn-small">涓?/button>
+                <button onclick="app.setLanguage('th')" class="lang-btn-small">喙勦笚喔?/button>
+                <button onclick="app.logout()" class="btn-link" data-i18n="common.logout">閫€鍑?/button>
             </div>
         </header>
 
-        <!-- 主内容区 -->
+        <!-- 涓诲唴瀹瑰尯 -->
         <div class="main-container">
-            <!-- 侧边导航 -->
+            <!-- 渚ц竟瀵艰埅 -->
             <nav class="sidebar">
                 <ul>
-                    <li><a href="#" onclick="app.showView('daily-tasks')" data-i18n="nav.dailyTasks">今日任务</a></li>
-                    <li><a href="#" onclick="app.showView('projects')" data-i18n="nav.projects">项目管理</a></li>
-                    <li><a href="#" onclick="app.showView('processes')" data-i18n="nav.processes">工序进度</a></li>
-                    <li><a href="#" onclick="app.showView('materials')" data-i18n="nav.materials">材料管理</a></li>
-                    <li><a href="#" onclick="app.showView('photos')" data-i18n="nav.photos">现场照片</a></li>
+                    <li><a href="#" onclick="app.showView('daily-tasks')" data-i18n="nav.dailyTasks">浠婃棩浠诲姟</a></li>
+                    <li><a href="#" onclick="app.showView('projects')" data-i18n="nav.projects">椤圭洰绠＄悊</a></li>
+                    <li><a href="#" onclick="app.showView('processes')" data-i18n="nav.processes">宸ュ簭杩涘害</a></li>
+                    <li><a href="#" onclick="app.showView('materials')" data-i18n="nav.materials">鏉愭枡绠＄悊</a></li>
+                    <li><a href="#" onclick="app.showView('photos')" data-i18n="nav.photos">鐜板満鐓х墖</a></li>
                 </ul>
             </nav>
 
-            <!-- 内容区域 -->
+            <!-- 鍐呭鍖哄煙 -->
             <main class="content">
-                <!-- 今日任务视图 -->
+                <!-- 浠婃棩浠诲姟瑙嗗浘 -->
                 <div id="daily-tasks-view" class="view active">
                     <div class="view-header">
-                        <h3 data-i18n="daily.title">今日任务</h3>
+                        <h3 data-i18n="daily.title">浠婃棩浠诲姟</h3>
                         <select id="daily-project-selector" onchange="app.loadDailyTasks(this.value)">
-                            <option value="" data-i18n="projects.selectProject">选择项目</option>
+                            <option value="" data-i18n="projects.selectProject">閫夋嫨椤圭洰</option>
                         </select>
                     </div>
                     <div class="daily-date">
-                        📅 <span id="today-date"></span>
+                        馃搮 <span id="today-date"></span>
                     </div>
                     <div id="daily-tasks-container">
-                        <!-- 进行中的任务 -->
+                        <!-- 杩涜涓殑浠诲姟 -->
                         <div class="task-section">
-                            <h4>🔵 <span data-i18n="daily.inProgress">进行中</span></h4>
+                            <h4>馃數 <span data-i18n="daily.inProgress">杩涜涓?/span></h4>
                             <div id="tasks-in-progress"></div>
                         </div>
                         
-                        <!-- 等待材料 -->
+                        <!-- 绛夊緟鏉愭枡 -->
                         <div class="task-section">
-                            <h4>🟡 <span data-i18n="daily.waitingMaterial">等待材料</span></h4>
+                            <h4>馃煛 <span data-i18n="daily.waitingMaterial">绛夊緟鏉愭枡</span></h4>
                             <div id="tasks-waiting-material"></div>
                         </div>
                         
-                        <!-- 今日完成 -->
+                        <!-- 浠婃棩瀹屾垚 -->
                         <div class="task-section">
-                            <h4>🟢 <span data-i18n="daily.completed">今日完成</span></h4>
+                            <h4>馃煝 <span data-i18n="daily.completed">浠婃棩瀹屾垚</span></h4>
                             <div id="tasks-completed"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 项目列表视图 -->
+                <!-- 椤圭洰鍒楄〃瑙嗗浘 -->
                 <div id="projects-view" class="view">
                     <div class="view-header">
-                        <h3 data-i18n="projects.title">项目管理</h3>
-                        <button onclick="app.showProjectForm()" class="btn-primary" data-i18n="projects.add">+ 新建项目</button>
+                        <h3 data-i18n="projects.title">椤圭洰绠＄悊</h3>
+                        <button onclick="app.showProjectForm()" class="btn-primary" data-i18n="projects.add">+ 鏂板缓椤圭洰</button>
                     </div>
                     <div id="projects-list" class="card-grid"></div>
                 </div>
 
-                <!-- 工序进度视图 -->
+                <!-- 宸ュ簭杩涘害瑙嗗浘 -->
                 <div id="processes-view" class="view">
                     <div class="view-header">
-                        <h3 data-i18n="processes.title">工序进度</h3>
+                        <h3 data-i18n="processes.title">宸ュ簭杩涘害</h3>
                         <select id="project-selector" onchange="app.loadProcesses(this.value)">
-                            <option value="" data-i18n="processes.selectProject">选择项目</option>
+                            <option value="" data-i18n="processes.selectProject">閫夋嫨椤圭洰</option>
                         </select>
                     </div>
                     <div id="processes-list" class="process-timeline"></div>
                 </div>
 
-                <!-- 材料管理视图 -->
+                <!-- 鏉愭枡绠＄悊瑙嗗浘 -->
                 <div id="materials-view" class="view">
                     <div class="view-header">
-                        <h3 data-i18n="materials.title">材料管理</h3>
+                        <h3 data-i18n="materials.title">鏉愭枡绠＄悊</h3>
                         <select id="material-project-selector" onchange="app.loadMaterials(this.value)">
-                            <option value="" data-i18n="materials.selectProject">选择项目</option>
+                            <option value="" data-i18n="materials.selectProject">閫夋嫨椤圭洰</option>
                         </select>
                     </div>
                     <div id="materials-list"></div>
                 </div>
 
-                <!-- 现场照片视图 -->
+                <!-- 鐜板満鐓х墖瑙嗗浘 -->
                 <div id="photos-view" class="view">
                     <div class="view-header">
-                        <h3 data-i18n="photos.title">现场照片</h3>
+                        <h3 data-i18n="photos.title">鐜板満鐓х墖</h3>
                         <select id="photo-project-selector" onchange="app.loadPhotos(this.value)">
-                            <option value="" data-i18n="photos.selectProject">选择项目</option>
+                            <option value="" data-i18n="photos.selectProject">閫夋嫨椤圭洰</option>
                         </select>
                     </div>
                     <div id="photos-grid" class="photo-grid"></div>
@@ -141,10 +141,10 @@
         </div>
     </div>
 
-    <!-- 模态框容器 -->
+    <!-- 妯℃€佹瀹瑰櫒 -->
     <div id="modal-container"></div>
 
-    <!-- 加载提示 -->
+    <!-- 鍔犺浇鎻愮ず -->
     <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
     </div>

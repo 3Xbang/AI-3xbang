@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
 const bcrypt = require('bcrypt');
@@ -8,7 +8,7 @@ const { STANDARD_PROCESSES } = require('./process-templates');
 const multer = require('multer');
 const path = require('path');
 
-// 照片上传配置
+// 鐓х墖涓婁紶閰嶇疆
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -24,25 +24,25 @@ const upload = multer({
     const ext = allowed.test(path.extname(file.originalname).toLowerCase());
     const mime = allowed.test(file.mimetype);
     if (ext && mime) cb(null, true);
-    else cb(new Error('只允许上传jpg/png图片'));
+    else cb(new Error('鍙厑璁镐笂浼爅pg/png鍥剧墖'));
   }
 });
 
-// ============ 认证接口 ============
+// ============ 璁よ瘉鎺ュ彛 ============
 router.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     
     if (result.rows.length === 0) {
-      return res.status(401).json({ success: false, message: '用户名或密码错误' });
+      return res.status(401).json({ success: false, message: '鐢ㄦ埛鍚嶆垨瀵嗙爜閿欒' });
     }
     
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     
     if (!valid) {
-      return res.status(401).json({ success: false, message: '用户名或密码错误' });
+      return res.status(401).json({ success: false, message: '鐢ㄦ埛鍚嶆垨瀵嗙爜閿欒' });
     }
     
     const token = jwt.sign(
@@ -63,7 +63,7 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-// ============ 项目接口 ============
+// ============ 椤圭洰鎺ュ彛 ============
 router.get('/projects', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -89,7 +89,7 @@ router.post('/projects', authenticate, async (req, res) => {
     
     const { name, location, client_name, start_date, planned_end_date } = req.body;
     
-    // 1. 创建项目
+    // 1. 鍒涘缓椤圭洰
     const projectResult = await client.query(
       `INSERT INTO projects (name, location, client_name, start_date, planned_end_date, status) 
        VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
@@ -98,9 +98,8 @@ router.post('/projects', authenticate, async (req, res) => {
     
     const project = projectResult.rows[0];
     
-    // 2. 自动创建16个标准工序节点
-    for (const template of STANDARD_PROCESSES) {
-      // 插入工序节点
+    // 2. 鑷姩鍒涘缓16涓爣鍑嗗伐搴忚妭鐐?    for (const template of STANDARD_PROCESSES) {
+      // 鎻掑叆宸ュ簭鑺傜偣
       const nodeResult = await client.query(
         `INSERT INTO process_nodes 
          (project_id, process_code, process_name, sequence_number) 
@@ -108,8 +107,7 @@ router.post('/projects', authenticate, async (req, res) => {
         [project.id, template.code, JSON.stringify(template.name), template.sequence]
       );
       
-      // 为每个节点创建执行记录
-      await client.query(
+      // 涓烘瘡涓妭鐐瑰垱寤烘墽琛岃褰?      await client.query(
         `INSERT INTO process_execution 
          (process_node_id, status, quantity_unit) 
          VALUES ($1, 'not_started', $2)`,
@@ -122,7 +120,7 @@ router.post('/projects', authenticate, async (req, res) => {
     res.json({ 
       success: true, 
       data: project,
-      message: '项目创建成功，已自动生成16个标准工序'
+      message: '椤圭洰鍒涘缓鎴愬姛锛屽凡鑷姩鐢熸垚16涓爣鍑嗗伐搴?
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -141,7 +139,7 @@ router.get('/projects/:id/summary', authenticate, async (req, res) => {
       FROM process_execution pe
       JOIN process_nodes pn ON pe.process_node_id = pn.id
       WHERE pn.project_id = $1
-      ORDER BY pn.sequence_number
+      ORDER BY pn.sequence_number_number
     `, [req.params.id]);
     
     const issues = processes.rows.filter(p => p.status === 'waiting_material' || p.status === 'weather_stop');
@@ -166,7 +164,7 @@ router.get('/projects/:id/summary', authenticate, async (req, res) => {
   }
 });
 
-// ============ 工序接口 ============
+// ============ 宸ュ簭鎺ュ彛 ============
 router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -174,7 +172,7 @@ router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
       FROM process_nodes pn
       LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
       WHERE pn.project_id = $1
-      ORDER BY pn.sequence_number
+      ORDER BY pn.sequence_number_number
     `, [req.params.projectId]);
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -186,8 +184,7 @@ router.post('/projects/:projectId/processes', authenticate, async (req, res) => 
   try {
     const { process_node_id, assigned_workers, estimated_days, dimensions } = req.body;
     
-    // 材料计算逻辑（简化版）
-    const calculated_materials = calculateMaterials(dimensions);
+    // 鏉愭枡璁＄畻閫昏緫锛堢畝鍖栫増锛?    const calculated_materials = calculateMaterials(dimensions);
     
     const result = await pool.query(`
       INSERT INTO process_execution 
@@ -221,7 +218,7 @@ router.put('/processes/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ 材料接口 ============
+// ============ 鏉愭枡鎺ュ彛 ============
 router.get('/projects/:projectId/materials', authenticate, async (req, res) => {
   try {
     const { status } = req.query;
@@ -236,7 +233,7 @@ router.get('/projects/:projectId/materials', authenticate, async (req, res) => {
     query += ' ORDER BY created_at DESC';
     const result = await pool.query(query, params);
     
-    // 计算库存
+    // 璁＄畻搴撳瓨
     const data = result.rows.map(m => ({
       ...m,
       stock: parseFloat(m.received_quantity) - parseFloat(m.used_quantity)
@@ -291,14 +288,13 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
     
     await pool.query('BEGIN');
     
-    // 记录使用
+    // 璁板綍浣跨敤
     await pool.query(
       'INSERT INTO material_usage (material_id, process_execution_id, quantity_used, usage_date) VALUES ($1, $2, $3, $4)',
       [req.params.id, process_execution_id, quantity_used, usage_date]
     );
     
-    // 更新材料已用量
-    const result = await pool.query(`
+    // 鏇存柊鏉愭枡宸茬敤閲?    const result = await pool.query(`
       UPDATE materials 
       SET used_quantity = used_quantity + $1,
           status = CASE 
@@ -318,7 +314,7 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
   }
 });
 
-// ============ 照片接口 ============
+// ============ 鐓х墖鎺ュ彛 ============
 router.post('/photos/upload', authenticate, upload.single('photo'), async (req, res) => {
   try {
     const { project_id, process_execution_id, material_id, photo_type } = req.body;
@@ -344,6 +340,27 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
   }
 });
 
+
+// 获取项目照片列表
+router.get('/projects/:projectId/photos', authenticate, async (req, res) => {
+  try {
+    const { photo_type } = req.query;
+    let query = 'SELECT * FROM photos WHERE project_id = router.get('/photos/:id'';
+    const params = [req.params.projectId];
+    
+    if (photo_type) {
+      query += ' AND photo_type = $2';
+      params.push(photo_type);
+    }
+    
+    query += ' ORDER BY upload_time DESC';
+    const result = await pool.query(query, params);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 router.get('/photos/:id', authenticate, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM photos WHERE id = $1', [req.params.id]);
@@ -353,27 +370,26 @@ router.get('/photos/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ 材料计算函数 ============
+// ============ 鏉愭枡璁＄畻鍑芥暟 ============
 function calculateMaterials(dimensions) {
   const { length, width, height, depth, area, volume } = dimensions;
-  // 简化版计算，实际根据工序不同计算
-  return [
+  // 绠€鍖栫増璁＄畻锛屽疄闄呮牴鎹伐搴忎笉鍚岃绠?  return [
     {
-      material_name: { zh: '水泥', th: 'ปูนซีเมนต์' },
+      material_name: { zh: '姘存偿', th: '喔涏腹喔權笅喔掂箑喔∴笝喔曕箤' },
       quantity: (volume || length * width * (height || depth || 0.1)) * 0.35,
-      unit: { zh: '吨', th: 'ตัน' }
+      unit: { zh: '鍚?, th: '喔曕副喔? }
     }
   ];
 }
 
 
-// ============ 子任务模板功能 ============
+// ============ 瀛愪换鍔℃ā鏉垮姛鑳?============
 const { SUBTASK_TEMPLATES } = require('./subtask-templates');
 
-// 获取工序的子任务模板
+// 鑾峰彇宸ュ簭鐨勫瓙浠诲姟妯℃澘
 router.get('/process-execution/:id/subtask-templates', authenticate, async (req, res) => {
   try {
-    // 获取工序信息
+    // 鑾峰彇宸ュ簭淇℃伅
     const processResult = await pool.query(`
       SELECT pe.*, pn.process_code
       FROM process_execution pe
@@ -382,24 +398,23 @@ router.get('/process-execution/:id/subtask-templates', authenticate, async (req,
     `, [req.params.id]);
     
     if (processResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存在' });
+      return res.status(404).json({ success: false, message: '宸ュ簭涓嶅瓨鍦? });
     }
     
     const processCode = processResult.rows[0].process_code;
     const templates = SUBTASK_TEMPLATES[processCode] || [];
     
-    // 检查哪些子任务已经创建
+    // 妫€鏌ュ摢浜涘瓙浠诲姟宸茬粡鍒涘缓
     const existingResult = await pool.query(`
       SELECT subtask_name FROM process_subtasks WHERE process_execution_id = $1
     `, [req.params.id]);
     
     const existingNames = existingResult.rows.map(row => {
       const name = typeof row.subtask_name === 'string' ? JSON.parse(row.subtask_name) : row.subtask_name;
-      return name.zh; // 用中文名称做比对
+      return name.zh; // 鐢ㄤ腑鏂囧悕绉板仛姣斿
     });
     
-    // 标记哪些已创建
-    const templatesWithStatus = templates.map(template => ({
+    // 鏍囪鍝簺宸插垱寤?    const templatesWithStatus = templates.map(template => ({
       ...template,
       isCreated: existingNames.includes(template.name.zh)
     }));
@@ -416,20 +431,20 @@ router.get('/process-execution/:id/subtask-templates', authenticate, async (req,
   }
 });
 
-// 批量创建子任务（从模板激活）
+// 鎵归噺鍒涘缓瀛愪换鍔★紙浠庢ā鏉挎縺娲伙級
 router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, res) => {
   const client = await pool.connect();
   
   try {
     await client.query('BEGIN');
     
-    const { selectedSubtasks } = req.body; // 数组，包含要创建的子任务索引
+    const { selectedSubtasks } = req.body; // 鏁扮粍锛屽寘鍚鍒涘缓鐨勫瓙浠诲姟绱㈠紩
     
     if (!Array.isArray(selectedSubtasks) || selectedSubtasks.length === 0) {
-      return res.status(400).json({ success: false, message: '请选择至少一个子任务' });
+      return res.status(400).json({ success: false, message: '璇烽€夋嫨鑷冲皯涓€涓瓙浠诲姟' });
     }
     
-    // 获取工序信息
+    // 鑾峰彇宸ュ簭淇℃伅
     const processResult = await client.query(`
       SELECT pe.*, pn.process_code, pe.planned_quantity as parent_quantity
       FROM process_execution pe
@@ -439,28 +454,27 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
     
     if (processResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '工序不存在' });
+      return res.status(404).json({ success: false, message: '宸ュ簭涓嶅瓨鍦? });
     }
     
     const processCode = processResult.rows[0].process_code;
-    const parentQuantity = processResult.rows[0].parent_quantity || 100; // 父工序的计划数量
+    const parentQuantity = processResult.rows[0].parent_quantity || 100; // 鐖跺伐搴忕殑璁″垝鏁伴噺
     const templates = SUBTASK_TEMPLATES[processCode] || [];
     
     if (templates.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '该工序没有子任务模板' });
+      return res.status(404).json({ success: false, message: '璇ュ伐搴忔病鏈夊瓙浠诲姟妯℃澘' });
     }
     
     const createdSubtasks = [];
     
-    // 按选中的索引创建子任务
+    // 鎸夐€変腑鐨勭储寮曞垱寤哄瓙浠诲姟
     for (const index of selectedSubtasks) {
       if (index < 0 || index >= templates.length) continue;
       
       const template = templates[index];
       
-      // 根据模板的typical_percentage计算该子任务的预计数量
-      const estimated_quantity = Math.round(parentQuantity * template.typical_percentage / 100);
+      // 鏍规嵁妯℃澘鐨則ypical_percentage璁＄畻璇ュ瓙浠诲姟鐨勯璁℃暟閲?      const estimated_quantity = Math.round(parentQuantity * template.typical_percentage / 100);
       
       const result = await client.query(`
         INSERT INTO process_subtasks 
@@ -486,7 +500,7 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
     res.json({ 
       success: true, 
       data: createdSubtasks,
-      message: `成功创建${createdSubtasks.length}个子任务`
+      message: `鎴愬姛鍒涘缓${createdSubtasks.length}涓瓙浠诲姟`
     });
     
   } catch (error) {
@@ -498,10 +512,9 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
 });
 
 
-// ============ 工程量管理接口 ============
+// ============ 宸ョ▼閲忕鐞嗘帴鍙?============
 
-// 批量设置项目工程量
-router.post('/projects/:projectId/set-quantities', authenticate, async (req, res) => {
+// 鎵归噺璁剧疆椤圭洰宸ョ▼閲?router.post('/projects/:projectId/set-quantities', authenticate, async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -510,7 +523,7 @@ router.post('/projects/:projectId/set-quantities', authenticate, async (req, res
     const { quantities } = req.body;
     
     if (!quantities || typeof quantities !== 'object') {
-      return res.status(400).json({ success: false, message: '工程量数据格式错误' });
+      return res.status(400).json({ success: false, message: '宸ョ▼閲忔暟鎹牸寮忛敊璇? });
     }
     
     const updated = [];
@@ -536,7 +549,7 @@ router.post('/projects/:projectId/set-quantities', authenticate, async (req, res
     
     res.json({ 
       success: true, 
-      message: `成功设置${updated.length}个工序的工程量`,
+      message: `鎴愬姛璁剧疆${updated.length}涓伐搴忕殑宸ョ▼閲廯,
       data: updated
     });
     
@@ -548,19 +561,18 @@ router.post('/projects/:projectId/set-quantities', authenticate, async (req, res
   }
 });
 
-// 获取项目工程量
-router.get('/projects/:projectId/quantities', authenticate, async (req, res) => {
+// 鑾峰彇椤圭洰宸ョ▼閲?router.get('/projects/:projectId/quantities', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
         pn.process_code,
         pn.process_name,
         pe.planned_quantity,
-        pn.typical_unit as unit
+        pe.quantity_unit as unit
       FROM process_nodes pn
       LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
       WHERE pn.project_id = $1
-      ORDER BY pn.sequence
+      ORDER BY pn.sequence_number
     `, [req.params.projectId]);
     
     res.json({ success: true, data: result.rows });
@@ -571,15 +583,14 @@ router.get('/projects/:projectId/quantities', authenticate, async (req, res) => 
 module.exports = router;
 
 
-// ============ 每日进度接口 ============
+// ============ 姣忔棩杩涘害鎺ュ彛 ============
 
-// 获取今日任务看板
+// 鑾峰彇浠婃棩浠诲姟鐪嬫澘
 router.get('/projects/:projectId/daily-tasks', authenticate, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // 获取所有进行中的工序
-    const result = await pool.query(`
+    // 鑾峰彇鎵€鏈夎繘琛屼腑鐨勫伐搴?    const result = await pool.query(`
       SELECT 
         pe.*,
         pn.process_code,
@@ -591,11 +602,10 @@ router.get('/projects/:projectId/daily-tasks', authenticate, async (req, res) =>
       JOIN process_nodes pn ON pe.process_node_id = pn.id
       LEFT JOIN daily_progress dp ON pe.id = dp.process_execution_id AND dp.date = $1
       WHERE pn.project_id = $2
-      ORDER BY pn.sequence_number
+      ORDER BY pn.sequence_number_number
     `, [today, req.params.projectId]);
     
-    // 按状态分组
-    const tasks = {
+    // 鎸夌姸鎬佸垎缁?    const tasks = {
       in_progress: [],
       waiting_material: [],
       weather_stop: [],
@@ -616,7 +626,7 @@ router.get('/projects/:projectId/daily-tasks', authenticate, async (req, res) =>
   }
 });
 
-// 提交每日进度
+// 鎻愪氦姣忔棩杩涘害
 router.post('/daily-progress', authenticate, async (req, res) => {
   try {
     const {
@@ -631,23 +641,22 @@ router.post('/daily-progress', authenticate, async (req, res) => {
     
     const today = new Date().toISOString().split('T')[0];
     
-    // 获取工序信息
+    // 鑾峰彇宸ュ簭淇℃伅
     const processInfo = await pool.query(
       'SELECT total_completed, planned_quantity FROM process_execution WHERE id = $1',
       [process_execution_id]
     );
     
     if (processInfo.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存在' });
+      return res.status(404).json({ success: false, message: '宸ュ簭涓嶅瓨鍦? });
     }
     
-    // 计算累计完成量和百分比
-    const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
+    // 璁＄畻绱瀹屾垚閲忓拰鐧惧垎姣?    const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
     const newTotal = previousTotal + parseFloat(quantity_completed);
     const plannedQty = parseFloat(processInfo.rows[0].planned_quantity) || 1;
     const percentage = (newTotal / plannedQty) * 100;
     
-    // 插入每日进度记录
+    // 鎻掑叆姣忔棩杩涘害璁板綍
     const progressResult = await pool.query(`
       INSERT INTO daily_progress 
       (process_execution_id, date, quantity_completed, unit, total_completed, 
@@ -670,7 +679,7 @@ router.post('/daily-progress', authenticate, async (req, res) => {
       req.user.id
     ]);
     
-    // 更新工序执行表的累计数据
+    // 鏇存柊宸ュ簭鎵ц琛ㄧ殑绱鏁版嵁
     await pool.query(`
       UPDATE process_execution 
       SET total_completed = $1, 
@@ -687,15 +696,14 @@ router.post('/daily-progress', authenticate, async (req, res) => {
     res.json({ 
       success: true, 
       data: progressResult.rows[0],
-      message: '进度更新成功'
+      message: '杩涘害鏇存柊鎴愬姛'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// 获取工序的历史进度
-router.get('/process-execution/:id/progress-history', authenticate, async (req, res) => {
+// 鑾峰彇宸ュ簭鐨勫巻鍙茶繘搴?router.get('/process-execution/:id/progress-history', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT * FROM daily_progress 
@@ -710,7 +718,7 @@ router.get('/process-execution/:id/progress-history', authenticate, async (req, 
   }
 });
 
-// 更新工序计划总量
+// 鏇存柊宸ュ簭璁″垝鎬婚噺
 router.put('/process-execution/:id/plan', authenticate, async (req, res) => {
   try {
     const { planned_quantity, quantity_unit } = req.body;
@@ -725,7 +733,7 @@ router.put('/process-execution/:id/plan', authenticate, async (req, res) => {
     `, [planned_quantity, quantity_unit, req.params.id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存在' });
+      return res.status(404).json({ success: false, message: '宸ュ簭涓嶅瓨鍦? });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -734,7 +742,7 @@ router.put('/process-execution/:id/plan', authenticate, async (req, res) => {
   }
 });
 
-// 更新项目工人信息
+// 鏇存柊椤圭洰宸ヤ汉淇℃伅
 router.put('/projects/:id/workers', authenticate, async (req, res) => {
   try {
     const { total_workers, worker_skills } = req.body;
@@ -749,7 +757,7 @@ router.put('/projects/:id/workers', authenticate, async (req, res) => {
     `, [total_workers, worker_skills ? JSON.stringify(worker_skills) : null, req.params.id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '项目不存在' });
+      return res.status(404).json({ success: false, message: '椤圭洰涓嶅瓨鍦? });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -759,9 +767,9 @@ router.put('/projects/:id/workers', authenticate, async (req, res) => {
 });
 
 
-// ============ 工序子任务接口 ============
+// ============ 宸ュ簭瀛愪换鍔℃帴鍙?============
 
-// 获取工序的所有子任务
+// 鑾峰彇宸ュ簭鐨勬墍鏈夊瓙浠诲姟
 router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -776,8 +784,7 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
   }
 });
 
-// 创建子任务
-router.post('/process-execution/:id/subtasks', authenticate, async (req, res) => {
+// 鍒涘缓瀛愪换鍔?router.post('/process-execution/:id/subtasks', authenticate, async (req, res) => {
   try {
     const {
       subtask_name,
@@ -813,15 +820,14 @@ router.post('/process-execution/:id/subtasks', authenticate, async (req, res) =>
     res.json({ 
       success: true, 
       data: result.rows[0],
-      message: '子任务创建成功'
+      message: '瀛愪换鍔″垱寤烘垚鍔?
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// 更新子任务
-router.put('/subtasks/:id', authenticate, async (req, res) => {
+// 鏇存柊瀛愪换鍔?router.put('/subtasks/:id', authenticate, async (req, res) => {
   try {
     const {
       subtask_name,
@@ -854,7 +860,7 @@ router.put('/subtasks/:id', authenticate, async (req, res) => {
     ]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '子任务不存在' });
+      return res.status(404).json({ success: false, message: '瀛愪换鍔′笉瀛樺湪' });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -863,8 +869,7 @@ router.put('/subtasks/:id', authenticate, async (req, res) => {
   }
 });
 
-// 删除子任务
-router.delete('/subtasks/:id', authenticate, async (req, res) => {
+// 鍒犻櫎瀛愪换鍔?router.delete('/subtasks/:id', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       'DELETE FROM process_subtasks WHERE id = $1 RETURNING id',
@@ -872,30 +877,28 @@ router.delete('/subtasks/:id', authenticate, async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '子任务不存在' });
+      return res.status(404).json({ success: false, message: '瀛愪换鍔′笉瀛樺湪' });
     }
     
-    res.json({ success: true, message: '子任务已删除' });
+    res.json({ success: true, message: '瀛愪换鍔″凡鍒犻櫎' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// 更新子任务进度
-router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
+// 鏇存柊瀛愪换鍔¤繘搴?router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
   try {
     const { quantity_completed, work_status, notes, photos } = req.body;
     
     const today = new Date().toISOString().split('T')[0];
     
-    // 获取子任务信息
-    const subtaskInfo = await pool.query(
+    // 鑾峰彇瀛愪换鍔′俊鎭?    const subtaskInfo = await pool.query(
       'SELECT * FROM process_subtasks WHERE id = $1',
       [req.params.id]
     );
     
     if (subtaskInfo.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '子任务不存在' });
+      return res.status(404).json({ success: false, message: '瀛愪换鍔′笉瀛樺湪' });
     }
     
     const subtask = subtaskInfo.rows[0];
@@ -904,8 +907,7 @@ router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
     const plannedQty = parseFloat(subtask.planned_quantity) || 1;
     const percentage = Math.min((newTotal / plannedQty) * 100, 100);
     
-    // 更新子任务进度
-    await pool.query(`
+    // 鏇存柊瀛愪换鍔¤繘搴?    await pool.query(`
       UPDATE process_subtasks 
       SET total_completed = $1,
           completion_percentage = $2,
@@ -920,8 +922,7 @@ router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
       WHERE id = $3
     `, [newTotal, percentage, req.params.id]);
     
-    // 插入每日进度记录（关联子任务）
-    const progressResult = await pool.query(`
+    // 鎻掑叆姣忔棩杩涘害璁板綍锛堝叧鑱斿瓙浠诲姟锛?    const progressResult = await pool.query(`
       INSERT INTO daily_progress 
       (process_execution_id, subtask_id, date, quantity_completed, unit, 
        total_completed, total_planned, completion_percentage, work_status, 
@@ -943,20 +944,20 @@ router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
       req.user.id
     ]);
     
-    // 重新计算大工序的总进度（所有子任务的加权平均）
+    // 閲嶆柊璁＄畻澶у伐搴忕殑鎬昏繘搴︼紙鎵€鏈夊瓙浠诲姟鐨勫姞鏉冨钩鍧囷級
     await recalculateProcessProgress(subtask.process_execution_id);
     
     res.json({ 
       success: true, 
       data: progressResult.rows[0],
-      message: '进度更新成功'
+      message: '杩涘害鏇存柊鎴愬姛'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// 辅助函数：重新计算大工序进度
+// 杈呭姪鍑芥暟锛氶噸鏂拌绠楀ぇ宸ュ簭杩涘害
 async function recalculateProcessProgress(processExecutionId) {
   const subtasks = await pool.query(
     'SELECT planned_quantity, total_completed FROM process_subtasks WHERE process_execution_id = $1',
@@ -964,8 +965,7 @@ async function recalculateProcessProgress(processExecutionId) {
   );
   
   if (subtasks.rows.length === 0) {
-    // 没有子任务，不更新
-    return;
+    // 娌℃湁瀛愪换鍔★紝涓嶆洿鏂?    return;
   }
   
   let totalPlanned = 0;

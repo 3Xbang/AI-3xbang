@@ -1,12 +1,12 @@
-// API配置
+﻿// API閰嶇疆
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001'
-    : '';  // 生产环境使用相对路径，nginx会代理/api/*
+    : '';  // 鐢熶骇鐜浣跨敤鐩稿璺緞锛宯ginx浼氫唬鐞?api/*
 
-// 存储token
+// 瀛樺偍token
 let authToken = localStorage.getItem('authToken');
 
-// API请求封装
+// API璇锋眰灏佽
 async function apiRequest(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
     
@@ -29,7 +29,7 @@ async function apiRequest(endpoint, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401) {
-                // Token过期，跳转登录
+                // Token杩囨湡锛岃烦杞櫥褰?
                 localStorage.removeItem('authToken');
                 window.location.reload();
             }
@@ -43,9 +43,9 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// API方法
+// API鏂规硶
 const api = {
-    // 认证
+    // 璁よ瘉
     login: async (username, password) => {
         const data = await apiRequest('/api/auth/login', {
             method: 'POST',
@@ -59,7 +59,7 @@ const api = {
         return data;
     },
 
-    // 项目
+    // 椤圭洰
     getProjects: () => apiRequest('/api/projects'),
     
     createProject: (projectData) => apiRequest('/api/projects', {
@@ -69,7 +69,7 @@ const api = {
 
     getProjectSummary: (projectId) => apiRequest(`/api/projects/${projectId}/summary`),
 
-    // 工序
+    // 宸ュ簭
     getProcesses: (projectId) => apiRequest(`/api/projects/${projectId}/processes`),
 
     updateProcess: (processId, data) => apiRequest(`/api/processes/${processId}`, {
@@ -77,7 +77,7 @@ const api = {
         body: JSON.stringify(data)
     }),
 
-    // 材料
+    // 鏉愭枡
     getMaterials: (projectId, status) => {
         const query = status ? `?status=${status}` : '';
         return apiRequest(`/api/projects/${projectId}/materials${query}`);
@@ -88,11 +88,11 @@ const api = {
         body: JSON.stringify(data)
     }),
 
-    // 照片
+    // 鐓х墖
     getPhotos: (projectId) => apiRequest(`/api/photos/project/${projectId}`),
 
     uploadPhoto: async (formData) => {
-        // 照片上传使用FormData，不设置Content-Type
+        // 鐓х墖涓婁紶浣跨敤FormData锛屼笉璁剧疆Content-Type
         const url = `${API_BASE}/api/photos/upload`;
         const response = await fetch(url, {
             method: 'POST',
@@ -104,7 +104,7 @@ const api = {
         return response.json();
     },
 
-    // 每日进度
+    // 姣忔棩杩涘害
     getDailyTasks: (projectId) => apiRequest(`/api/projects/${projectId}/daily-tasks`),
 
     submitDailyProgress: (data) => apiRequest('/api/daily-progress', {
@@ -124,7 +124,7 @@ const api = {
         body: JSON.stringify(data)
     }),
 
-    // 子任务
+    // 瀛愪换鍔?
     getSubtasks: (processExecutionId) => apiRequest(`/api/process-execution/${processExecutionId}/subtasks`),
 
     createSubtask: (processExecutionId, data) => apiRequest(`/api/process-execution/${processExecutionId}/subtasks`, {

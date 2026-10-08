@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
 const bcrypt = require('bcrypt');
@@ -497,6 +497,77 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
   }
 });
 
+
+// ============ 工程量管理接口 ============
+
+// 批量设置项目工程量
+router.post('/projects/:projectId/set-quantities', authenticate, async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { quantities } = req.body;
+    
+    if (!quantities || typeof quantities !== 'object') {
+      return res.status(400).json({ success: false, message: '工程量数据格式错误' });
+    }
+    
+    const updated = [];
+    
+    for (const [processCode, quantity] of Object.entries(quantities)) {
+      const result = await client.query(`
+        UPDATE process_execution pe
+        SET planned_quantity = $1,
+            updated_at = CURRENT_TIMESTAMP
+        FROM process_nodes pn
+        WHERE pe.process_node_id = pn.id
+          AND pn.project_id = $2
+          AND pn.process_code = $3
+        RETURNING pe.id, pe.planned_quantity, pn.process_code
+      `, [quantity, req.params.projectId, processCode]);
+      
+      if (result.rows.length > 0) {
+        updated.push(result.rows[0]);
+      }
+    }
+    
+    await client.query('COMMIT');
+    
+    res.json({ 
+      success: true, 
+      message: `成功设置${updated.length}个工序的工程量`,
+      data: updated
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取项目工程量
+router.get('/projects/:projectId/quantities', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        pn.process_code,
+        pn.process_name,
+        pe.planned_quantity,
+        pn.typical_unit as unit
+      FROM process_nodes pn
+      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
+      WHERE pn.project_id = $1
+      ORDER BY pn.sequence
+    `, [req.params.projectId]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 module.exports = router;
 
 

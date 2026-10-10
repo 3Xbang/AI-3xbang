@@ -90,6 +90,14 @@ if (typeof app !== 'undefined') {
                         <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
                             <span id="subtask-toggle-text-${process.id}">查看子任务 ▼</span>
                         </button>
+                        ${PermissionManager.canManageProjects() ? `
+                            <button class="btn-schedule" onclick="ProcessScheduling.showDependencyManager(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
+                                🔗 ${t('scheduling.dependencies')}
+                            </button>
+                            <button class="btn-schedule" onclick="ProcessScheduling.showProcessSchedule(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
+                                📅 ${t('scheduling.schedule')}
+                            </button>
+                        ` : ''}
                     </div>
                     <div class="process-subtasks-area" id="subtasks-area-${process.id}">
                         <div class="loading-subtasks">加载中...</div>

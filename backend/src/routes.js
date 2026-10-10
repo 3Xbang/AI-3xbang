@@ -1986,3 +1986,227 @@ router.delete('/projects/:projectId/processes/:processExecutionId', authenticate
     client.release();
   }
 });
+
+// ============ Phase 3B: 工序依赖关系管理 ============
+
+// 获取工序的依赖关系
+router.get('/processes/:processExecutionId/dependencies', authenticate, async (req, res) => {
+  try {
+    const { processExecutionId } = req.params;
+    
+    // 获取该工序依赖的工序（前置）
+    const predecessors = await pool.query(`
+      SELECT pd.*, 
+             pe.id as depends_on_id,
+             pn.process_code as depends_on_code,
+             pn.process_name as depends_on_name,
+             pe.status as depends_on_status
+      FROM process_dependencies pd
+      JOIN process_execution pe ON pd.depends_on_process_id = pe.id
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pd.process_execution_id = $1
+      ORDER BY pd.id
+    `, [processExecutionId]);
+    
+    // 获取依赖该工序的工序（后置）
+    const successors = await pool.query(`
+      SELECT pd.*, 
+             pe.id as successor_id,
+             pn.process_code as successor_code,
+             pn.process_name as successor_name,
+             pe.status as successor_status
+      FROM process_dependencies pd
+      JOIN process_execution pe ON pd.process_execution_id = pe.id
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pd.depends_on_process_id = $1
+      ORDER BY pd.id
+    `, [processExecutionId]);
+    
+    res.json({
+      success: true,
+      data: {
+        predecessors: predecessors.rows,
+        successors: successors.rows
+      }
+    });
+  } catch (error) {
+    console.error('Get dependencies error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取项目所有工序的依赖关系
+router.get('/projects/:projectId/dependencies', authenticate, requireProjectAccess(), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    const result = await pool.query(`
+      SELECT pd.*, 
+             pe1.id as from_process_id,
+             pn1.process_code as from_code,
+             pn1.process_name as from_name,
+             pe2.id as to_process_id,
+             pn2.process_code as to_code,
+             pn2.process_name as to_name
+      FROM process_dependencies pd
+      JOIN process_execution pe1 ON pd.depends_on_process_id = pe1.id
+      JOIN process_nodes pn1 ON pe1.process_node_id = pn1.id
+      JOIN process_execution pe2 ON pd.process_execution_id = pe2.id
+      JOIN process_nodes pn2 ON pe2.process_node_id = pn2.id
+      WHERE pn1.project_id = $1
+      ORDER BY pd.id
+    `, [projectId]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Get project dependencies error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 添加工序依赖关系
+router.post('/processes/:processExecutionId/dependencies', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { processExecutionId } = req.params;
+    const { dependsOnProcessId, dependencyType, lagDays } = req.body;
+    
+    await client.query('BEGIN');
+    
+    // 验证两个工序都存在且属于同一项目
+    const processCheck = await client.query(`
+      SELECT p1.project_id as project1, p2.project_id as project2
+      FROM process_execution pe1
+      JOIN process_nodes p1 ON pe1.process_node_id = p1.id
+      CROSS JOIN process_execution pe2
+      JOIN process_nodes p2 ON pe2.process_node_id = p2.id
+      WHERE pe1.id = $1 AND pe2.id = $2
+    `, [processExecutionId, dependsOnProcessId]);
+    
+    if (processCheck.rows.length === 0) {
+      throw new Error('工序不存在');
+    }
+    
+    if (processCheck.rows[0].project1 !== processCheck.rows[0].project2) {
+      throw new Error('只能在同一项目内建立依赖关系');
+    }
+    
+    // 检查是否会形成循环依赖
+    const circularCheck = await checkCircularDependency(client, processExecutionId, dependsOnProcessId);
+    if (circularCheck) {
+      throw new Error('不能添加循环依赖');
+    }
+    
+    // 添加依赖关系
+    const result = await client.query(`
+      INSERT INTO process_dependencies 
+      (process_execution_id, depends_on_process_id, dependency_type, lag_days)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `, [processExecutionId, dependsOnProcessId, dependencyType || 'finish_to_start', lagDays || 0]);
+    
+    await logActivity(client, req.user.id, 'add_dependency', 'process', processExecutionId, {
+      depends_on: dependsOnProcessId,
+      type: dependencyType
+    });
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: '依赖关系添加成功',
+      data: result.rows[0]
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Add dependency error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 删除工序依赖关系
+router.delete('/dependencies/:dependencyId', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  try {
+    const { dependencyId } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM process_dependencies WHERE id = $1 RETURNING *',
+      [dependencyId]
+    );
+    
+    if (result.rows.length === 0) {
+      throw new Error('依赖关系不存在');
+    }
+    
+    await logActivity(pool, req.user.id, 'delete_dependency', 'process', result.rows[0].process_execution_id);
+    
+    res.json({
+      success: true,
+      message: '依赖关系删除成功'
+    });
+  } catch (error) {
+    console.error('Delete dependency error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新工序计划日期和工期
+router.put('/processes/:processExecutionId/schedule', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  try {
+    const { processExecutionId } = req.params;
+    const { plannedStartDate, plannedEndDate, plannedDuration } = req.body;
+    
+    const result = await pool.query(`
+      UPDATE process_execution 
+      SET planned_start_date = $1,
+          planned_end_date = $2,
+          planned_duration = $3,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+      RETURNING *
+    `, [plannedStartDate, plannedEndDate, plannedDuration, processExecutionId]);
+    
+    if (result.rows.length === 0) {
+      throw new Error('工序不存在');
+    }
+    
+    res.json({
+      success: true,
+      message: '计划更新成功',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update schedule error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 检查循环依赖的辅助函数
+async function checkCircularDependency(client, processId, dependsOnId, visited = new Set()) {
+  if (processId === dependsOnId) {
+    return true; // 直接形成循环
+  }
+  
+  if (visited.has(dependsOnId)) {
+    return false; // 已检查过
+  }
+  
+  visited.add(dependsOnId);
+  
+  // 获取dependsOnId的所有前置依赖
+  const result = await client.query(
+    'SELECT depends_on_process_id FROM process_dependencies WHERE process_execution_id = $1',
+    [dependsOnId]
+  );
+  
+  for (const row of result.rows) {
+    if (await checkCircularDependency(client, processId, row.depends_on_process_id, visited)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+

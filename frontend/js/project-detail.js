@@ -14,6 +14,11 @@ const ProjectDetail = {
             ProcessManager.init(projectId);
         }
         
+        // 初始化ProcessScheduling
+        if (typeof ProcessScheduling !== 'undefined') {
+            ProcessScheduling.init(projectId);
+        }
+        
         this.render();
         this.showSubView('overview');
     },

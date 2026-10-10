@@ -205,5 +205,34 @@ const api = {
         delete: (projectId, processExecutionId) => apiRequest(`/api/projects/${projectId}/processes/${processExecutionId}`, {
             method: 'DELETE'
         })
+    },
+
+    // 工序依赖关系 (Phase 3B)
+    processDependencies: {
+        // 获取工序的依赖关系
+        get: (processExecutionId) => apiRequest(`/api/processes/${processExecutionId}/dependencies`),
+        
+        // 获取项目所有依赖关系
+        getAll: (projectId) => apiRequest(`/api/projects/${projectId}/dependencies`),
+        
+        // 添加依赖关系
+        add: (processExecutionId, data) => apiRequest(`/api/processes/${processExecutionId}/dependencies`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        
+        // 删除依赖关系
+        delete: (dependencyId) => apiRequest(`/api/dependencies/${dependencyId}`, {
+            method: 'DELETE'
+        })
+    },
+
+    // 工序进度计划 (Phase 3B)
+    processSchedule: {
+        // 更新工序计划
+        update: (processExecutionId, data) => apiRequest(`/api/processes/${processExecutionId}/schedule`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        })
     }
 };

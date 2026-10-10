@@ -1,0 +1,190 @@
+/* 工序进度规划样式 - Phase 3B */
+
+/* 依赖管理器 */
+.dependency-manager {
+    padding: 1rem 0;
+}
+
+.current-process-info {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 8px;
+    border-left: 4px solid #1e3a8a;
+}
+
+.current-process-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1e3a8a;
+}
+
+.help-text {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* 依赖分组 */
+.dependency-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.dependency-section h5 {
+    margin: 0 0 0.5rem 0;
+    color: #1e3a8a;
+    font-size: 1.1rem;
+}
+
+.section-desc {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0 0 1rem 0;
+}
+
+.empty-text {
+    color: #94a3b8;
+    font-style: italic;
+    margin: 1rem 0;
+}
+
+/* 依赖列表 */
+.dependency-list {
+    margin: 1rem 0;
+}
+
+.dependency-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: box-shadow 0.2s;
+}
+
+.dependency-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dependency-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.process-code-small {
+    display: inline-block;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.process-name-small {
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+
+.dependency-type-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.lag-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.btn-icon-delete {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.btn-icon-delete:hover {
+    opacity: 1;
+}
+
+/* 工序操作按钮 */
+.btn-schedule {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-schedule:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #1e293b;
+}
+
+/* 表单提示 */
+.form-hint {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* 时间规划表单 */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .dependency-info {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .dependency-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .btn-icon-delete {
+        align-self: flex-end;
+    }
+    
+    .btn-schedule {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

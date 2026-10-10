@@ -85,7 +85,13 @@ const i18n = {
             createSuccess: '项目创建成功',
             createError: '项目创建失败',
             createFirst: '创建第一个项目',
-            loadError: '加载项目失败'
+            loadError: '加载项目失败',
+            status: {
+                active: '进行中',
+                planning: '规划中',
+                completed: '已完成',
+                'on-hold': '暂停'
+            }
         },
         processes: {
             title: '工序进度',
@@ -367,7 +373,13 @@ const i18n = {
             createSuccess: 'สร้างโครงการสำเร็จ',
             createError: 'สร้างโครงการไม่สำเร็จ',
             createFirst: 'สร้างโครงการแรก',
-            loadError: 'โหลดโครงการไม่สำเร็จ'
+            loadError: 'โหลดโครงการไม่สำเร็จ',
+            status: {
+                active: 'กำลังดำเนินการ',
+                planning: 'กำลังวางแผน',
+                completed: 'เสร็จสิ้น',
+                'on-hold': 'หยุดชั่วคราว'
+            }
         },
         processes: {
             title: 'ความคืบหน้างาน',

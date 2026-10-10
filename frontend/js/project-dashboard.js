@@ -142,7 +142,7 @@ const ProjectDashboard = {
             <form id="create-project-form" class="form-vertical">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>${t('projects.name')} (${t('common.thai')})</label>
+                        <label>${t('projects.name')} (${t('common.thai')}) *</label>
                         <input type="text" id="project-name-th" required placeholder="เช่น: วิลล่ามิร่า">
                     </div>
                     <div class="form-group">
@@ -152,8 +152,8 @@ const ProjectDashboard = {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>${t('projects.location')} (${t('common.thai')})</label>
-                        <input type="text" id="project-location-th" placeholder="เช่น: เชียงใหม่">
+                        <label>${t('projects.location')} (${t('common.thai')}) *</label>
+                        <input type="text" id="project-location-th" required placeholder="เช่น: เชียงใหม่">
                     </div>
                     <div class="form-group">
                         <label>${t('projects.location')} (${t('common.chinese')})</label>

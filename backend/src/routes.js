@@ -1783,9 +1783,20 @@ module.exports = router;
     const { category } = req.query;
     
     let query = `
-      SELECT pt.*, 
-             pc.name_zh as category_name_zh,
-             pc.name_th as category_name_th
+      SELECT 
+        pt.id,
+        pt.code,
+        pt.category,
+        jsonb_build_object('zh', pt.name_zh, 'th', pt.name_th) as name,
+        pt.description_zh,
+        pt.description_th,
+        pt.default_duration,
+        pt.quantity_unit,
+        pt.quality_points,
+        pt.display_order,
+        pt.is_active,
+        pc.name_zh as category_name_zh,
+        pc.name_th as category_name_th
       FROM process_templates pt
       LEFT JOIN process_categories pc ON pt.category = pc.category_code
       WHERE pt.is_active = true

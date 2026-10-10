@@ -449,6 +449,9 @@ const app = {
             return;
         }
 
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const canAssignTask = user.role === 'manager' || user.role === 'purchaser';
+
         container.innerHTML = processes.map(process => {
             const statusClass = process.status || 'not_started';
             const statusText = t(`processes.status.${statusClass}`);
@@ -475,6 +478,11 @@ const app = {
                     </div>
                     <div class="process-actions">
                         <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">${t('subtasks.view')}</button>
+                        ${canAssignTask ? `
+                            <button class="btn-sm btn-primary" onclick="taskAssignment.showAssignModal(${process.id}, '${process.process_code}', '${getI18nField(process, 'process_name')}')">
+                                📋 ${t('tasks.assign')}
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `;

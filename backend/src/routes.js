@@ -1491,38 +1491,183 @@ router.delete('/projects/:projectId/members/:userId', authenticate, requirePermi
 // ============ 任务分配接口 ============
 
 // 分配任务给执行者（采购者或管理者）
-router.post('/tasks/assign', authenticate, requirePermission('tasks', 'assign'), async (req, res) => {
+router.post('/tasks/assign', authenticate, requirePermission('assign_task'), async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { project_id, process_execution_id, assigned_to, notes } = req.body;
+    await client.query('BEGIN');
     
-    // 检查被分配人是否是项目成员
-    const memberCheck = await pool.query(
-      'SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2',
+    const { process_execution_id, assigned_to } = req.body;
+    
+    // 获取工序所属项目
+    const processCheck = await client.query(`
+      SELECT pn.project_id 
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1
+    `, [process_execution_id]);
+    
+    if (processCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const project_id = processCheck.rows[0].project_id;
+    
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
+    // 检查被分配人是否是项目成员且是执行者
+    const memberCheck = await client.query(
+      `SELECT role FROM project_members 
+       WHERE project_id = $1 AND user_id = $2 AND role = 'executor'`,
       [project_id, assigned_to]
     );
     
     if (memberCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        message: '被分配人不是此项目成员' 
+        message: '被分配人不是此项目的执行者' 
       });
     }
     
-    const result = await pool.query(
+    // 检查是否已经分配
+    const existingCheck = await client.query(
+      'SELECT 1 FROM task_assignments WHERE process_execution_id = $1 AND assigned_to = $2',
+      [process_execution_id, assigned_to]
+    );
+    
+    if (existingCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        message: '该执行者已被分配此任务' 
+      });
+    }
+    
+    const result = await client.query(
       `INSERT INTO task_assignments 
-       (project_id, process_execution_id, assigned_to, assigned_by, notes, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')
+       (process_execution_id, assigned_to, assigned_by)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [project_id, process_execution_id, assigned_to, req.user.id, JSON.stringify(notes)]
+      [process_execution_id, assigned_to, req.user.id]
     );
     
     // 记录日志
-    await logActivity(req.user.id, 'assign_task', 'process', process_execution_id, 
-      { assigned_to, notes }, req.ip);
+    await logActivity(client, req.user.id, 'assign_task', 'process_execution', process_execution_id, 
+      `分配任务给用户 ${assigned_to}`);
     
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0], message: '任务分配成功' });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 取消任务分配
+router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermission('assign_task'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { processId, userId } = req.params;
+    
+    // 获取工序所属项目
+    const processCheck = await client.query(`
+      SELECT pn.project_id 
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1
+    `, [processId]);
+    
+    if (processCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const project_id = processCheck.rows[0].project_id;
+    
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
+    const result = await client.query(
+      'DELETE FROM task_assignments WHERE process_execution_id = $1 AND assigned_to = $2 RETURNING *',
+      [processId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '任务分配不存在' });
+    }
+    
+    // 记录日志
+    await logActivity(client, req.user.id, 'unassign_task', 'process_execution', processId, 
+      `取消分配给用户 ${userId}`);
+    
+    await client.query('COMMIT');
+    res.json({ success: true, message: '取消分配成功' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取工序的任务分配列表
+router.get('/process-execution/:id/assignments', authenticate, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    // 获取工序所属项目
+    const processCheck = await client.query(`
+      SELECT pn.project_id 
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1
+    `, [req.params.id]);
+    
+    if (processCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const project_id = processCheck.rows[0].project_id;
+    
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    if (!hasAccess) {
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
+    const result = await client.query(`
+      SELECT 
+        ta.*,
+        u.username,
+        u.full_name,
+        assigner.username as assigned_by_username,
+        assigner.full_name as assigned_by_name
+      FROM task_assignments ta
+      JOIN users u ON ta.assigned_to = u.id
+      JOIN users assigner ON ta.assigned_by = assigner.id
+      WHERE ta.process_execution_id = $1
+      ORDER BY ta.assigned_at DESC
+    `, [req.params.id]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -1533,16 +1678,19 @@ router.get('/tasks/my-tasks', authenticate, async (req, res) => {
       SELECT 
         ta.*,
         pe.status as process_status,
+        pe.completion_percentage,
+        pn.process_code,
         pn.process_name,
+        p.id as project_id,
         p.name as project_name,
         assigner.full_name as assigned_by_name
       FROM task_assignments ta
       JOIN process_execution pe ON ta.process_execution_id = pe.id
       JOIN process_nodes pn ON pe.process_node_id = pn.id
-      JOIN projects p ON ta.project_id = p.id
+      JOIN projects p ON pn.project_id = p.id
       JOIN users assigner ON ta.assigned_by = assigner.id
-      WHERE ta.assigned_to = $1 AND ta.status != 'completed'
-      ORDER BY ta.created_at DESC
+      WHERE ta.assigned_to = $1
+      ORDER BY ta.assigned_at DESC
     `, [req.user.id]);
     
     res.json({ success: true, data: result.rows });

@@ -1,0 +1,255 @@
+/* 任务分配样式 */
+
+/* 任务信息卡片 */
+.task-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.task-info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.task-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.task-info-label {
+    font-size: 14px;
+    opacity: 0.9;
+    min-width: 100px;
+    font-weight: 500;
+}
+
+.task-info-value {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* 分配区块 */
+.assignments-section {
+    margin-bottom: 30px;
+}
+
+.assignments-section:last-child {
+    margin-bottom: 0;
+}
+
+/* 分配列表 */
+.assignments-list,
+.available-executors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 分配项和执行者项 */
+.assignment-item,
+.available-executor-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.assignment-item:hover,
+.available-executor-item:hover {
+    background: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 执行者信息 */
+.executor-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.executor-avatar {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    font-size: 24px;
+    box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3);
+}
+
+.executor-details {
+    flex: 1;
+}
+
+.executor-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 5px;
+}
+
+.executor-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.executor-meta span {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 可分配执行者项特殊样式 */
+.available-executor-item {
+    background: #fff;
+    border: 2px solid #e9ecef;
+}
+
+.available-executor-item:hover {
+    background: #f0f8ff;
+    border-color: #007bff;
+}
+
+.available-executor-item .executor-avatar {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+}
+
+/* 警告消息 */
+.warning-message {
+    text-align: center;
+    padding: 20px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.warning-message::before {
+    content: '⚠️';
+    font-size: 20px;
+}
+
+/* 工序操作按钮样式优化 */
+.process-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-sm.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-sm.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.btn-sm.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-sm.btn-secondary:hover {
+    background: #545b62;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .task-info-card {
+        padding: 15px;
+    }
+    
+    .task-info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .task-info-label {
+        min-width: auto;
+    }
+    
+    .assignment-item,
+    .available-executor-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .executor-info {
+        width: 100%;
+    }
+    
+    .btn-small {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .executor-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .process-actions {
+        flex-direction: column;
+    }
+    
+    .btn-sm {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* 加载和动画效果 */
+.assignment-item,
+.available-executor-item {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

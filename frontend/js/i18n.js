@@ -187,6 +187,26 @@ const i18n = {
             purchaser: '采购者',
             executor: '执行者'
         },
+        tasks: {
+            assign: '分配任务',
+            assignTask: '分配任务',
+            unassign: '取消分配',
+            processCode: '工序代码',
+            processName: '工序名称',
+            currentAssignments: '当前分配',
+            availableExecutors: '可分配的执行者',
+            noAssignments: '暂无分配',
+            noExecutorsInProject: '此项目没有执行者，请先添加执行者成员',
+            allExecutorsAssigned: '所有执行者都已分配',
+            assignedBy: '分配人',
+            assignSuccess: '任务分配成功',
+            assignError: '任务分配失败',
+            unassignSuccess: '取消分配成功',
+            unassignError: '取消分配失败',
+            confirmUnassign: '确认取消分配？',
+            loadError: '加载任务分配失败',
+            selectProjectFirst: '请先选择项目'
+        },
         daily: {
             title: '今日任务',
             date: '日期',
@@ -423,6 +443,26 @@ const i18n = {
             manager: 'ผู้จัดการ',
             purchaser: 'ผู้จัดซื้อ',
             executor: 'พนักงาน'
+        },
+        tasks: {
+            assign: 'มอบหมายงาน',
+            assignTask: 'มอบหมายงาน',
+            unassign: 'ยกเลิกการมอบหมาย',
+            processCode: 'รหัสงาน',
+            processName: 'ชื่องาน',
+            currentAssignments: 'การมอบหมายปัจจุบัน',
+            availableExecutors: 'พนักงานที่สามารถมอบหมาย',
+            noAssignments: 'ยังไม่มีการมอบหมาย',
+            noExecutorsInProject: 'โครงการนี้ไม่มีพนักงาน กรุณาเพิ่มสมาชิกพนักงานก่อน',
+            allExecutorsAssigned: 'มอบหมายให้พนักงานทั้งหมดแล้ว',
+            assignedBy: 'มอบหมายโดย',
+            assignSuccess: 'มอบหมายงานสำเร็จ',
+            assignError: 'มอบหมายงานไม่สำเร็จ',
+            unassignSuccess: 'ยกเลิกการมอบหมายสำเร็จ',
+            unassignError: 'ยกเลิกการมอบหมายไม่สำเร็จ',
+            confirmUnassign: 'ยืนยันยกเลิกการมอบหมาย?',
+            loadError: 'โหลดการมอบหมายงานไม่สำเร็จ',
+            selectProjectFirst: 'กรุณาเลือกโครงการก่อน'
         },
         daily: {
             title: 'งานวันนี้',

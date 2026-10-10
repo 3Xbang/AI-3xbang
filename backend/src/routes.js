@@ -4,6 +4,7 @@ const pool = require('./config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authenticate = require('./middleware-auth');
+const { requirePermission, requireProjectAccess, checkProjectAccess, logActivity } = require('./middleware-permissions');
 const { STANDARD_PROCESSES } = require('./process-templates');
 const multer = require('multer');
 const path = require('path');
@@ -66,22 +67,44 @@ router.post('/auth/login', async (req, res) => {
 // ============ 项目接口 ============
 router.get('/projects', authenticate, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT p.*,
-        COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
-      FROM projects p
-      LEFT JOIN process_nodes pn ON p.id = pn.project_id
-      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-    `);
+    let query;
+    const params = [];
+    
+    // 管理者可以看到所有项目
+    if (req.user.role === 'manager') {
+      query = `
+        SELECT p.*,
+          COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
+        FROM projects p
+        LEFT JOIN process_nodes pn ON p.id = pn.project_id
+        LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+      `;
+    } else {
+      // 采购者和执行者只能看到分配给自己的项目
+      query = `
+        SELECT p.*,
+          COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
+        FROM projects p
+        INNER JOIN project_members pm ON p.id = pm.project_id
+        LEFT JOIN process_nodes pn ON p.id = pn.project_id
+        LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
+        WHERE pm.user_id = $1
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+      `;
+      params.push(req.user.id);
+    }
+    
+    const result = await pool.query(query, params);
     res.json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post('/projects', authenticate, async (req, res) => {
+router.post('/projects', authenticate, requirePermission('create_project'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -98,7 +121,14 @@ router.post('/projects', authenticate, async (req, res) => {
     
     const project = projectResult.rows[0];
     
-    // 2. 自动创建16个标准工序节点
+    // 2. 自动将创建者添加为项目成员
+    await client.query(
+      `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
+       VALUES ($1, $2, $3, $4)`,
+      [project.id, req.user.id, req.user.role, req.user.id]
+    );
+    
+    // 3. 自动创建16个标准工序节点
     for (const template of STANDARD_PROCESSES) {
       // 插入工序节点
       const nodeResult = await client.query(
@@ -117,6 +147,10 @@ router.post('/projects', authenticate, async (req, res) => {
       );
     }
     
+    // 4. 记录活动日志
+    await logActivity(client, req.user.id, 'create_project', 'projects', project.id, 
+      `创建项目: ${name}`);
+    
     await client.query('COMMIT');
     
     res.json({ 
@@ -132,7 +166,7 @@ router.post('/projects', authenticate, async (req, res) => {
   }
 });
 
-router.get('/projects/:id/summary', authenticate, async (req, res) => {
+router.get('/projects/:id/summary', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const project = await pool.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);
     
@@ -167,7 +201,7 @@ router.get('/projects/:id/summary', authenticate, async (req, res) => {
 });
 
 // ============ 工序接口 ============
-router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
+router.get('/projects/:projectId/processes', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT pe.*, pn.process_code, pn.process_name, pn.sequence_number
@@ -182,7 +216,7 @@ router.get('/projects/:projectId/processes', authenticate, async (req, res) => {
   }
 });
 
-router.post('/projects/:projectId/processes', authenticate, async (req, res) => {
+router.post('/projects/:projectId/processes', authenticate, requireProjectAccess(), requirePermission('assign_task'), async (req, res) => {
   try {
     const { process_node_id, assigned_workers, estimated_days, dimensions } = req.body;
     
@@ -203,9 +237,31 @@ router.post('/projects/:projectId/processes', authenticate, async (req, res) => 
 });
 
 router.put('/processes/:id', authenticate, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
+    // 检查项目访问权限
+    const processCheck = await client.query(
+      'SELECT pn.project_id FROM process_nodes pn JOIN process_execution pe ON pn.id = pe.process_node_id WHERE pe.id = $1',
+      [req.params.id]
+    );
+    
+    if (processCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '工序不存在' });
+    }
+    
+    const projectId = processCheck.rows[0].project_id;
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, projectId);
+    
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
     const { status, actual_start_date, actual_end_date, notes } = req.body;
-    const result = await pool.query(`
+    const result = await client.query(`
       UPDATE process_execution 
       SET status = COALESCE($1, status),
           actual_start_date = COALESCE($2, actual_start_date),
@@ -215,14 +271,22 @@ router.put('/processes/:id', authenticate, async (req, res) => {
       WHERE id = $5
       RETURNING *
     `, [status, actual_start_date, actual_end_date, notes, req.params.id]);
+    
+    await logActivity(client, req.user.id, 'update_process', 'process_execution', req.params.id,
+      `更新工序状态: ${status || '未变更'}`);
+    
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 // ============ 材料接口 ============
-router.get('/projects/:projectId/materials', authenticate, async (req, res) => {
+router.get('/projects/:projectId/materials', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const { status } = req.query;
     let query = 'SELECT * FROM materials WHERE project_id = $1';
@@ -248,28 +312,64 @@ router.get('/projects/:projectId/materials', authenticate, async (req, res) => {
   }
 });
 
-router.post('/materials', authenticate, async (req, res) => {
+router.post('/materials', authenticate, requirePermission('purchase_material'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { project_id, material_name, material_code, unit, purchase_quantity, unit_price, supplier, expected_arrival_date } = req.body;
+    
+    // 检查项目访问权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
     const total_cost = purchase_quantity * (unit_price || 0);
     
-    const result = await pool.query(`
+    const result = await client.query(`
       INSERT INTO materials 
       (project_id, material_code, material_name, unit, purchase_quantity, unit_price, total_cost, supplier, expected_arrival_date, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ordered')
       RETURNING *
     `, [project_id, material_code, JSON.stringify(material_name), JSON.stringify(unit), purchase_quantity, unit_price, total_cost, supplier, expected_arrival_date]);
     
+    await logActivity(client, req.user.id, 'purchase_material', 'materials', result.rows[0].id,
+      `采购材料: ${material_name.zh || material_name}`);
+    
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 router.post('/materials/:id/receive', authenticate, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
+    // 检查材料所属项目权限
+    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
+    if (materialCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '材料不存在' });
+    }
+    
+    const projectId = materialCheck.rows[0].project_id;
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, projectId);
+    
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
     const { received_quantity, actual_arrival_date, notes } = req.body;
-    const result = await pool.query(`
+    const result = await client.query(`
       UPDATE materials 
       SET received_quantity = $1,
           actual_arrival_date = $2,
@@ -279,26 +379,50 @@ router.post('/materials/:id/receive', authenticate, async (req, res) => {
       WHERE id = $4
       RETURNING *
     `, [received_quantity, actual_arrival_date, notes, req.params.id]);
+    
+    await logActivity(client, req.user.id, 'receive_material', 'materials', req.params.id,
+      `确认收货: 数量${received_quantity}`);
+    
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 router.post('/materials/:id/use', authenticate, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
+    // 检查材料所属项目权限
+    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
+    if (materialCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '材料不存在' });
+    }
+    
+    const projectId = materialCheck.rows[0].project_id;
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, projectId);
+    
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
     const { process_execution_id, quantity_used, usage_date } = req.body;
     
-    await pool.query('BEGIN');
-    
     // 记录使用
-    await pool.query(
+    await client.query(
       'INSERT INTO material_usage (material_id, process_execution_id, quantity_used, usage_date) VALUES ($1, $2, $3, $4)',
       [req.params.id, process_execution_id, quantity_used, usage_date]
     );
     
     // 更新材料已用量
-    const result = await pool.query(`
+    const result = await client.query(`
       UPDATE materials 
       SET used_quantity = used_quantity + $1,
           status = CASE 
@@ -310,20 +434,35 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
       RETURNING *
     `, [quantity_used, req.params.id]);
     
-    await pool.query('COMMIT');
+    await logActivity(client, req.user.id, 'use_material', 'materials', req.params.id,
+      `使用材料: 数量${quantity_used}`);
+    
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 // ============ 照片接口 ============
 router.post('/photos/upload', authenticate, upload.single('photo'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { project_id, process_execution_id, material_id, photo_type } = req.body;
     
-    const result = await pool.query(`
+    // 检查项目访问权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    if (!hasAccess) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
+    }
+    
+    const result = await client.query(`
       INSERT INTO photos 
       (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -338,9 +477,16 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       req.user.username
     ]);
     
+    await logActivity(client, req.user.id, 'upload_photo', 'photos', result.rows[0].id,
+      `上传照片: ${photo_type}`);
+    
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -541,7 +687,7 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
 // ============ 工程量管理接口 ============
 
 // 批量设置项目工程量
-router.post('/projects/:projectId/set-quantities', authenticate, async (req, res) => {
+router.post('/projects/:projectId/set-quantities', authenticate, requireProjectAccess(), requirePermission('assign_task'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -589,7 +735,7 @@ router.post('/projects/:projectId/set-quantities', authenticate, async (req, res
 });
 
 // 获取项目工程量
-router.get('/projects/:projectId/quantities', authenticate, async (req, res) => {
+router.get('/projects/:projectId/quantities', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -614,7 +760,7 @@ module.exports = router;
 // ============ 每日进度接口 ============
 
 // 获取今日任务看板
-router.get('/projects/:projectId/daily-tasks', authenticate, async (req, res) => {
+router.get('/projects/:projectId/daily-tasks', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
@@ -1034,3 +1180,284 @@ async function recalculateProcessProgress(processExecutionId) {
     WHERE id = $4
   `, [totalCompleted, totalPlanned, percentage, processExecutionId]);
 }
+
+
+// ============ 用户管理接口 ============
+
+// 获取所有用户（仅管理者）
+router.get('/users', authenticate, requirePermission('manage_users'), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        u.id, 
+        u.username, 
+        u.full_name, 
+        u.role, 
+        u.created_at,
+        COUNT(DISTINCT pm.project_id) as project_count
+      FROM users u
+      LEFT JOIN project_members pm ON u.id = pm.user_id
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+    `);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 创建用户（仅管理者）
+router.post('/users', authenticate, requirePermission('users', 'create'), async (req, res) => {
+  try {
+    const { username, password, full_name, role } = req.body;
+    
+    // 验证角色
+    if (!['manager', 'purchaser', 'executor'].includes(role)) {
+      return res.status(400).json({ success: false, message: '无效的角色' });
+    }
+    
+    // 检查用户名是否已存在
+    const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, message: '用户名已存在' });
+    }
+    
+    // 加密密码
+    const password_hash = await bcrypt.hash(password, 10);
+    
+    // 创建用户
+    const result = await pool.query(
+      'INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, full_name, role, created_at',
+      [username, password_hash, full_name, role]
+    );
+    
+    // 记录日志
+    await logActivity(req.user.id, 'create_user', 'user', result.rows[0].id, 
+      { username, full_name, role }, req.ip);
+    
+    res.json({ success: true, data: result.rows[0], message: '用户创建成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新用户（仅管理者）
+router.put('/users/:id', authenticate, requirePermission('users', 'update'), async (req, res) => {
+  try {
+    const { full_name, role, password } = req.body;
+    
+    // 不能修改自己的角色
+    if (req.params.id == req.user.id && role && role !== req.user.role) {
+      return res.status(400).json({ success: false, message: '不能修改自己的角色' });
+    }
+    
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+    
+    if (full_name) {
+      updates.push(`full_name = $${paramIndex++}`);
+      params.push(full_name);
+    }
+    
+    if (role && ['manager', 'purchaser', 'executor'].includes(role)) {
+      updates.push(`role = $${paramIndex++}`);
+      params.push(role);
+    }
+    
+    if (password) {
+      const password_hash = await bcrypt.hash(password, 10);
+      updates.push(`password_hash = $${paramIndex++}`);
+      params.push(password_hash);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: '没有要更新的字段' });
+    }
+    
+    params.push(req.params.id);
+    
+    const result = await pool.query(
+      `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $${paramIndex} 
+       RETURNING id, username, full_name, role`,
+      params
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 记录日志
+    await logActivity(req.user.id, 'update_user', 'user', req.params.id, 
+      { full_name, role, password_changed: !!password }, req.ip);
+    
+    res.json({ success: true, data: result.rows[0], message: '用户更新成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 删除用户（仅管理者）
+router.delete('/users/:id', authenticate, requirePermission('users', 'delete'), async (req, res) => {
+  try {
+    // 不能删除自己
+    if (req.params.id == req.user.id) {
+      return res.status(400).json({ success: false, message: '不能删除自己' });
+    }
+    
+    const result = await pool.query(
+      'DELETE FROM users WHERE id = $1 RETURNING username',
+      [req.params.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 记录日志
+    await logActivity(req.user.id, 'delete_user', 'user', req.params.id, 
+      { username: result.rows[0].username }, req.ip);
+    
+    res.json({ success: true, message: '用户删除成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============ 项目成员管理接口 ============
+
+// 获取项目成员列表
+router.get('/projects/:projectId/members', authenticate, requireProjectAccess(), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        pm.id,
+        pm.project_id,
+        pm.user_id,
+        u.username,
+        u.full_name,
+        u.role,
+        pm.assigned_at,
+        pm.notes,
+        assigner.full_name as assigned_by_name
+      FROM project_members pm
+      JOIN users u ON pm.user_id = u.id
+      LEFT JOIN users assigner ON pm.assigned_by = assigner.id
+      WHERE pm.project_id = $1
+      ORDER BY u.role, u.full_name
+    `, [req.params.projectId]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 添加项目成员（仅管理者）
+router.post('/projects/:projectId/members', authenticate, requirePermission('users', 'assign'), async (req, res) => {
+  try {
+    const { user_id, notes } = req.body;
+    
+    const result = await pool.query(
+      `INSERT INTO project_members (project_id, user_id, assigned_by, notes)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (project_id, user_id) DO UPDATE 
+       SET notes = EXCLUDED.notes, assigned_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [req.params.projectId, user_id, req.user.id, notes]
+    );
+    
+    // 记录日志
+    await logActivity(req.user.id, 'assign_project_member', 'project', req.params.projectId, 
+      { user_id, notes }, req.ip);
+    
+    res.json({ success: true, data: result.rows[0], message: '成员添加成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 移除项目成员（仅管理者）
+router.delete('/projects/:projectId/members/:userId', authenticate, requirePermission('users', 'assign'), async (req, res) => {
+  try {
+    await pool.query(
+      'DELETE FROM project_members WHERE project_id = $1 AND user_id = $2',
+      [req.params.projectId, req.params.userId]
+    );
+    
+    // 记录日志
+    await logActivity(req.user.id, 'remove_project_member', 'project', req.params.projectId, 
+      { user_id: req.params.userId }, req.ip);
+    
+    res.json({ success: true, message: '成员移除成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============ 任务分配接口 ============
+
+// 分配任务给执行者（采购者或管理者）
+router.post('/tasks/assign', authenticate, requirePermission('tasks', 'assign'), async (req, res) => {
+  try {
+    const { project_id, process_execution_id, assigned_to, notes } = req.body;
+    
+    // 检查被分配人是否是项目成员
+    const memberCheck = await pool.query(
+      'SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2',
+      [project_id, assigned_to]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '被分配人不是此项目成员' 
+      });
+    }
+    
+    const result = await pool.query(
+      `INSERT INTO task_assignments 
+       (project_id, process_execution_id, assigned_to, assigned_by, notes, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
+       RETURNING *`,
+      [project_id, process_execution_id, assigned_to, req.user.id, JSON.stringify(notes)]
+    );
+    
+    // 记录日志
+    await logActivity(req.user.id, 'assign_task', 'process', process_execution_id, 
+      { assigned_to, notes }, req.ip);
+    
+    res.json({ success: true, data: result.rows[0], message: '任务分配成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取我的任务列表
+router.get('/tasks/my-tasks', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        ta.*,
+        pe.status as process_status,
+        pn.process_name,
+        p.name as project_name,
+        assigner.full_name as assigned_by_name
+      FROM task_assignments ta
+      JOIN process_execution pe ON ta.process_execution_id = pe.id
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      JOIN projects p ON ta.project_id = p.id
+      JOIN users assigner ON ta.assigned_by = assigner.id
+      WHERE ta.assigned_to = $1 AND ta.status != 'completed'
+      ORDER BY ta.created_at DESC
+    `, [req.user.id]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;

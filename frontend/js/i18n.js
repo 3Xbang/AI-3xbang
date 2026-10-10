@@ -35,7 +35,8 @@ const i18n = {
             add: '添加',
             remove: '移除',
             close: '关闭',
-            submit: '提交'
+            submit: '提交',
+            permissionDenied: '抱歉，您没有权限执行此操作'
         },
         projects: {
             title: '项目管理',
@@ -292,7 +293,8 @@ const i18n = {
             add: 'เพิ่ม',
             remove: 'ลบออก',
             close: 'ปิด',
-            submit: 'ส่ง'
+            submit: 'ส่ง',
+            permissionDenied: 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้'
         },
         projects: {
             title: 'จัดการโครงการ',

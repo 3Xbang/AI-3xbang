@@ -71,13 +71,11 @@ const app = {
     // 加载用户信息
     loadUserInfo() {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        document.getElementById('user-name').textContent = user.full_name || user.username || '';
+        const roleDisplay = PermissionManager.getRoleDisplayName(user.role);
+        document.getElementById('user-name').textContent = `${user.full_name || user.username} (${roleDisplay})`;
         
-        // 只有manager角色可以看到用户管理菜单
-        const navUsers = document.getElementById('nav-users');
-        if (navUsers) {
-            navUsers.style.display = user.role === 'manager' ? 'block' : 'none';
-        }
+        // 初始化页面权限
+        PermissionManager.initializePagePermissions();
     },
 
     // 退出登录
@@ -165,8 +163,7 @@ const app = {
             return;
         }
 
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const isManager = user.role === 'manager';
+        const canManageMembers = PermissionManager.canManageProjectMembers();
 
         container.innerHTML = projects.map(project => `
             <div class="project-card">
@@ -184,7 +181,7 @@ const app = {
                         <span class="status-${project.status}">${project.status}</span>
                     </div>
                 </div>
-                ${isManager ? `
+                ${canManageMembers ? `
                     <div class="project-actions">
                         <button class="btn btn-small" onclick="event.stopPropagation(); projectMembers.showMembersModal(${project.id}, '${project.name?.zh || project.name}')">
                             👥 ${t('projects.members')}
@@ -197,6 +194,12 @@ const app = {
 
     // 显示项目表单
     showProjectForm() {
+        // 检查权限
+        if (!PermissionManager.canManageProjects()) {
+            PermissionManager.showPermissionDenied();
+            return;
+        }
+
         const modal = this.createModal(t('projects.add'), `
             <form id="project-form">
                 <div class="form-group">
@@ -449,8 +452,7 @@ const app = {
             return;
         }
 
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const canAssignTask = user.role === 'manager' || user.role === 'purchaser';
+        const canAssignTask = PermissionManager.canAssignTasks();
 
         container.innerHTML = processes.map(process => {
             const statusClass = process.status || 'not_started';

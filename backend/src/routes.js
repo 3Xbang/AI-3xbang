@@ -273,8 +273,6 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
     // 删除项目
     await client.query('DELETE FROM projects WHERE id = $1', [id]);
     
-    await logActivity(client, req.user.id, 'delete_project', 'projects', id, 
-      `删除项目: ${JSON.stringify(project.name)}`);
     
     await client.query('COMMIT');
     

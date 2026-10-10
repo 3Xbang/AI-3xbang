@@ -1,4 +1,4 @@
-// 项目仪表盘模�?- 登录后的首页
+// 项目仪表盘模块 - 登录后的首页
 const ProjectDashboard = {
     projects: [],
     currentProjectId: null,
@@ -28,7 +28,7 @@ const ProjectDashboard = {
         }
     },
 
-    // 渲染项目仪表�?
+    // 渲染项目仪表盘
     render() {
         const container = document.getElementById('project-dashboard-container');
         if (!container) return;
@@ -103,7 +103,7 @@ const ProjectDashboard = {
                         <button class="btn-icon-only btn-delete" 
                                 onclick="event.stopPropagation(); ProjectDashboard.confirmDeleteProject(${project.id})" 
                                 title="${t('projects.delete')}">
-                            🗑�?
+                            🗑️
                         </button>
                     </div>
                 ` : ''}
@@ -111,11 +111,11 @@ const ProjectDashboard = {
         `;
     },
 
-    // 渲染空状�?
+    // 渲染空状态
     renderEmptyState() {
         return `
             <div class="empty-state-large">
-                <div class="empty-icon">🏗�?/div>
+                <div class="empty-icon">🏗️</div>
                 <h3>${t('dashboard.noProjects')}</h3>
                 <p>${t('dashboard.noProjectsDesc')}</p>
                 ${PermissionManager.canManageProjects() ? `
@@ -148,13 +148,13 @@ const ProjectDashboard = {
             app.currentProject = project;
         }
 
-        // 显示项目详情�?
+        // 显示项目详情页
         app.showProjectDetail(projectId);
     },
 
     // 显示创建项目模态框
     showCreateProjectModal() {
-        this.createProjectStep = 1; // 步骤�?=基本信息, 2=选择工序
+        this.createProjectStep = 1; // 步骤：1=基本信息, 2=选择工序
         this.createProjectData = {}; // 临时存储数据
         this.selectedTemplates = []; // 选中的工序模板ID
         
@@ -179,7 +179,7 @@ const ProjectDashboard = {
                 <div class="form-row">
                     <div class="form-group">
                         <label>${t('projects.name')} (${t('common.thai')}) *</label>
-                        <input type="text" id="project-name-th" required placeholder="เช่�? วิลล่ามิร่�?>
+                        <input type="text" id="project-name-th" required placeholder="เช่น: วิลล่ามิร่า">
                     </div>
                     <div class="form-group">
                         <label>${t('projects.name')} (${t('common.chinese')})</label>
@@ -189,11 +189,11 @@ const ProjectDashboard = {
                 <div class="form-row">
                     <div class="form-group">
                         <label>${t('projects.location')} (${t('common.thai')}) *</label>
-                        <input type="text" id="project-location-th" required placeholder="เช่�? เชียงใหม่">
+                        <input type="text" id="project-location-th" required placeholder="เช่น: เชียงใหม่">
                     </div>
                     <div class="form-group">
                         <label>${t('projects.location')} (${t('common.chinese')})</label>
-                        <input type="text" id="project-location-zh" placeholder="例如：清�?>
+                        <input type="text" id="project-location-zh" placeholder="例如：清迈">
                     </div>
                 </div>
                 <div class="form-row">
@@ -239,7 +239,7 @@ const ProjectDashboard = {
                 planned_end_date: document.getElementById('project-end-date').value
             };
             
-            // 进入第二�?
+            // 进入第二步
             await this.showCreateProjectStep2();
         });
     },
@@ -249,7 +249,7 @@ const ProjectDashboard = {
         try {
             app.showLoading();
             
-            // 加载工序模板和分�?
+            // 加载工序模板和分类
             const [templatesResult, categoriesResult] = await Promise.all([
                 api.processTemplates.getAll(),
                 api.processTemplates.getCategories()
@@ -262,7 +262,7 @@ const ProjectDashboard = {
             const templates = templatesResult.data;
             const categories = categoriesResult.data;
             
-            // 按分类组织工�?
+            // 按分类组织工序
             const templatesByCategory = {};
             categories.forEach(cat => {
                 templatesByCategory[cat.category_code] = {
@@ -276,7 +276,7 @@ const ProjectDashboard = {
             const modal = app.createModal(t('projects.selectProcesses'), `
                 <div class="create-project-steps">
                     <div class="step completed">
-                        <div class="step-number">�?/div>
+                        <div class="step-number">✓</div>
                         <div class="step-label">${t('projects.basicInfo')}</div>
                     </div>
                     <div class="step-connector"></div>
@@ -314,7 +314,7 @@ const ProjectDashboard = {
                 </div>
             `);
             
-            // 恢复之前选中的工�?
+            // 恢复之前选中的工序
             this.selectedTemplates.forEach(id => {
                 const checkbox = document.querySelector(`input[data-template-id="${id}"]`);
                 if (checkbox) checkbox.checked = true;
@@ -338,7 +338,7 @@ const ProjectDashboard = {
                         <h4>${getI18nField(category, 'name')}</h4>
                         <span class="category-count">${templates.length} ${t('projects.processes')}</span>
                     </div>
-                    <button type="button" class="btn-icon-only">�?/button>
+                    <button type="button" class="btn-icon-only">▼</button>
                 </div>
                 <div class="category-processes" id="category-${category.category_code}">
                     ${templates.map(tmpl => this.renderProcessTemplate(tmpl)).join('')}
@@ -386,7 +386,7 @@ const ProjectDashboard = {
         this.updateSelectedCount();
     },
 
-    // 全选工�?
+    // 全选工序
     selectAllProcesses() {
         const checkboxes = document.querySelectorAll('.process-item input[type="checkbox"]');
         this.selectedTemplates = [];
@@ -397,7 +397,7 @@ const ProjectDashboard = {
         this.updateSelectedCount();
     },
 
-    // 取消全�?
+    // 取消全选
     deselectAllProcesses() {
         const checkboxes = document.querySelectorAll('.process-item input[type="checkbox"]');
         checkboxes.forEach(cb => cb.checked = false);
@@ -431,7 +431,7 @@ const ProjectDashboard = {
                 const batchResult = await api.processTemplates.batchAdd(projectId, this.selectedTemplates);
                 if (!batchResult.success) {
                     console.warn('添加工序失败:', batchResult.message);
-                    // 不阻止项目创建，只显示警�?
+                    // 不阻止项目创建，只显示警告
                     app.showToast(t('projects.createSuccessProcessWarning'), 'warning');
                 }
             }

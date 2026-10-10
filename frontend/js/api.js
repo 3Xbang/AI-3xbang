@@ -67,6 +67,15 @@ const api = {
         body: JSON.stringify(projectData)
     }),
 
+    updateProject: (projectId, projectData) => apiRequest(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        body: JSON.stringify(projectData)
+    }),
+
+    deleteProject: (projectId) => apiRequest(`/api/projects/${projectId}`, {
+        method: 'DELETE'
+    }),
+
     getProjectSummary: (projectId) => apiRequest(`/api/projects/${projectId}/summary`),
 
     // 工序管理

@@ -166,6 +166,125 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
   }
 });
 
+// 更新项目信息
+router.put('/projects/:id', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, location, client_name, start_date, planned_end_date, status } = req.body;
+    
+    const result = await pool.query(
+      `UPDATE projects 
+       SET name = $1, location = $2, client_name = $3, 
+           start_date = $4, planned_end_date = $5, status = $6,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7
+       RETURNING *`,
+      [name, location, client_name, start_date, planned_end_date, status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '项目不存在' });
+    }
+    
+    await logActivity(pool, req.user.id, 'update_project', 'projects', id, `更新项目: ${name}`);
+    
+    res.json({ 
+      success: true, 
+      data: result.rows[0],
+      message: '项目更新成功'
+    });
+  } catch (error) {
+    console.error('Update project error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 删除项目
+router.delete('/projects/:id', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    
+    await client.query('BEGIN');
+    
+    // 检查项目是否存在
+    const projectCheck = await client.query('SELECT * FROM projects WHERE id = $1', [id]);
+    if (projectCheck.rows.length === 0) {
+      throw new Error('项目不存在');
+    }
+    
+    const project = projectCheck.rows[0];
+    
+    // 获取所有工序执行ID
+    const processExecutions = await client.query(
+      `SELECT pe.id FROM process_execution pe
+       JOIN process_nodes pn ON pe.process_node_id = pn.id
+       WHERE pn.project_id = $1`,
+      [id]
+    );
+    
+    // 删除所有相关数据（级联删除）
+    for (const pe of processExecutions.rows) {
+      // 删除每日进度
+      await client.query('DELETE FROM daily_progress WHERE process_execution_id = $1', [pe.id]);
+      
+      // 删除子任务进度
+      const subtasks = await client.query('SELECT id FROM subtasks WHERE process_execution_id = $1', [pe.id]);
+      for (const subtask of subtasks.rows) {
+        await client.query('DELETE FROM subtask_progress WHERE subtask_id = $1', [subtask.id]);
+      }
+      
+      // 删除子任务
+      await client.query('DELETE FROM subtasks WHERE process_execution_id = $1', [pe.id]);
+      
+      // 删除工序依赖关系
+      await client.query('DELETE FROM process_dependencies WHERE process_execution_id = $1 OR depends_on_process_id = $1', [pe.id]);
+    }
+    
+    // 删除工序执行记录
+    await client.query(
+      `DELETE FROM process_execution WHERE process_node_id IN (
+        SELECT id FROM process_nodes WHERE project_id = $1
+      )`,
+      [id]
+    );
+    
+    // 删除工序节点
+    await client.query('DELETE FROM process_nodes WHERE project_id = $1', [id]);
+    
+    // 删除材料记录
+    await client.query('DELETE FROM materials WHERE project_id = $1', [id]);
+    
+    // 删除照片
+    await client.query('DELETE FROM photos WHERE project_id = $1', [id]);
+    
+    // 删除里程碑
+    await client.query('DELETE FROM project_milestones WHERE project_id = $1', [id]);
+    
+    // 删除项目成员
+    await client.query('DELETE FROM project_members WHERE project_id = $1', [id]);
+    
+    // 删除项目
+    await client.query('DELETE FROM projects WHERE id = $1', [id]);
+    
+    await logActivity(client, req.user.id, 'delete_project', 'projects', id, 
+      `删除项目: ${JSON.stringify(project.name)}`);
+    
+    await client.query('COMMIT');
+    
+    res.json({ 
+      success: true,
+      message: '项目删除成功'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Delete project error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 router.get('/projects/:id/summary', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const project = await pool.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);

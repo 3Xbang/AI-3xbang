@@ -263,7 +263,6 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
     await client.query('DELETE FROM materials WHERE project_id = $1', [id]);
     
     // 删除照片
-    await client.query('DELETE FROM photos WHERE project_id = $1', [id]);
     
     // 删除里程碑
     await client.query('DELETE FROM project_milestones WHERE project_id = $1', [id]);

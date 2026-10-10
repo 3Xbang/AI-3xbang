@@ -228,14 +228,21 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
       // 删除每日进度
       await client.query('DELETE FROM daily_progress WHERE process_execution_id = $1', [pe.id]);
       
-      // 删除子任务进度
-      const subtasks = await client.query('SELECT id FROM subtasks WHERE process_execution_id = $1', [pe.id]);
-      for (const subtask of subtasks.rows) {
-        await client.query('DELETE FROM subtask_progress WHERE subtask_id = $1', [subtask.id]);
+      // 删除子任务进度（如果有 subtask_progress 表）
+      const subtaskCheck = await client.query(
+        `SELECT table_name FROM information_schema.tables 
+         WHERE table_schema = 'public' AND table_name = 'subtask_progress'`
+      );
+      
+      if (subtaskCheck.rows.length > 0) {
+        const subtasks = await client.query('SELECT id FROM process_subtasks WHERE process_execution_id = $1', [pe.id]);
+        for (const subtask of subtasks.rows) {
+          await client.query('DELETE FROM subtask_progress WHERE subtask_id = $1', [subtask.id]);
+        }
       }
       
       // 删除子任务
-      await client.query('DELETE FROM subtasks WHERE process_execution_id = $1', [pe.id]);
+      await client.query('DELETE FROM process_subtasks WHERE process_execution_id = $1', [pe.id]);
       
       // 删除工序依赖关系
       await client.query('DELETE FROM process_dependencies WHERE process_execution_id = $1 OR depends_on_process_id = $1', [pe.id]);

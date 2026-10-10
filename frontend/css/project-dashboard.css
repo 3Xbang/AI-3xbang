@@ -47,14 +47,57 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     transition: all 0.3s ease;
-    cursor: pointer;
     border: 2px solid transparent;
+    position: relative;
 }
 
 .project-card:hover {
     box-shadow: 0 8px 24px rgba(30, 58, 138, 0.15);
     border-color: #0891b2;
     transform: translateY(-4px);
+}
+
+.project-card-main {
+    cursor: pointer;
+}
+
+.project-card-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.project-card-actions .btn-icon-only {
+    background: white;
+    border: 1.5px solid #e5e7eb;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.project-card-actions .btn-icon-only:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.project-card-actions .btn-edit:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.project-card-actions .btn-delete:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.project-card-header {
+    padding-right: 6rem; /* Make room for action buttons */
 }
 
 /* 卡片头部 */
@@ -629,4 +672,64 @@
     .process-item {
         padding: 0.6rem 0.75rem;
     }
+}
+
+
+/* ===== 删除确认模态框 ===== */
+.confirm-delete {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.confirm-delete .warning-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.confirm-delete h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #dc2626;
+    margin: 0 0 1rem 0;
+}
+
+.delete-warning-text {
+    font-size: 1rem;
+    color: #374151;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.delete-items-list {
+    text-align: left;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+}
+
+.delete-items-list li {
+    color: #991b1b;
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+    font-weight: 500;
+}
+
+.delete-final-warning {
+    font-size: 0.95rem;
+    color: #dc2626;
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #b91c1c, #dc2626);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }

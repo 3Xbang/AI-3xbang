@@ -26,6 +26,7 @@ const i18n = {
             delete: '删除',
             edit: '编辑',
             confirm: '确认',
+            confirmDelete: '确认删除',
             loading: '加载中...',
             success: '操作成功',
             error: '操作失败',
@@ -98,11 +99,29 @@ const i18n = {
             processesSelected: '个工序已选',
             qualityPoints: '质量要点',
             loadProcessError: '加载工序模板失败',
+            edit: '编辑项目',
+            delete: '删除项目',
+            confirmDelete: '确认删除项目？',
+            deleteWarning: '您即将删除项目「{name}」，此操作将永久删除以下所有数据：',
+            deleteItems: {
+                processes: '所有工序及其执行记录',
+                materials: '所有材料记录',
+                photos: '所有现场照片',
+                progress: '所有每日进度记录',
+                members: '所有项目成员关系'
+            },
+            deleteFinalWarning: '⚠️ 此操作无法撤销！',
+            deleteSuccess: '项目删除成功',
+            deleteError: '项目删除失败',
+            updateSuccess: '项目更新成功',
+            updateError: '项目更新失败',
             status: {
                 active: '进行中',
                 planning: '规划中',
                 completed: '已完成',
-                'on-hold': '暂停'
+                'on-hold': '暂停',
+                paused: '暂停',
+                cancelled: '已取消'
             }
         },
         processes: {
@@ -386,6 +405,7 @@ const i18n = {
             delete: 'ลบ',
             edit: 'แก้ไข',
             confirm: 'ยืนยัน',
+            confirmDelete: 'ยืนยันลบ',
             loading: 'กำลังโหลด...',
             success: 'สำเร็จ',
             error: 'ผิดพลาด',
@@ -458,11 +478,29 @@ const i18n = {
             processesSelected: 'งานที่เลือก',
             qualityPoints: 'จุดควบคุมคุณภาพ',
             loadProcessError: 'โหลดรายการงานไม่สำเร็จ',
+            edit: 'แก้ไขโครงการ',
+            delete: 'ลบโครงการ',
+            confirmDelete: 'ยืนยันลบโครงการ?',
+            deleteWarning: 'คุณกำลังลบโครงการ「{name}」 การดำเนินการนี้จะลบข้อมูลทั้งหมดต่อไปนี้อย่างถาวร:',
+            deleteItems: {
+                processes: 'งานทั้งหมดและบันทึกการทำงาน',
+                materials: 'บันทึกวัสดุทั้งหมด',
+                photos: 'รูปภาพทั้งหมด',
+                progress: 'บันทึกความคืบหน้ารายวันทั้งหมด',
+                members: 'ความสัมพันธ์สมาชิกโครงการทั้งหมด'
+            },
+            deleteFinalWarning: '⚠️ ไม่สามารถยกเลิกการดำเนินการนี้ได้!',
+            deleteSuccess: 'ลบโครงการสำเร็จ',
+            deleteError: 'ลบโครงการไม่สำเร็จ',
+            updateSuccess: 'อัพเดทโครงการสำเร็จ',
+            updateError: 'อัพเดทโครงการไม่สำเร็จ',
             status: {
                 active: 'กำลังดำเนินการ',
                 planning: 'กำลังวางแผน',
                 completed: 'เสร็จสิ้น',
-                'on-hold': 'หยุดชั่วคราว'
+                'on-hold': 'หยุดชั่วคราว',
+                paused: 'หยุดชั่วคราว',
+                cancelled: 'ยกเลิกแล้ว'
             }
         },
         processes: {

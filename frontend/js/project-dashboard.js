@@ -61,36 +61,52 @@ const ProjectDashboard = {
         const statusClass = project.status || 'active';
 
         return `
-            <div class="project-card" onclick="ProjectDashboard.enterProject(${project.id})">
-                <div class="project-card-header">
-                    <h3>${getI18nField(project, 'name')}</h3>
-                    <span class="project-status status-${statusClass}">${t('projects.status.' + statusClass)}</span>
-                </div>
-                <div class="project-card-body">
-                    <div class="project-info-row">
-                        <span class="info-label">${t('projects.location')}:</span>
-                        <span class="info-value">${getI18nField(project, 'location') || '-'}</span>
+            <div class="project-card">
+                <div class="project-card-main" onclick="ProjectDashboard.enterProject(${project.id})">
+                    <div class="project-card-header">
+                        <h3>${getI18nField(project, 'name')}</h3>
+                        <span class="project-status status-${statusClass}">${t('projects.status.' + statusClass)}</span>
                     </div>
-                    <div class="project-info-row">
-                        <span class="info-label">${t('projects.client')}:</span>
-                        <span class="info-value">${project.client_name || '-'}</span>
-                    </div>
-                    <div class="project-info-row">
-                        <span class="info-label">${t('projects.startDate')}:</span>
-                        <span class="info-value">${project.start_date || '-'}</span>
-                    </div>
-                </div>
-                <div class="project-card-footer">
-                    <div class="progress-section">
-                        <div class="progress-label">
-                            <span>${t('projects.progress')}</span>
-                            <span class="progress-value">${progress}%</span>
+                    <div class="project-card-body">
+                        <div class="project-info-row">
+                            <span class="info-label">${t('projects.location')}:</span>
+                            <span class="info-value">${getI18nField(project, 'location') || '-'}</span>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress}%; background-color: ${progressColor}"></div>
+                        <div class="project-info-row">
+                            <span class="info-label">${t('projects.client')}:</span>
+                            <span class="info-value">${project.client_name || '-'}</span>
+                        </div>
+                        <div class="project-info-row">
+                            <span class="info-label">${t('projects.startDate')}:</span>
+                            <span class="info-value">${project.start_date || '-'}</span>
                         </div>
                     </div>
+                    <div class="project-card-footer">
+                        <div class="progress-section">
+                            <div class="progress-label">
+                                <span>${t('projects.progress')}</span>
+                                <span class="progress-value">${progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%; background-color: ${progressColor}"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                ${PermissionManager.canManageProjects() ? `
+                    <div class="project-card-actions">
+                        <button class="btn-icon-only btn-edit" 
+                                onclick="event.stopPropagation(); ProjectDashboard.showEditProjectModal(${project.id})" 
+                                title="${t('projects.edit')}">
+                            ✏️
+                        </button>
+                        <button class="btn-icon-only btn-delete" 
+                                onclick="event.stopPropagation(); ProjectDashboard.confirmDeleteProject(${project.id})" 
+                                title="${t('projects.delete')}">
+                            🗑️
+                        </button>
+                    </div>
+                ` : ''}
             </div>
         `;
     },
@@ -434,6 +450,182 @@ const ProjectDashboard = {
         } catch (error) {
             console.error('Create project error:', error);
             app.showToast(error.message || t('common.error'), 'error');
+        } finally {
+            app.hideLoading();
+        }
+    },
+
+    // 显示编辑项目模态框
+    async showEditProjectModal(projectId) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (!project) {
+            app.showToast(t('common.error'), 'error');
+            return;
+        }
+
+        const modal = app.createModal(t('projects.edit'), `
+            <form id="edit-project-form" class="form-vertical">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>${t('projects.name')} (${t('common.thai')}) *</label>
+                        <input type="text" id="edit-project-name-th" required value="${project.name_th || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>${t('projects.name')} (${t('common.chinese')})</label>
+                        <input type="text" id="edit-project-name-zh" value="${project.name_zh || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>${t('projects.location')} (${t('common.thai')}) *</label>
+                        <input type="text" id="edit-project-location-th" required value="${project.location_th || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>${t('projects.location')} (${t('common.chinese')})</label>
+                        <input type="text" id="edit-project-location-zh" value="${project.location_zh || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>${t('projects.client')}</label>
+                        <input type="text" id="edit-project-client" value="${project.client_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>${t('projects.status')}</label>
+                        <select id="edit-project-status">
+                            <option value="active" ${project.status === 'active' ? 'selected' : ''}>${t('projects.status.active')}</option>
+                            <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>${t('projects.status.completed')}</option>
+                            <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>${t('projects.status.paused')}</option>
+                            <option value="cancelled" ${project.status === 'cancelled' ? 'selected' : ''}>${t('projects.status.cancelled')}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>${t('projects.startDate')}</label>
+                        <input type="date" id="edit-project-start-date" value="${project.start_date || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>${t('projects.endDate')}</label>
+                        <input type="date" id="edit-project-end-date" value="${project.planned_end_date || ''}">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
+                        ${t('common.cancel')}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ${t('common.save')}
+                    </button>
+                </div>
+            </form>
+        `);
+
+        document.getElementById('edit-project-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleUpdateProject(projectId);
+        });
+    },
+
+    // 处理更新项目
+    async handleUpdateProject(projectId) {
+        try {
+            app.showLoading();
+            
+            const projectData = {
+                name: {
+                    th: document.getElementById('edit-project-name-th').value,
+                    zh: document.getElementById('edit-project-name-zh').value || document.getElementById('edit-project-name-th').value
+                },
+                location: {
+                    th: document.getElementById('edit-project-location-th').value,
+                    zh: document.getElementById('edit-project-location-zh').value || document.getElementById('edit-project-location-th').value
+                },
+                client_name: document.getElementById('edit-project-client').value,
+                status: document.getElementById('edit-project-status').value,
+                start_date: document.getElementById('edit-project-start-date').value,
+                planned_end_date: document.getElementById('edit-project-end-date').value
+            };
+            
+            const result = await api.updateProject(projectId, projectData);
+            
+            if (!result.success) {
+                throw new Error(result.message || t('projects.updateError'));
+            }
+            
+            app.closeModal();
+            app.showToast(t('projects.updateSuccess'));
+            
+            // 刷新项目列表
+            await this.loadProjects();
+            this.render();
+            
+        } catch (error) {
+            console.error('Update project error:', error);
+            app.showToast(error.message || t('projects.updateError'), 'error');
+        } finally {
+            app.hideLoading();
+        }
+    },
+
+    // 确认删除项目
+    confirmDeleteProject(projectId) {
+        const project = this.projects.find(p => p.id === projectId);
+        if (!project) {
+            app.showToast(t('common.error'), 'error');
+            return;
+        }
+
+        const projectName = getI18nField(project, 'name');
+        
+        const modal = app.createModal(t('projects.delete'), `
+            <div class="confirm-delete">
+                <div class="warning-icon">⚠️</div>
+                <h3>${t('projects.confirmDelete')}</h3>
+                <p class="delete-warning-text">
+                    ${t('projects.deleteWarning', { name: projectName })}
+                </p>
+                <ul class="delete-items-list">
+                    <li>${t('projects.deleteItems.processes')}</li>
+                    <li>${t('projects.deleteItems.materials')}</li>
+                    <li>${t('projects.deleteItems.photos')}</li>
+                    <li>${t('projects.deleteItems.progress')}</li>
+                    <li>${t('projects.deleteItems.members')}</li>
+                </ul>
+                <p class="delete-final-warning">${t('projects.deleteFinalWarning')}</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
+                    ${t('common.cancel')}
+                </button>
+                <button type="button" class="btn btn-danger" onclick="ProjectDashboard.handleDeleteProject(${projectId})">
+                    ${t('common.confirmDelete')}
+                </button>
+            </div>
+        `);
+    },
+
+    // 处理删除项目
+    async handleDeleteProject(projectId) {
+        try {
+            app.showLoading();
+            
+            const result = await api.deleteProject(projectId);
+            
+            if (!result.success) {
+                throw new Error(result.message || t('projects.deleteError'));
+            }
+            
+            app.closeModal();
+            app.showToast(t('projects.deleteSuccess'));
+            
+            // 刷新项目列表
+            await this.loadProjects();
+            this.render();
+            
+        } catch (error) {
+            console.error('Delete project error:', error);
+            app.showToast(error.message || t('projects.deleteError'), 'error');
         } finally {
             app.hideLoading();
         }

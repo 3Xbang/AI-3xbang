@@ -70,7 +70,8 @@ router.get('/projects', authenticate, async (req, res) => {
     let query;
     const params = [];
     
-    // 管理者可以看到所有项�?    if (req.user.role === 'manager') {
+    // 管理者可以看到所有项目
+    if (req.user.role === 'manager') {
       query = `
         SELECT p.*,
           COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
@@ -81,7 +82,8 @@ router.get('/projects', authenticate, async (req, res) => {
         ORDER BY p.created_at DESC
       `;
     } else {
-      // 采购者和执行者只能看到分配给自己的项�?      query = `
+      // 采购者和执行者只能看到分配给自己的项目
+      query = `
         SELECT p.*,
           COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
         FROM projects p
@@ -126,7 +128,8 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
       [project.id, req.user.id, req.user.role, req.user.id]
     );
     
-    // 3. 自动创建16个标准工序节�?    for (const template of STANDARD_PROCESSES) {
+    // 3. 自动创建16个标准工序节点
+    for (const template of STANDARD_PROCESSES) {
       // 插入工序节点
       const nodeResult = await client.query(
         `INSERT INTO process_nodes 
@@ -135,7 +138,8 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
         [project.id, template.code, JSON.stringify(template.name), template.sequence]
       );
       
-      // 为每个节点创建执行记�?      await client.query(
+      // 为每个节点创建执行记录
+      await client.query(
         `INSERT INTO process_execution 
          (process_node_id, status, quantity_unit) 
          VALUES ($1, 'not_started', $2)`,
@@ -152,7 +156,7 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
     res.json({ 
       success: true, 
       data: project,
-      message: '项目创建成功，已自动生成16个标准工�?
+      message: '项目创建成功，已自动生成16个标准工序'
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -179,7 +183,7 @@ router.put('/projects/:id', authenticate, requirePermission('manage_projects'), 
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '项目不存�? });
+      return res.status(404).json({ success: false, message: '项目不存在' });
     }
     
     await logActivity(pool, req.user.id, 'update_project', 'projects', id, `更新项目: ${name}`);
@@ -203,9 +207,10 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
     
     await client.query('BEGIN');
     
-    // 检查项目是否存�?    const projectCheck = await client.query('SELECT * FROM projects WHERE id = $1', [id]);
+    // 检查项目是否存在
+    const projectCheck = await client.query('SELECT * FROM projects WHERE id = $1', [id]);
     if (projectCheck.rows.length === 0) {
-      throw new Error('项目不存�?);
+      throw new Error('项目不存在');
     }
     
     const project = projectCheck.rows[0];
@@ -218,11 +223,12 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
       [id]
     );
     
-    // 删除所有相关数据（级联删除�?    for (const pe of processExecutions.rows) {
+    // 删除所有相关数据（级联删除）
+    for (const pe of processExecutions.rows) {
       // 删除每日进度
       await client.query('DELETE FROM daily_progress WHERE process_execution_id = $1', [pe.id]);
       
-      // 删除子任务进度（如果�?subtask_progress 表）
+      // 删除子任务进度（如果有 subtask_progress 表）
       const subtaskCheck = await client.query(
         `SELECT table_name FROM information_schema.tables 
          WHERE table_schema = 'public' AND table_name = 'subtask_progress'`
@@ -235,7 +241,8 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
         }
       }
       
-      // 删除子任�?      await client.query('DELETE FROM process_subtasks WHERE process_execution_id = $1', [pe.id]);
+      // 删除子任务
+      await client.query('DELETE FROM process_subtasks WHERE process_execution_id = $1', [pe.id]);
       
       // 删除工序依赖关系
       await client.query('DELETE FROM process_dependencies WHERE process_execution_id = $1 OR depends_on_process_id = $1', [pe.id]);
@@ -257,7 +264,8 @@ router.delete('/projects/:id', authenticate, requirePermission('manage_projects'
     
     // 删除照片
     
-    // 删除里程�?    await client.query('DELETE FROM project_milestones WHERE project_id = $1', [id]);
+    // 删除里程碑
+    await client.query('DELETE FROM project_milestones WHERE project_id = $1', [id]);
     
     // 删除项目成员
     await client.query('DELETE FROM project_members WHERE project_id = $1', [id]);
@@ -335,7 +343,8 @@ router.post('/projects/:projectId/processes', authenticate, requireProjectAccess
   try {
     const { process_node_id, assigned_workers, estimated_days, dimensions } = req.body;
     
-    // 材料计算逻辑（简化版�?    const calculated_materials = calculateMaterials(dimensions);
+    // 材料计算逻辑（简化版）
+    const calculated_materials = calculateMaterials(dimensions);
     
     const result = await pool.query(`
       INSERT INTO process_execution 
@@ -355,14 +364,15 @@ router.put('/processes/:id', authenticate, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // 检查项目访问权�?    const processCheck = await client.query(
+    // 检查项目访问权限
+    const processCheck = await client.query(
       'SELECT pn.project_id FROM process_nodes pn JOIN process_execution pe ON pn.id = pe.process_node_id WHERE pe.id = $1',
       [req.params.id]
     );
     
     if (processCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const projectId = processCheck.rows[0].project_id;
@@ -370,7 +380,7 @@ router.put('/processes/:id', authenticate, async (req, res) => {
     
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const { status, actual_start_date, actual_end_date, notes } = req.body;
@@ -386,7 +396,7 @@ router.put('/processes/:id', authenticate, async (req, res) => {
     `, [status, actual_start_date, actual_end_date, notes, req.params.id]);
     
     await logActivity(client, req.user.id, 'update_process', 'process_execution', req.params.id,
-      `更新工序状�? ${status || '未变�?}`);
+      `更新工序状态: ${status || '未变更'}`);
     
     await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });
@@ -432,10 +442,11 @@ router.post('/materials', authenticate, requirePermission('purchase_material'), 
     
     const { project_id, material_name, material_code, unit, purchase_quantity, unit_price, supplier, expected_arrival_date } = req.body;
     
-    // 检查项目访问权�?    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    // 检查项目访问权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const total_cost = purchase_quantity * (unit_price || 0);
@@ -465,10 +476,11 @@ router.post('/materials/:id/receive', authenticate, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // 检查材料所属项目权�?    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
+    // 检查材料所属项目权限
+    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
     if (materialCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '材料不存�? });
+      return res.status(404).json({ success: false, message: '材料不存在' });
     }
     
     const projectId = materialCheck.rows[0].project_id;
@@ -476,7 +488,7 @@ router.post('/materials/:id/receive', authenticate, async (req, res) => {
     
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const { received_quantity, actual_arrival_date, notes } = req.body;
@@ -509,10 +521,11 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // 检查材料所属项目权�?    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
+    // 检查材料所属项目权限
+    const materialCheck = await client.query('SELECT project_id FROM materials WHERE id = $1', [req.params.id]);
     if (materialCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '材料不存�? });
+      return res.status(404).json({ success: false, message: '材料不存在' });
     }
     
     const projectId = materialCheck.rows[0].project_id;
@@ -520,7 +533,7 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
     
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const { process_execution_id, quantity_used, usage_date } = req.body;
@@ -531,7 +544,8 @@ router.post('/materials/:id/use', authenticate, async (req, res) => {
       [req.params.id, process_execution_id, quantity_used, usage_date]
     );
     
-    // 更新材料已用�?    const result = await client.query(`
+    // 更新材料已用量
+    const result = await client.query(`
       UPDATE materials 
       SET used_quantity = used_quantity + $1,
           status = CASE 
@@ -564,10 +578,11 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
     
     const { project_id, process_execution_id, material_id, photo_type } = req.body;
     
-    // 检查项目访问权�?    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    // 检查项目访问权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const result = await client.query(`
@@ -607,8 +622,9 @@ router.get('/photos/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ 材料库接�?============
-// 获取材料库列�?router.get('/material-library', authenticate, async (req, res) => {
+// ============ 材料库接口 ============
+// 获取材料库列表
+router.get('/material-library', authenticate, async (req, res) => {
   try {
     const { category } = req.query;
     let query = 'SELECT * FROM material_library';
@@ -628,7 +644,8 @@ router.get('/photos/:id', authenticate, async (req, res) => {
   }
 });
 
-// 获取单个材料库材�?router.get('/material-library/:code', authenticate, async (req, res) => {
+// 获取单个材料库材料
+router.get('/material-library/:code', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM material_library WHERE material_code = $1',
@@ -636,7 +653,7 @@ router.get('/photos/:id', authenticate, async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '材料不存�? });
+      return res.status(404).json({ success: false, message: '材料不存在' });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -648,17 +665,18 @@ router.get('/photos/:id', authenticate, async (req, res) => {
 // ============ 材料计算函数 ============
 function calculateMaterials(dimensions) {
   const { length, width, height, depth, area, volume } = dimensions;
-  // 简化版计算，实际根据工序不同计�?  return [
+  // 简化版计算，实际根据工序不同计算
+  return [
     {
       material_name: { zh: '水泥', th: 'ปูนซีเมนต์' },
       quantity: (volume || length * width * (height || depth || 0.1)) * 0.35,
-      unit: { zh: '�?, th: 'ตั�? }
+      unit: { zh: '吨', th: 'ตัน' }
     }
   ];
 }
 
 
-// ============ 子任务模板功�?============
+// ============ 子任务模板功能 ============
 const { SUBTASK_TEMPLATES } = require('./subtask-templates');
 
 // 获取工序的子任务模板
@@ -673,7 +691,7 @@ router.get('/process-execution/:id/subtask-templates', authenticate, async (req,
     `, [req.params.id]);
     
     if (processResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const processCode = processResult.rows[0].process_code;
@@ -689,7 +707,8 @@ router.get('/process-execution/:id/subtask-templates', authenticate, async (req,
       return name.zh; // 用中文名称做比对
     });
     
-    // 标记哪些已创�?    const templatesWithStatus = templates.map(template => ({
+    // 标记哪些已创建
+    const templatesWithStatus = templates.map(template => ({
       ...template,
       isCreated: existingNames.includes(template.name.zh)
     }));
@@ -729,7 +748,7 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
     
     if (processResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const processCode = processResult.rows[0].process_code;
@@ -749,7 +768,8 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
       
       const template = templates[index];
       
-      // 根据模板的typical_percentage计算该子任务的预计数�?      const estimated_quantity = Math.round(parentQuantity * template.typical_percentage / 100);
+      // 根据模板的typical_percentage计算该子任务的预计数量
+      const estimated_quantity = Math.round(parentQuantity * template.typical_percentage / 100);
       
       const result = await client.query(`
         INSERT INTO process_subtasks 
@@ -787,9 +807,10 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
 });
 
 
-// ============ 工程量管理接�?============
+// ============ 工程量管理接口 ============
 
-// 批量设置项目工程�?router.post('/projects/:projectId/set-quantities', authenticate, requireProjectAccess(), requirePermission('assign_task'), async (req, res) => {
+// 批量设置项目工程量
+router.post('/projects/:projectId/set-quantities', authenticate, requireProjectAccess(), requirePermission('assign_task'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -798,7 +819,7 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
     const { quantities } = req.body;
     
     if (!quantities || typeof quantities !== 'object') {
-      return res.status(400).json({ success: false, message: '工程量数据格式错�? });
+      return res.status(400).json({ success: false, message: '工程量数据格式错误' });
     }
     
     const updated = [];
@@ -836,7 +857,8 @@ router.post('/process-execution/:id/subtasks/batch', authenticate, async (req, r
   }
 });
 
-// 获取项目工程�?router.get('/projects/:projectId/quantities', authenticate, requireProjectAccess(), async (req, res) => {
+// 获取项目工程量
+router.get('/projects/:projectId/quantities', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -865,7 +887,8 @@ router.get('/projects/:projectId/daily-tasks', authenticate, requireProjectAcces
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // 获取所有进行中的工�?    const result = await pool.query(`
+    // 获取所有进行中的工序
+    const result = await pool.query(`
       SELECT 
         pe.*,
         pn.process_code,
@@ -880,7 +903,8 @@ router.get('/projects/:projectId/daily-tasks', authenticate, requireProjectAcces
       ORDER BY pn.sequence_number
     `, [today, req.params.projectId]);
     
-    // 按状态分�?    const tasks = {
+    // 按状态分组
+    const tasks = {
       in_progress: [],
       waiting_material: [],
       weather_stop: [],
@@ -923,10 +947,11 @@ router.post('/daily-progress', authenticate, async (req, res) => {
     );
     
     if (processInfo.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
-    // 计算累计完成量和百分�?    const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
+    // 计算累计完成量和百分比
+    const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
     const newTotal = previousTotal + parseFloat(quantity_completed);
     const plannedQty = parseFloat(processInfo.rows[0].planned_quantity) || 1;
     const percentage = (newTotal / plannedQty) * 100;
@@ -978,7 +1003,8 @@ router.post('/daily-progress', authenticate, async (req, res) => {
   }
 });
 
-// 获取工序的历史进�?router.get('/process-execution/:id/progress-history', authenticate, async (req, res) => {
+// 获取工序的历史进度
+router.get('/process-execution/:id/progress-history', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT * FROM daily_progress 
@@ -1008,7 +1034,7 @@ router.put('/process-execution/:id/plan', authenticate, async (req, res) => {
     `, [planned_quantity, quantity_unit, req.params.id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -1032,7 +1058,7 @@ router.put('/projects/:id/workers', authenticate, async (req, res) => {
     `, [total_workers, worker_skills ? JSON.stringify(worker_skills) : null, req.params.id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '项目不存�? });
+      return res.status(404).json({ success: false, message: '项目不存在' });
     }
     
     res.json({ success: true, data: result.rows[0] });
@@ -1042,7 +1068,7 @@ router.put('/projects/:id/workers', authenticate, async (req, res) => {
 });
 
 
-// ============ 工序子任务接�?============
+// ============ 工序子任务接口 ============
 
 // 获取工序的所有子任务
 router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => {
@@ -1059,7 +1085,8 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
   }
 });
 
-// 创建子任�?router.post('/process-execution/:id/subtasks', authenticate, async (req, res) => {
+// 创建子任务
+router.post('/process-execution/:id/subtasks', authenticate, async (req, res) => {
   try {
     const {
       subtask_name,
@@ -1095,14 +1122,15 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
     res.json({ 
       success: true, 
       data: result.rows[0],
-      message: '子任务创建成�?
+      message: '子任务创建成功'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// 更新子任�?router.put('/subtasks/:id', authenticate, async (req, res) => {
+// 更新子任务
+router.put('/subtasks/:id', authenticate, async (req, res) => {
   try {
     const {
       subtask_name,
@@ -1144,7 +1172,8 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
   }
 });
 
-// 删除子任�?router.delete('/subtasks/:id', authenticate, async (req, res) => {
+// 删除子任务
+router.delete('/subtasks/:id', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       'DELETE FROM process_subtasks WHERE id = $1 RETURNING id',
@@ -1161,13 +1190,15 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
   }
 });
 
-// 更新子任务进�?router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
+// 更新子任务进度
+router.post('/subtasks/:id/progress', authenticate, async (req, res) => {
   try {
     const { quantity_completed, work_status, notes, photos } = req.body;
     
     const today = new Date().toISOString().split('T')[0];
     
-    // 获取子任务信�?    const subtaskInfo = await pool.query(
+    // 获取子任务信息
+    const subtaskInfo = await pool.query(
       'SELECT * FROM process_subtasks WHERE id = $1',
       [req.params.id]
     );
@@ -1182,7 +1213,8 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
     const plannedQty = parseFloat(subtask.planned_quantity) || 1;
     const percentage = Math.min((newTotal / plannedQty) * 100, 100);
     
-    // 更新子任务进�?    await pool.query(`
+    // 更新子任务进度
+    await pool.query(`
       UPDATE process_subtasks 
       SET total_completed = $1,
           completion_percentage = $2,
@@ -1197,7 +1229,8 @@ router.get('/process-execution/:id/subtasks', authenticate, async (req, res) => 
       WHERE id = $3
     `, [newTotal, percentage, req.params.id]);
     
-    // 插入每日进度记录（关联子任务�?    const progressResult = await pool.query(`
+    // 插入每日进度记录（关联子任务）
+    const progressResult = await pool.query(`
       INSERT INTO daily_progress 
       (process_execution_id, subtask_id, date, quantity_completed, unit, 
        total_completed, total_planned, completion_percentage, work_status, 
@@ -1240,7 +1273,8 @@ async function recalculateProcessProgress(processExecutionId) {
   );
   
   if (subtasks.rows.length === 0) {
-    // 没有子任务，不更�?    return;
+    // 没有子任务，不更新
+    return;
   }
   
   let totalPlanned = 0;
@@ -1307,10 +1341,11 @@ router.post('/users', authenticate, requirePermission('manage_users'), async (re
     // 验证角色
     if (!['manager', 'purchaser', 'executor'].includes(role)) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ success: false, message: '无效的角�? });
+      return res.status(400).json({ success: false, message: '无效的角色' });
     }
     
-    // 检查用户名是否已存�?    const existing = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+    // 检查用户名是否已存在
+    const existing = await client.query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '用户名已存在' });
@@ -1347,9 +1382,10 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
     
     const { full_name, role, password } = req.body;
     
-    // 不能修改自己的角�?    if (req.params.id == req.user.id && role && role !== req.user.role) {
+    // 不能修改自己的角色
+    if (req.params.id == req.user.id && role && role !== req.user.role) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ success: false, message: '不能修改自己的角�? });
+      return res.status(400).json({ success: false, message: '不能修改自己的角色' });
     }
     
     const updates = [];
@@ -1388,7 +1424,7 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
     
     if (result.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '用户不存�? });
+      return res.status(404).json({ success: false, message: '用户不存在' });
     }
     
     // 记录日志
@@ -1424,7 +1460,7 @@ router.delete('/users/:id', authenticate, requirePermission('manage_users'), asy
     
     if (result.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '用户不存�? });
+      return res.status(404).json({ success: false, message: '用户不存在' });
     }
     
     // 记录日志
@@ -1458,7 +1494,8 @@ router.get('/users/:userId/projects', authenticate, requirePermission('manage_us
   }
 });
 
-// 批量分配用户到项�?router.post('/users/:userId/assign-projects', authenticate, requirePermission('manage_users'), async (req, res) => {
+// 批量分配用户到项目
+router.post('/users/:userId/assign-projects', authenticate, requirePermission('manage_users'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1466,15 +1503,17 @@ router.get('/users/:userId/projects', authenticate, requirePermission('manage_us
     const { project_ids } = req.body;
     const userId = req.params.userId;
     
-    // 先删除该用户的所有项目分�?    await client.query('DELETE FROM project_members WHERE user_id = $1', [userId]);
+    // 先删除该用户的所有项目分配
+    await client.query('DELETE FROM project_members WHERE user_id = $1', [userId]);
     
-    // 重新分配选中的项�?    if (project_ids && project_ids.length > 0) {
+    // 重新分配选中的项目
+    if (project_ids && project_ids.length > 0) {
       for (const projectId of project_ids) {
         // 获取用户角色
         const userResult = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
         if (userResult.rows.length === 0) {
           await client.query('ROLLBACK');
-          return res.status(404).json({ success: false, message: '用户不存�? });
+          return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
         const userRole = userResult.rows[0].role;
@@ -1582,7 +1621,8 @@ router.post('/tasks/assign', authenticate, requirePermission('assign_task'), asy
     
     const { process_execution_id, assigned_to } = req.body;
     
-    // 获取工序所属项�?    const processCheck = await client.query(`
+    // 获取工序所属项目
+    const processCheck = await client.query(`
       SELECT pn.project_id 
       FROM process_execution pe
       JOIN process_nodes pn ON pe.process_node_id = pn.id
@@ -1591,18 +1631,20 @@ router.post('/tasks/assign', authenticate, requirePermission('assign_task'), asy
     
     if (processCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const project_id = processCheck.rows[0].project_id;
     
-    // 检查权�?    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
-    // 检查被分配人是否是项目成员且是执行�?    const memberCheck = await client.query(
+    // 检查被分配人是否是项目成员且是执行者
+    const memberCheck = await client.query(
       `SELECT role FROM project_members 
        WHERE project_id = $1 AND user_id = $2 AND role = 'executor'`,
       [project_id, assigned_to]
@@ -1612,11 +1654,12 @@ router.post('/tasks/assign', authenticate, requirePermission('assign_task'), asy
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        message: '被分配人不是此项目的执行�? 
+        message: '被分配人不是此项目的执行者' 
       });
     }
     
-    // 检查是否已经分�?    const existingCheck = await client.query(
+    // 检查是否已经分配
+    const existingCheck = await client.query(
       'SELECT 1 FROM task_assignments WHERE process_execution_id = $1 AND assigned_to = $2',
       [process_execution_id, assigned_to]
     );
@@ -1639,7 +1682,7 @@ router.post('/tasks/assign', authenticate, requirePermission('assign_task'), asy
     
     // 记录日志
     await logActivity(client, req.user.id, 'assign_task', 'process_execution', process_execution_id, 
-      `分配任务给用�?${assigned_to}`);
+      `分配任务给用户 ${assigned_to}`);
     
     await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0], message: '任务分配成功' });
@@ -1659,7 +1702,8 @@ router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermissio
     
     const { processId, userId } = req.params;
     
-    // 获取工序所属项�?    const processCheck = await client.query(`
+    // 获取工序所属项目
+    const processCheck = await client.query(`
       SELECT pn.project_id 
       FROM process_execution pe
       JOIN process_nodes pn ON pe.process_node_id = pn.id
@@ -1668,15 +1712,16 @@ router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermissio
     
     if (processCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const project_id = processCheck.rows[0].project_id;
     
-    // 检查权�?    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
     if (!hasAccess) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const result = await client.query(
@@ -1686,12 +1731,12 @@ router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermissio
     
     if (result.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: '任务分配不存�? });
+      return res.status(404).json({ success: false, message: '任务分配不存在' });
     }
     
     // 记录日志
     await logActivity(client, req.user.id, 'unassign_task', 'process_execution', processId, 
-      `取消分配给用�?${userId}`);
+      `取消分配给用户 ${userId}`);
     
     await client.query('COMMIT');
     res.json({ success: true, message: '取消分配成功' });
@@ -1703,10 +1748,12 @@ router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermissio
   }
 });
 
-// 获取工序的任务分配列�?router.get('/process-execution/:id/assignments', authenticate, async (req, res) => {
+// 获取工序的任务分配列表
+router.get('/process-execution/:id/assignments', authenticate, async (req, res) => {
   const client = await pool.connect();
   try {
-    // 获取工序所属项�?    const processCheck = await client.query(`
+    // 获取工序所属项目
+    const processCheck = await client.query(`
       SELECT pn.project_id 
       FROM process_execution pe
       JOIN process_nodes pn ON pe.process_node_id = pn.id
@@ -1714,14 +1761,15 @@ router.delete('/tasks/assign/:processId/:userId', authenticate, requirePermissio
     `, [req.params.id]);
     
     if (processCheck.rows.length === 0) {
-      return res.status(404).json({ success: false, message: '工序不存�? });
+      return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
     const project_id = processCheck.rows[0].project_id;
     
-    // 检查权�?    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
+    // 检查权限
+    const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
     if (!hasAccess) {
-      return res.status(403).json({ success: false, message: '无权访问此项�? });
+      return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
     const result = await client.query(`
@@ -1778,7 +1826,8 @@ module.exports = router;
 
 // ============ 工序模板接口 ============
 
-// 获取所有工序模�?router.get('/process-templates', authenticate, async (req, res) => {
+// 获取所有工序模板
+router.get('/process-templates', authenticate, async (req, res) => {
   try {
     const { category } = req.query;
     
@@ -1846,7 +1895,8 @@ router.get('/process-templates/categories', authenticate, async (req, res) => {
   }
 });
 
-// 批量添加工序到项�?router.post('/projects/:projectId/processes/batch', authenticate, requirePermission('manage_projects'), async (req, res) => {
+// 批量添加工序到项目
+router.post('/projects/:projectId/processes/batch', authenticate, requirePermission('manage_projects'), async (req, res) => {
   const client = await pool.connect();
   try {
     const { projectId } = req.params;
@@ -1925,13 +1975,14 @@ router.post('/projects/:projectId/processes/single', authenticate, requirePermis
     let processCode, processName, processUnit, displayOrder;
     
     if (templateId) {
-      // 从模板添�?      const templateResult = await client.query(
+      // 从模板添加
+      const templateResult = await client.query(
         'SELECT * FROM process_templates WHERE id = $1',
         [templateId]
       );
       
       if (templateResult.rows.length === 0) {
-        throw new Error('工序模板不存�?);
+        throw new Error('工序模板不存在');
       }
       
       const template = templateResult.rows[0];
@@ -1940,16 +1991,18 @@ router.post('/projects/:projectId/processes/single', authenticate, requirePermis
       processUnit = template.default_unit;
       displayOrder = template.display_order;
     } else if (customProcess) {
-      // 自定义工�?      const { code, name, unit } = customProcess;
+      // 自定义工序
+      const { code, name, unit } = customProcess;
       
       if (!code || !name || !name.th) {
-        throw new Error('工序信息不完�?);
+        throw new Error('工序信息不完整');
       }
       
       processCode = code;
       processName = { zh: name.zh || name.th, th: name.th };
       processUnit = unit || 'm²';
-      displayOrder = 999; // 自定义工序排在后�?    } else {
+      displayOrder = 999; // 自定义工序排在后面
+    } else {
       throw new Error('请提供工序模板ID或自定义工序信息');
     }
     
@@ -2020,7 +2073,8 @@ router.delete('/projects/:projectId/processes/:processExecutionId', authenticate
     
     const process = processInfo.rows[0];
     
-    // 检查工序状态，已完成的工序不允许删�?    const statusCheck = await client.query(
+    // 检查工序状态，已完成的工序不允许删除
+    const statusCheck = await client.query(
       'SELECT status FROM process_execution WHERE id = $1',
       [processExecutionId]
     );
@@ -2029,12 +2083,14 @@ router.delete('/projects/:projectId/processes/:processExecutionId', authenticate
       throw new Error('已完成的工序不能删除');
     }
     
-    // 删除相关的每日进度记�?    await client.query(
+    // 删除相关的每日进度记录
+    await client.query(
       'DELETE FROM daily_progress WHERE process_execution_id = $1',
       [processExecutionId]
     );
     
-    // 删除相关的子任务及进�?    const subtasksResult = await client.query(
+    // 删除相关的子任务及进度
+    const subtasksResult = await client.query(
       'SELECT id FROM subtasks WHERE process_execution_id = $1',
       [processExecutionId]
     );
@@ -2073,7 +2129,8 @@ router.delete('/projects/:projectId/processes/:processExecutionId', authenticate
 
 // ============ Phase 3B: 工序依赖关系管理 ============
 
-// 获取工序的依赖关�?router.get('/processes/:processExecutionId/dependencies', authenticate, async (req, res) => {
+// 获取工序的依赖关系
+router.get('/processes/:processExecutionId/dependencies', authenticate, async (req, res) => {
   try {
     const { processExecutionId } = req.params;
     
@@ -2167,11 +2224,11 @@ router.post('/processes/:processExecutionId/dependencies', authenticate, require
     `, [processExecutionId, dependsOnProcessId]);
     
     if (processCheck.rows.length === 0) {
-      throw new Error('工序不存�?);
+      throw new Error('工序不存在');
     }
     
     if (processCheck.rows[0].project1 !== processCheck.rows[0].project2) {
-      throw new Error('只能在同一项目内建立依赖关�?);
+      throw new Error('只能在同一项目内建立依赖关系');
     }
     
     // 检查是否会形成循环依赖
@@ -2220,7 +2277,7 @@ router.delete('/dependencies/:dependencyId', authenticate, requirePermission('ma
     );
     
     if (result.rows.length === 0) {
-      throw new Error('依赖关系不存�?);
+      throw new Error('依赖关系不存在');
     }
     
     await logActivity(pool, req.user.id, 'delete_dependency', 'process', result.rows[0].process_execution_id);
@@ -2235,7 +2292,8 @@ router.delete('/dependencies/:dependencyId', authenticate, requirePermission('ma
   }
 });
 
-// 更新工序计划日期和工�?router.put('/processes/:processExecutionId/schedule', authenticate, requirePermission('manage_projects'), async (req, res) => {
+// 更新工序计划日期和工期
+router.put('/processes/:processExecutionId/schedule', authenticate, requirePermission('manage_projects'), async (req, res) => {
   try {
     const { processExecutionId } = req.params;
     const { plannedStartDate, plannedEndDate, plannedDuration } = req.body;
@@ -2251,7 +2309,7 @@ router.delete('/dependencies/:dependencyId', authenticate, requirePermission('ma
     `, [plannedStartDate, plannedEndDate, plannedDuration, processExecutionId]);
     
     if (result.rows.length === 0) {
-      throw new Error('工序不存�?);
+      throw new Error('工序不存在');
     }
     
     res.json({
@@ -2277,7 +2335,8 @@ async function checkCircularDependency(client, processId, dependsOnId, visited =
   
   visited.add(dependsOnId);
   
-  // 获取dependsOnId的所有前置依�?  const result = await client.query(
+  // 获取dependsOnId的所有前置依赖
+  const result = await client.query(
     'SELECT depends_on_process_id FROM process_dependencies WHERE process_execution_id = $1',
     [dependsOnId]
   );

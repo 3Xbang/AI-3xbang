@@ -176,5 +176,23 @@ const api = {
     submitSubtaskProgress: (subtaskId, data) => apiRequest(`/api/subtasks/${subtaskId}/progress`, {
         method: 'POST',
         body: JSON.stringify(data)
-    })
+    }),
+
+    // 工序模板
+    processTemplates: {
+        // 获取所有工序模板
+        getAll: (category) => {
+            const query = category ? `?category=${category}` : '';
+            return apiRequest(`/api/process-templates${query}`);
+        },
+        
+        // 获取工序分类
+        getCategories: () => apiRequest('/api/process-templates/categories'),
+        
+        // 批量添加工序到项目
+        batchAdd: (projectId, templateIds) => apiRequest(`/api/projects/${projectId}/processes/batch`, {
+            method: 'POST',
+            body: JSON.stringify({ templateIds })
+        })
+    }
 };

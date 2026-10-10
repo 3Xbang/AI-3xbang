@@ -1700,3 +1700,125 @@ router.get('/tasks/my-tasks', authenticate, async (req, res) => {
 });
 
 module.exports = router;
+
+// ============ 工序模板接口 ============
+
+// 获取所有工序模板
+router.get('/process-templates', authenticate, async (req, res) => {
+  try {
+    const { category } = req.query;
+    
+    let query = `
+      SELECT pt.*, 
+             pc.name_zh as category_name_zh,
+             pc.name_th as category_name_th
+      FROM process_templates pt
+      LEFT JOIN process_categories pc ON pt.category = pc.category_code
+      WHERE pt.is_active = true
+    `;
+    const params = [];
+    
+    if (category) {
+      query += ' AND pt.category = $1';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY pt.display_order';
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Get process templates error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取工序分类
+router.get('/process-templates/categories', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM process_categories 
+      ORDER BY display_order
+    `);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Get process categories error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 批量添加工序到项目
+router.post('/projects/:projectId/processes/batch', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { projectId } = req.params;
+    const { templateIds } = req.body;
+    
+    await client.query('BEGIN');
+    
+    const addedProcesses = [];
+    
+    if (templateIds && templateIds.length > 0) {
+      for (const templateId of templateIds) {
+        const templateResult = await client.query(
+          'SELECT * FROM process_templates WHERE id = $1',
+          [templateId]
+        );
+        
+        if (templateResult.rows.length === 0) continue;
+        
+        const template = templateResult.rows[0];
+        
+        const nodeResult = await client.query(`
+          INSERT INTO process_nodes 
+          (project_id, process_code, process_name, parent_id, display_order)
+          VALUES ($1, $2, $3::jsonb, NULL, $4)
+          RETURNING id
+        `, [
+          projectId,
+          template.code,
+          JSON.stringify({ zh: template.name_zh, th: template.name_th }),
+          template.display_order
+        ]);
+        
+        const nodeId = nodeResult.rows[0].id;
+        
+        await client.query(`
+          INSERT INTO process_execution 
+          (process_node_id, status, quantity_unit)
+          VALUES ($1, 'not_started', $2)
+        `, [nodeId, template.default_unit]);
+        
+        addedProcesses.push({
+          nodeId,
+          code: template.code,
+          name: { zh: template.name_zh, th: template.name_th }
+        });
+      }
+    }
+    
+    await logActivity(client, req.user.id, 'add_project_processes', 'project', projectId, { count: addedProcesses.length });
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: `成功添加 ${addedProcesses.length} 个工序`,
+      data: addedProcesses
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Batch add processes error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});

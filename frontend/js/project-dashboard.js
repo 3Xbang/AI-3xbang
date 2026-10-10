@@ -138,7 +138,27 @@ const ProjectDashboard = {
 
     // 显示创建项目模态框
     showCreateProjectModal() {
+        this.createProjectStep = 1; // 步骤：1=基本信息, 2=选择工序
+        this.createProjectData = {}; // 临时存储数据
+        this.selectedTemplates = []; // 选中的工序模板ID
+        
+        this.showCreateProjectStep1();
+    },
+
+    // 第一步：基本信息
+    showCreateProjectStep1() {
         const modal = app.createModal(t('projects.add'), `
+            <div class="create-project-steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">${t('projects.basicInfo')}</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">${t('projects.selectProcesses')}</div>
+                </div>
+            </div>
             <form id="create-project-form" class="form-vertical">
                 <div class="form-row">
                     <div class="form-group">
@@ -179,7 +199,7 @@ const ProjectDashboard = {
                         ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${t('common.save')}
+                        ${t('common.next')}
                     </button>
                 </div>
             </form>
@@ -187,40 +207,233 @@ const ProjectDashboard = {
 
         document.getElementById('create-project-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await this.handleCreateProject();
+            
+            // 保存第一步的数据
+            this.createProjectData = {
+                name: {
+                    th: document.getElementById('project-name-th').value,
+                    zh: document.getElementById('project-name-zh').value || document.getElementById('project-name-th').value
+                },
+                location: {
+                    th: document.getElementById('project-location-th').value,
+                    zh: document.getElementById('project-location-zh').value || document.getElementById('project-location-th').value
+                },
+                client_name: document.getElementById('project-client').value,
+                start_date: document.getElementById('project-start-date').value,
+                planned_end_date: document.getElementById('project-end-date').value
+            };
+            
+            // 进入第二步
+            await this.showCreateProjectStep2();
         });
+    },
+
+    // 第二步：选择工序
+    async showCreateProjectStep2() {
+        try {
+            app.showLoading();
+            
+            // 加载工序模板和分类
+            const [templatesResult, categoriesResult] = await Promise.all([
+                api.processTemplates.getAll(),
+                api.processTemplates.getCategories()
+            ]);
+            
+            if (!templatesResult.success || !categoriesResult.success) {
+                throw new Error('加载工序模板失败');
+            }
+            
+            const templates = templatesResult.data;
+            const categories = categoriesResult.data;
+            
+            // 按分类组织工序
+            const templatesByCategory = {};
+            categories.forEach(cat => {
+                templatesByCategory[cat.category] = {
+                    ...cat,
+                    templates: templates.filter(t => t.category === cat.category)
+                };
+            });
+            
+            app.hideLoading();
+            
+            const modal = app.createModal(t('projects.selectProcesses'), `
+                <div class="create-project-steps">
+                    <div class="step completed">
+                        <div class="step-number">✓</div>
+                        <div class="step-label">${t('projects.basicInfo')}</div>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step active">
+                        <div class="step-number">2</div>
+                        <div class="step-label">${t('projects.selectProcesses')}</div>
+                    </div>
+                </div>
+                
+                <div class="process-selection-container">
+                    <div class="process-selection-header">
+                        <p class="help-text">${t('projects.selectProcessesHelp')}</p>
+                        <div class="selection-actions">
+                            <button type="button" class="btn btn-sm" onclick="ProjectDashboard.selectAllProcesses()">
+                                ${t('projects.selectAll')}
+                            </button>
+                            <button type="button" class="btn btn-sm" onclick="ProjectDashboard.deselectAllProcesses()">
+                                ${t('projects.deselectAll')}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="process-categories">
+                        ${categories.map(cat => this.renderProcessCategory(cat, templatesByCategory[cat.category].templates)).join('')}
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="ProjectDashboard.showCreateProjectStep1()">
+                        ${t('common.back')}
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="ProjectDashboard.handleCreateProject()">
+                        ${t('common.create')} (<span id="selected-count">0</span> ${t('projects.processesSelected')})
+                    </button>
+                </div>
+            `);
+            
+            // 恢复之前选中的工序
+            this.selectedTemplates.forEach(id => {
+                const checkbox = document.querySelector(`input[data-template-id="${id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+            
+            this.updateSelectedCount();
+            
+        } catch (error) {
+            app.hideLoading();
+            console.error('Load process templates error:', error);
+            app.showToast(t('projects.loadProcessError'), 'error');
+        }
+    },
+
+    // 渲染工序分类
+    renderProcessCategory(category, templates) {
+        return `
+            <div class="process-category">
+                <div class="category-header" onclick="ProjectDashboard.toggleCategory('${category.category}')">
+                    <div class="category-info">
+                        <h4>${getI18nField(category, 'name')}</h4>
+                        <span class="category-count">${templates.length} ${t('projects.processes')}</span>
+                    </div>
+                    <button type="button" class="btn-icon-only">▼</button>
+                </div>
+                <div class="category-processes" id="category-${category.category}">
+                    ${templates.map(tmpl => this.renderProcessTemplate(tmpl)).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    // 渲染工序模板
+    renderProcessTemplate(template) {
+        return `
+            <label class="process-item">
+                <input type="checkbox" 
+                    data-template-id="${template.id}" 
+                    onchange="ProjectDashboard.toggleTemplateSelection(${template.id})">
+                <div class="process-info">
+                    <div class="process-name">
+                        <span class="process-code">${template.code}</span>
+                        ${getI18nField(template, 'name')}
+                    </div>
+                    ${template.quality_points ? `
+                        <div class="process-quality">${t('projects.qualityPoints')}: ${template.quality_points}</div>
+                    ` : ''}
+                </div>
+            </label>
+        `;
+    },
+
+    // 切换分类展开/折叠
+    toggleCategory(category) {
+        const categoryEl = document.getElementById(`category-${category}`);
+        if (categoryEl) {
+            categoryEl.classList.toggle('collapsed');
+        }
+    },
+
+    // 切换工序选择
+    toggleTemplateSelection(templateId) {
+        const index = this.selectedTemplates.indexOf(templateId);
+        if (index > -1) {
+            this.selectedTemplates.splice(index, 1);
+        } else {
+            this.selectedTemplates.push(templateId);
+        }
+        this.updateSelectedCount();
+    },
+
+    // 全选工序
+    selectAllProcesses() {
+        const checkboxes = document.querySelectorAll('.process-item input[type="checkbox"]');
+        this.selectedTemplates = [];
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            this.selectedTemplates.push(parseInt(cb.dataset.templateId));
+        });
+        this.updateSelectedCount();
+    },
+
+    // 取消全选
+    deselectAllProcesses() {
+        const checkboxes = document.querySelectorAll('.process-item input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        this.selectedTemplates = [];
+        this.updateSelectedCount();
+    },
+
+    // 更新选中计数
+    updateSelectedCount() {
+        const countEl = document.getElementById('selected-count');
+        if (countEl) {
+            countEl.textContent = this.selectedTemplates.length;
+        }
     },
 
     // 处理创建项目
     async handleCreateProject() {
-        const data = {
-            name: {
-                th: document.getElementById('project-name-th').value,
-                zh: document.getElementById('project-name-zh').value || document.getElementById('project-name-th').value
-            },
-            location: {
-                th: document.getElementById('project-location-th').value,
-                zh: document.getElementById('project-location-zh').value || document.getElementById('project-location-th').value
-            },
-            client_name: document.getElementById('project-client').value,
-            start_date: document.getElementById('project-start-date').value,
-            planned_end_date: document.getElementById('project-end-date').value
-        };
-
         try {
             app.showLoading();
-            const result = await api.createProject(data);
-            if (result.success) {
-                app.closeModal();
-                app.showToast(t('projects.createSuccess'));
-                await this.loadProjects();
-                this.render();
-            } else {
-                app.showToast(result.message || t('projects.createError'), 'error');
+            
+            // 第一步：创建项目
+            const result = await api.createProject(this.createProjectData);
+            if (!result.success) {
+                throw new Error(result.message || t('projects.createError'));
             }
+            
+            const projectId = result.data.id;
+            
+            // 第二步：如果选择了工序，批量添加
+            if (this.selectedTemplates.length > 0) {
+                const batchResult = await api.processTemplates.batchAdd(projectId, this.selectedTemplates);
+                if (!batchResult.success) {
+                    console.warn('添加工序失败:', batchResult.message);
+                    // 不阻止项目创建，只显示警告
+                    app.showToast(t('projects.createSuccessProcessWarning'), 'warning');
+                }
+            }
+            
+            app.closeModal();
+            app.showToast(t('projects.createSuccess'));
+            
+            // 刷新项目列表
+            await this.loadProjects();
+            this.render();
+            
+            // 清理临时数据
+            this.createProjectData = {};
+            this.selectedTemplates = [];
+            
         } catch (error) {
             console.error('Create project error:', error);
-            app.showToast(t('common.error'), 'error');
+            app.showToast(error.message || t('common.error'), 'error');
         } finally {
             app.hideLoading();
         }

@@ -38,7 +38,9 @@ const i18n = {
             close: '关闭',
             submit: '提交',
             permissionDenied: '抱歉，您没有权限执行此操作',
-            back: '返回'
+            back: '返回',
+            next: '下一步',
+            create: '创建'
         },
         dashboard: {
             title: '项目仪表盘',
@@ -84,8 +86,18 @@ const i18n = {
             loadMembersError: '加载成员列表失败',
             createSuccess: '项目创建成功',
             createError: '项目创建失败',
+            createSuccessProcessWarning: '项目创建成功，但部分工序添加失败',
             createFirst: '创建第一个项目',
             loadError: '加载项目失败',
+            basicInfo: '基本信息',
+            selectProcesses: '选择工序',
+            selectProcessesHelp: '从标准工序库中选择您项目需要的工序，也可以稍后添加',
+            selectAll: '全选',
+            deselectAll: '取消全选',
+            processes: '工序',
+            processesSelected: '个工序已选',
+            qualityPoints: '质量要点',
+            loadProcessError: '加载工序模板失败',
             status: {
                 active: '进行中',
                 planning: '规划中',
@@ -326,7 +338,9 @@ const i18n = {
             close: 'ปิด',
             submit: 'ส่ง',
             permissionDenied: 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้',
-            back: 'กลับ'
+            back: 'กลับ',
+            next: 'ถัดไป',
+            create: 'สร้าง'
         },
         dashboard: {
             title: 'แดชบอร์ดโครงการ',
@@ -372,8 +386,18 @@ const i18n = {
             loadMembersError: 'โหลดรายการสมาชิกไม่สำเร็จ',
             createSuccess: 'สร้างโครงการสำเร็จ',
             createError: 'สร้างโครงการไม่สำเร็จ',
+            createSuccessProcessWarning: 'สร้างโครงการสำเร็จ แต่เพิ่มงานบางส่วนไม่สำเร็จ',
             createFirst: 'สร้างโครงการแรก',
             loadError: 'โหลดโครงการไม่สำเร็จ',
+            basicInfo: 'ข้อมูลพื้นฐาน',
+            selectProcesses: 'เลือกงาน',
+            selectProcessesHelp: 'เลือกงานมาตรฐานที่ต้องการสำหรับโครงการของคุณ สามารถเพิ่มเติมภายหลังได้',
+            selectAll: 'เลือกทั้งหมด',
+            deselectAll: 'ยกเลิกทั้งหมด',
+            processes: 'งาน',
+            processesSelected: 'งานที่เลือก',
+            qualityPoints: 'จุดควบคุมคุณภาพ',
+            loadProcessError: 'โหลดรายการงานไม่สำเร็จ',
             status: {
                 active: 'กำลังดำเนินการ',
                 planning: 'กำลังวางแผน',

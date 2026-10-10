@@ -8,6 +8,12 @@ const ProjectDetail = {
     async init(projectId) {
         this.projectId = projectId;
         await this.loadProjectInfo();
+        
+        // 初始化ProcessManager
+        if (typeof ProcessManager !== 'undefined') {
+            ProcessManager.init(projectId);
+        }
+        
         this.render();
         this.showSubView('overview');
     },

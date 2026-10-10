@@ -193,6 +193,17 @@ const api = {
         batchAdd: (projectId, templateIds) => apiRequest(`/api/projects/${projectId}/processes/batch`, {
             method: 'POST',
             body: JSON.stringify({ templateIds })
+        }),
+        
+        // 添加单个工序（从模板或自定义）
+        addSingle: (projectId, data) => apiRequest(`/api/projects/${projectId}/processes/single`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        
+        // 删除工序
+        delete: (projectId, processExecutionId) => apiRequest(`/api/projects/${projectId}/processes/${processExecutionId}`, {
+            method: 'DELETE'
         })
     }
 };

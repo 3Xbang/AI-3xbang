@@ -8,12 +8,40 @@ if (typeof app !== 'undefined') {
     // 替换renderProcesses函数以使用新设计
     app.renderProcesses = function(processes) {
         const container = document.getElementById('processes-list');
+        
+        // 添加工序管理头部（如果有权限）
+        let header = '';
+        if (typeof PermissionManager !== 'undefined' && PermissionManager.canManageProjects()) {
+            header = `
+                <div class="processes-header">
+                    <h3>${t('nav.processes')}</h3>
+                    <button class="btn btn-primary" onclick="ProcessManager.showAddProcessModal()">
+                        <span class="btn-icon">+</span>
+                        <span>${t('processes.addProcess')}</span>
+                    </button>
+                </div>
+            `;
+        }
+        
         if (!processes || processes.length === 0) {
-            container.innerHTML = `<p class="empty-state">暂无工序数据</p>`;
+            container.innerHTML = `
+                ${header}
+                <div class="empty-state">
+                    <div class="empty-icon">🔧</div>
+                    <h3>${t('processes.noProcesses')}</h3>
+                    <p>${t('processes.noProcessesDesc')}</p>
+                    ${PermissionManager.canManageProjects() ? `
+                        <button class="btn btn-primary btn-large" onclick="ProcessManager.showAddProcessModal()">
+                            <span class="btn-icon">+</span>
+                            <span>${t('processes.addFirst')}</span>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = processes.map(process => {
+        container.innerHTML = header + processes.map(process => {
             const statusClass = process.status || 'not_started';
             const statusText = t(`processes.status.${statusClass}`);
             const percentage = Math.round(process.completion_percentage || 0);
@@ -32,11 +60,23 @@ if (typeof app !== 'undefined') {
                 actionButtons = `<span style="color: #10b981; font-weight: 600;">✓ 已完成</span>`;
             }
             
+            // 删除按钮（只有未开始和管理员权限才能删除）
+            let deleteButton = '';
+            if (PermissionManager.canManageProjects() && statusClass === 'not_started') {
+                deleteButton = `
+                    <button class="btn-delete-process" 
+                            onclick="ProcessManager.confirmDeleteProcess(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
+                        <span>🗑️</span>
+                    </button>
+                `;
+            }
+            
             return `
                 <div class="process-item status-${statusClass}" id="process-${process.id}">
                     <div class="process-header">
                         <span class="process-code">${process.process_code}</span>
                         <h4>${getI18nField(process, 'process_name')}</h4>
+                        ${deleteButton}
                         <span class="process-status">${statusText}</span>
                         <span class="progress-text" style="font-weight: 600; color: ${progressColor};">${percentage}%</span>
                     </div>

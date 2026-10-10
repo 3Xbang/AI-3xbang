@@ -1822,3 +1822,167 @@ router.post('/projects/:projectId/processes/batch', authenticate, requirePermiss
     client.release();
   }
 });
+
+// 添加单个工序到项目（从模板或自定义）
+router.post('/projects/:projectId/processes/single', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { projectId } = req.params;
+    const { templateId, customProcess } = req.body;
+    
+    await client.query('BEGIN');
+    
+    let processCode, processName, processUnit, displayOrder;
+    
+    if (templateId) {
+      // 从模板添加
+      const templateResult = await client.query(
+        'SELECT * FROM process_templates WHERE id = $1',
+        [templateId]
+      );
+      
+      if (templateResult.rows.length === 0) {
+        throw new Error('工序模板不存在');
+      }
+      
+      const template = templateResult.rows[0];
+      processCode = template.code;
+      processName = { zh: template.name_zh, th: template.name_th };
+      processUnit = template.default_unit;
+      displayOrder = template.display_order;
+    } else if (customProcess) {
+      // 自定义工序
+      const { code, name, unit } = customProcess;
+      
+      if (!code || !name || !name.th) {
+        throw new Error('工序信息不完整');
+      }
+      
+      processCode = code;
+      processName = { zh: name.zh || name.th, th: name.th };
+      processUnit = unit || 'm²';
+      displayOrder = 999; // 自定义工序排在后面
+    } else {
+      throw new Error('请提供工序模板ID或自定义工序信息');
+    }
+    
+    // 检查工序是否已存在
+    const existingCheck = await client.query(
+      'SELECT id FROM process_nodes WHERE project_id = $1 AND process_code = $2',
+      [projectId, processCode]
+    );
+    
+    if (existingCheck.rows.length > 0) {
+      throw new Error('该工序已存在于项目中');
+    }
+    
+    // 创建工序节点
+    const nodeResult = await client.query(`
+      INSERT INTO process_nodes 
+      (project_id, process_code, process_name, parent_id, display_order)
+      VALUES ($1, $2, $3::jsonb, NULL, $4)
+      RETURNING id
+    `, [projectId, processCode, JSON.stringify(processName), displayOrder]);
+    
+    const nodeId = nodeResult.rows[0].id;
+    
+    // 创建工序执行记录
+    await client.query(`
+      INSERT INTO process_execution 
+      (process_node_id, status, quantity_unit)
+      VALUES ($1, 'not_started', $2)
+    `, [nodeId, processUnit]);
+    
+    await logActivity(client, req.user.id, 'add_process', 'project', projectId, { code: processCode });
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: '工序添加成功',
+      data: { nodeId, code: processCode, name: processName }
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Add single process error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 删除项目工序
+router.delete('/projects/:projectId/processes/:processExecutionId', authenticate, requirePermission('manage_projects'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { projectId, processExecutionId } = req.params;
+    
+    await client.query('BEGIN');
+    
+    // 获取工序信息
+    const processInfo = await client.query(`
+      SELECT pe.id, pe.process_node_id, pn.process_code, pn.process_name
+      FROM process_execution pe
+      JOIN process_nodes pn ON pe.process_node_id = pn.id
+      WHERE pe.id = $1 AND pn.project_id = $2
+    `, [processExecutionId, projectId]);
+    
+    if (processInfo.rows.length === 0) {
+      throw new Error('工序不存在或不属于该项目');
+    }
+    
+    const process = processInfo.rows[0];
+    
+    // 检查工序状态，已完成的工序不允许删除
+    const statusCheck = await client.query(
+      'SELECT status FROM process_execution WHERE id = $1',
+      [processExecutionId]
+    );
+    
+    if (statusCheck.rows[0].status === 'completed') {
+      throw new Error('已完成的工序不能删除');
+    }
+    
+    // 删除相关的每日进度记录
+    await client.query(
+      'DELETE FROM daily_progress WHERE process_execution_id = $1',
+      [processExecutionId]
+    );
+    
+    // 删除相关的子任务及进度
+    const subtasksResult = await client.query(
+      'SELECT id FROM subtasks WHERE process_execution_id = $1',
+      [processExecutionId]
+    );
+    
+    for (const subtask of subtasksResult.rows) {
+      await client.query('DELETE FROM subtask_progress WHERE subtask_id = $1', [subtask.id]);
+    }
+    
+    await client.query('DELETE FROM subtasks WHERE process_execution_id = $1', [processExecutionId]);
+    
+    // 删除工序执行记录
+    await client.query('DELETE FROM process_execution WHERE id = $1', [processExecutionId]);
+    
+    // 删除工序节点
+    await client.query('DELETE FROM process_nodes WHERE id = $1', [process.process_node_id]);
+    
+    await logActivity(client, req.user.id, 'delete_process', 'project', projectId, { 
+      code: process.process_code,
+      name: process.process_name 
+    });
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: '工序删除成功'
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Delete process error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});

@@ -8,6 +8,7 @@ const PERMISSIONS = {
         'create_project',
         'update_project',
         'delete_project',
+        'manage_projects',  // 管理项目的通用权限（包括增删改查工序、依赖等）
         'purchase_material',
         'assign_task',
         'manage_users',

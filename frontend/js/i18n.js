@@ -2,15 +2,16 @@
 const i18n = {
     zh: {
         app: {
-            title: '施工管理系统',
-            subtitle: '极简版工地管理'
+            title: 'Mira Villa 管理系统',
+            subtitle: '别墅项目管理'
         },
         nav: {
             projects: '项目管理',
             processes: '工序进度',
             materials: '材料管理',
             photos: '现场照片',
-            dailyTasks: '今日任务'
+            dailyTasks: '今日任务',
+            users: '用户管理'
         },
         login: {
             username: '用户名',
@@ -260,15 +261,16 @@ const i18n = {
     },
     th: {
         app: {
-            title: 'ระบบจัดการก่อสร้าง',
-            subtitle: 'Construction Management System'
+            title: 'Mira Villa',
+            subtitle: 'ระบบจัดการโครงการก่อสร้าง'
         },
         nav: {
             projects: 'จัดการโครงการ',
             processes: 'ความคืบหน้างาน',
             materials: 'จัดการวัสดุ',
             photos: 'รูปถ่ายหน้างาน',
-            dailyTasks: 'งานวันนี้'
+            dailyTasks: 'งานวันนี้',
+            users: 'ผู้ใช้งาน'
         },
         login: {
             username: 'ชื่อผู้ใช้',
@@ -518,8 +520,8 @@ const i18n = {
     }
 };
 
-// 当前语言
-let currentLang = localStorage.getItem('language') || 'zh';
+// 当前语言 - 默认泰语
+let currentLang = localStorage.getItem('language') || 'th';
 
 // 翻译函数
 function t(key, lang = currentLang) {

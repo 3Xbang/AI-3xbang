@@ -108,6 +108,18 @@ const api = {
         })
     },
 
+    // 材料库
+    materialLibrary: {
+        // 获取材料库列表
+        getList: (category) => {
+            const query = category ? `?category=${category}` : '';
+            return apiRequest(`/api/material-library${query}`);
+        },
+        
+        // 获取单个材料
+        get: (code) => apiRequest(`/api/material-library/${code}`)
+    },
+
     // 鐓х墖
     getPhotos: (projectId) => apiRequest(`/api/photos/project/${projectId}`),
 

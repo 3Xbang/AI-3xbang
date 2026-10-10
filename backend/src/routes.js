@@ -353,6 +353,46 @@ router.get('/photos/:id', authenticate, async (req, res) => {
   }
 });
 
+// ============ 材料库接口 ============
+// 获取材料库列表
+router.get('/material-library', authenticate, async (req, res) => {
+  try {
+    const { category } = req.query;
+    let query = 'SELECT * FROM material_library';
+    const params = [];
+    
+    if (category) {
+      query += ' WHERE category = $1';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY material_code';
+    
+    const result = await pool.query(query, params);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取单个材料库材料
+router.get('/material-library/:code', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM material_library WHERE material_code = $1',
+      [req.params.code]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '材料不存在' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ============ 材料计算函数 ============
 function calculateMaterials(dimensions) {
   const { length, width, height, depth, area, volume } = dimensions;

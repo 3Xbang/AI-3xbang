@@ -112,7 +112,18 @@ const app = {
                 this.loadProjectSelectors();
                 break;
             case 'materials':
-                this.loadProjectSelectors();
+                // 初始化材料管理器
+                if (this.currentProjectId) {
+                    MaterialManager.init(this.currentProjectId);
+                } else {
+                    // 如果没有选择项目，显示提示
+                    document.getElementById('materials-list').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p>请先选择一个项目</p>
+                        </div>
+                    `;
+                }
                 break;
             case 'photos':
                 this.loadProjectSelectors();

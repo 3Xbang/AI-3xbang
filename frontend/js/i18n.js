@@ -73,13 +73,51 @@ const i18n = {
             selectProject: '选择项目',
             code: '材料编号',
             name: '材料名称',
+            materialName: '材料名称',
+            materialCode: '材料编号',
             unit: '单位',
             quantity: '数量',
             calculated: '计算需求',
             purchased: '已采购',
             received: '已接收',
             used: '已使用',
-            stock: '库存'
+            stock: '库存',
+            noMaterials: '暂无材料，点击右上角采购材料',
+            purchaseMaterial: '采购材料',
+            purchaseQuantity: '采购数量',
+            receivedQuantity: '到货数量',
+            usedQuantity: '已用数量',
+            stockQuantity: '库存余额',
+            supplier: '供应商',
+            supplierName: '供应商名称',
+            expectedArrival: '预计到货',
+            actualArrival: '实际到货',
+            confirmArrival: '确认到货',
+            useMaterial: '使用材料',
+            reorder: '重新订购',
+            unitPrice: '单价',
+            ordered: '已订购',
+            arrived: '已到货',
+            inUse: '使用中',
+            depleted: '已用完',
+            lowStock: '库存不足',
+            actualReceivedQuantity: '实际到货数量',
+            anyDifferences: '如有差异请说明',
+            selectProcess: '选择工序',
+            quantityUsed: '使用数量',
+            usageDate: '使用日期',
+            currentStock: '当前库存',
+            maxAvailable: '最大可用',
+            material: '材料',
+            noActiveProcesses: '暂无进行中的工序',
+            pleaseSelectProcess: '请选择工序',
+            purchaseSuccess: '采购记录成功',
+            purchaseFailed: '采购失败',
+            receiveSuccess: '到货确认成功',
+            receiveFailed: '确认失败',
+            useSuccess: '使用记录成功',
+            useFailed: '记录失败',
+            confirmUse: '确认使用'
         },
         photos: {
             title: '现场照片',
@@ -212,13 +250,51 @@ const i18n = {
             selectProject: 'เลือกโครงการ',
             code: 'รหัสวัสดุ',
             name: 'ชื่อวัสดุ',
+            materialName: 'ชื่อวัสดุ',
+            materialCode: 'รหัสวัสดุ',
             unit: 'หน่วย',
             quantity: 'จำนวน',
             calculated: 'คำนวณแล้ว',
             purchased: 'สั่งซื้อแล้ว',
             received: 'รับแล้ว',
             used: 'ใช้แล้ว',
-            stock: 'คงเหลือ'
+            stock: 'คงเหลือ',
+            noMaterials: 'ยังไม่มีวัสดุ คลิกปุ่มมุมบนขวาเพื่อสั่งซื้อ',
+            purchaseMaterial: 'สั่งซื้อวัสดุ',
+            purchaseQuantity: 'จำนวนสั่งซื้อ',
+            receivedQuantity: 'จำนวนที่รับ',
+            usedQuantity: 'จำนวนที่ใช้',
+            stockQuantity: 'ยอดคงเหลือ',
+            supplier: 'ผู้จำหน่าย',
+            supplierName: 'ชื่อผู้จำหน่าย',
+            expectedArrival: 'คาดว่าจะส่ง',
+            actualArrival: 'วันที่ส่งจริง',
+            confirmArrival: 'ยืนยันรับของ',
+            useMaterial: 'ใช้วัสดุ',
+            reorder: 'สั่งซื้อเพิ่ม',
+            unitPrice: 'ราคาต่อหน่วย',
+            ordered: 'สั่งซื้อแล้ว',
+            arrived: 'ส่งถึงแล้ว',
+            inUse: 'กำลังใช้งาน',
+            depleted: 'หมดแล้ว',
+            lowStock: 'เหลือน้อย',
+            actualReceivedQuantity: 'จำนวนที่รับจริง',
+            anyDifferences: 'ระบุถ้ามีความแตกต่าง',
+            selectProcess: 'เลือกงาน',
+            quantityUsed: 'จำนวนที่ใช้',
+            usageDate: 'วันที่ใช้',
+            currentStock: 'คงเหลือปัจจุบัน',
+            maxAvailable: 'สูงสุดที่มี',
+            material: 'วัสดุ',
+            noActiveProcesses: 'ยังไม่มีงานที่กำลังทำ',
+            pleaseSelectProcess: 'กรุณาเลือกงาน',
+            purchaseSuccess: 'บันทึกการสั่งซื้อสำเร็จ',
+            purchaseFailed: 'การสั่งซื้อล้มเหลว',
+            receiveSuccess: 'ยืนยันรับของสำเร็จ',
+            receiveFailed: 'การยืนยันล้มเหลว',
+            useSuccess: 'บันทึกการใช้วัสดุสำเร็จ',
+            useFailed: 'การบันทึกล้มเหลว',
+            confirmUse: 'ยืนยันการใช้'
         },
         photos: {
             title: 'รูปถ่ายหน้างาน',
@@ -293,8 +369,25 @@ function t(key, lang = currentLang) {
     return value || key;
 }
 
+// 为 i18n 对象添加方法
+i18n.t = t;
+i18n.currentLang = () => currentLang;
+i18n.getLocalizedValue = function(value, field = null) {
+    if (!value) return '';
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch (e) {
+            return value;
+        }
+    }
+    if (field) return value[field] || value.zh || value.th || '';
+    return value[currentLang] || value.zh || value.th || '';
+};
+
 // 更新页面所有翻译
 function updateTranslations(lang = currentLang) {
+    currentLang = lang;
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translation = t(key, lang);

@@ -69,24 +69,44 @@ const api = {
 
     getProjectSummary: (projectId) => apiRequest(`/api/projects/${projectId}/summary`),
 
-    // 宸ュ簭
-    getProcesses: (projectId) => apiRequest(`/api/projects/${projectId}/processes`),
-
-    updateProcess: (processId, data) => apiRequest(`/api/processes/${processId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-    }),
-
-    // 鏉愭枡
-    getMaterials: (projectId, status) => {
-        const query = status ? `?status=${status}` : '';
-        return apiRequest(`/api/projects/${projectId}/materials${query}`);
+    // 工序管理
+    processes: {
+        // 获取工序列表
+        getList: (projectId) => apiRequest(`/api/projects/${projectId}/processes`),
+        
+        // 更新工序
+        update: (processId, data) => apiRequest(`/api/processes/${processId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        })
     },
 
-    recordMaterialUsage: (data) => apiRequest('/api/materials/usage', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
+    // 材料管理
+    materials: {
+        // 获取材料列表
+        getList: (projectId, status) => {
+            const query = status ? `?status=${status}` : '';
+            return apiRequest(`/api/projects/${projectId}/materials${query}`);
+        },
+        
+        // 采购材料
+        purchase: (data) => apiRequest('/api/materials', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        
+        // 材料到货
+        receive: (materialId, data) => apiRequest(`/api/materials/${materialId}/receive`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        
+        // 使用材料
+        use: (materialId, data) => apiRequest(`/api/materials/${materialId}/use`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+    },
 
     // 鐓х墖
     getPhotos: (projectId) => apiRequest(`/api/photos/project/${projectId}`),

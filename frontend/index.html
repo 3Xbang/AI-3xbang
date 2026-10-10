@@ -6,6 +6,9 @@
     <title>鏂藉伐绠＄悊绯荤粺 | Construction Management</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/process-colors.css">
+    <link rel="stylesheet" href="css/daily-tasks.css">
+    <link rel="stylesheet" href="css/photo-manager.css">
+    <link rel="stylesheet" href="css/material-manager.css">
 </head>
 <body>
     <!-- 鐧诲綍椤甸潰 -->
@@ -116,13 +119,27 @@
                     <div id="processes-list" class="process-timeline"></div>
                 </div>
 
-                <!-- 鏉愭枡绠＄悊瑙嗗浘 -->
+                <!-- 材料管理视图 -->
                 <div id="materials-view" class="view">
-                    <div class="view-header">
-                        <h3 data-i18n="materials.title">鏉愭枡绠＄悊</h3>
-                        <select id="material-project-selector" onchange="app.loadMaterials(this.value)">
-                            <option value="" data-i18n="materials.selectProject">閫夋嫨椤圭洰</option>
-                        </select>
+                    <div class="materials-toolbar">
+                        <div class="toolbar-left">
+                            <h3 data-i18n="materials.title">材料管理</h3>
+                            <select id="filter-material-status">
+                                <option value="">全部状态</option>
+                                <option value="ordered">已订购</option>
+                                <option value="arrived">已到货</option>
+                                <option value="in-use">使用中</option>
+                                <option value="depleted">已用完</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-right">
+                            <button id="btn-refresh-materials" class="btn btn-secondary">
+                                🔄 刷新
+                            </button>
+                            <button id="btn-purchase-material" class="btn btn-primary">
+                                + 采购材料
+                            </button>
+                        </div>
                     </div>
                     <div id="materials-list"></div>
                 </div>
@@ -157,5 +174,8 @@
     <script src="js/process-enhancements.js"></script>
     <script src="js/quantities.js"></script>
     <script src="js/project-enhancements.js"></script>
+    <script src="js/daily-tasks.js"></script>
+    <script src="js/photo-manager.js"></script>
+    <script src="js/material-manager.js"></script>
 </body>
 </html>

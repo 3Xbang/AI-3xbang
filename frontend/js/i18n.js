@@ -764,13 +764,24 @@ const i18n = {
 let currentLang = localStorage.getItem('language') || 'th';
 
 // 翻译函数
-function t(key, lang = currentLang) {
+function t(key, params = null, lang = currentLang) {
     const keys = key.split('.');
     let value = i18n[lang];
     for (const k of keys) {
         value = value?.[k];
     }
-    return value || key;
+    
+    // 如果没有找到翻译，返回键名
+    if (!value) return key;
+    
+    // 如果有参数，替换模板中的变量
+    if (params && typeof value === 'string') {
+        return value.replace(/\{(\w+)\}/g, (match, param) => {
+            return params[param] !== undefined ? params[param] : match;
+        });
+    }
+    
+    return value;
 }
 
 // 为 i18n 对象添加方法

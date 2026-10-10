@@ -9,7 +9,7 @@ const app = {
         if (authToken) {
             this.showMainPage();
             this.loadUserInfo();
-            this.showView('daily-tasks'); // 默认显示今日任务
+            this.showView('dashboard'); // 默认显示项目仪表盘
         } else {
             this.showLoginPage();
         }
@@ -19,17 +19,6 @@ const app = {
             e.preventDefault();
             this.handleLogin();
         });
-
-        // 显示今天日期
-        const today = new Date();
-        const dateStr = today.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'th-TH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            weekday: 'long'
-        });
-        const dateEl = document.getElementById('today-date');
-        if (dateEl) dateEl.textContent = dateStr;
 
         // 应用翻译
         updateTranslations();
@@ -59,7 +48,7 @@ const app = {
             if (result.success) {
                 this.showMainPage();
                 this.loadUserInfo();
-                this.loadProjects();
+                this.showView('dashboard'); // 登录后显示项目仪表盘
             }
         } catch (error) {
             errorEl.textContent = t('login.error');
@@ -97,42 +86,40 @@ const app = {
     // 显示视图
     showView(viewName) {
         // 隐藏所有视图
-        document.querySelectorAll('.view').forEach(view => {
+        document.querySelectorAll('.main-container > .view').forEach(view => {
             view.classList.remove('active');
         });
+        
         // 显示目标视图
-        document.getElementById(`${viewName}-view`).classList.add('active');
+        const targetView = document.getElementById(`${viewName}-view`);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+        
         this.currentView = viewName;
 
         // 加载视图数据
         switch(viewName) {
-            case 'daily-tasks':
-                this.loadProjectSelectors();
+            case 'dashboard':
+                // 初始化项目仪表盘
+                ProjectDashboard.init();
                 break;
-            case 'projects':
-                this.loadProjects();
+            case 'project-detail':
+                // 由 showProjectDetail() 调用，不在这里处理
                 break;
-            case 'processes':
-                this.loadProjectSelectors();
-                break;
-            case 'materials':
-                // 初始化材料管理器
-                if (this.currentProjectId) {
-                    MaterialManager.init(this.currentProjectId);
-                } else {
-                    // 如果没有选择项目，显示提示
-                    document.getElementById('materials-list').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">📋</div>
-                            <p>请先选择一个项目</p>
-                        </div>
-                    `;
+            case 'users':
+                // 用户管理
+                if (PermissionManager.canManageUsers()) {
+                    userManager.init();
                 }
                 break;
-            case 'photos':
-                this.loadProjectSelectors();
-                break;
         }
+    },
+
+    // 显示项目详情
+    async showProjectDetail(projectId) {
+        this.showView('project-detail');
+        await ProjectDetail.init(projectId);
     },
 
     // 刷新当前视图

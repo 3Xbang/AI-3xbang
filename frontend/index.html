@@ -57,116 +57,27 @@
 
         <!-- 主内容区 -->
         <div class="main-container">
-            <!-- 侧边导航 -->
-            <nav class="sidebar">
-                <ul>
-                    <li><a href="#" onclick="app.showView('daily-tasks')" data-i18n="nav.dailyTasks">今日任务</a></li>
-                    <li><a href="#" onclick="app.showView('projects')" data-i18n="nav.projects">项目管理</a></li>
-                    <li><a href="#" onclick="app.showView('processes')" data-i18n="nav.processes">工序进度</a></li>
-                    <li><a href="#" onclick="app.showView('materials')" data-i18n="nav.materials">材料管理</a></li>
-                    <li><a href="#" onclick="app.showView('photos')" data-i18n="nav.photos">现场照片</a></li>
-                    <li id="nav-users" style="display: none;"><a href="#" onclick="app.showView('users')" data-i18n="nav.users">ผู้ใช้งาน</a></li>
-                </ul>
-            </nav>
+            <!-- 项目仪表盘视图 -->
+            <div id="dashboard-view" class="view active">
+                <div id="project-dashboard-container"></div>
+            </div>
 
-            <!-- 内容区域 -->
-            <main class="content">
-                <!-- 今日任务视图 -->
-                <div id="daily-tasks-view" class="view active">
-                    <div class="view-header">
-                        <h3 data-i18n="daily.title">今日任务</h3>
-                        <select id="daily-project-selector" onchange="app.loadDailyTasks(this.value)">
-                            <option value="" data-i18n="projects.selectProject">选择项目</option>
-                        </select>
-                    </div>
-                    <div class="daily-date">
-                        📅 <span id="today-date"></span>
-                    </div>
-                    <div id="daily-tasks-container">
-                        <!-- 进行中的任务 -->
-                        <div class="task-section">
-                            <h4>🚧 <span data-i18n="daily.inProgress">进行中</span></h4>
-                            <div id="tasks-in-progress"></div>
-                        </div>
-                        
-                        <!-- 等待材料 -->
-                        <div class="task-section">
-                            <h4>📦 <span data-i18n="daily.waitingMaterial">等待材料</span></h4>
-                            <div id="tasks-waiting-material"></div>
-                        </div>
-                        
-                        <!-- 今日完成 -->
-                        <div class="task-section">
-                            <h4>✅ <span data-i18n="daily.completed">今日完成</span></h4>
-                            <div id="tasks-completed"></div>
-                        </div>
-                    </div>
+            <!-- 项目详情视图 -->
+            <div id="project-detail-view" class="view">
+                <div id="project-detail-container"></div>
+            </div>
+
+            <!-- 用户管理视图（仅管理员） -->
+            <div id="users-view" class="view">
+                <div class="view-header">
+                    <button class="btn-back" onclick="app.showView('dashboard')">
+                        <span>←</span> <span data-i18n="common.back">返回</span>
+                    </button>
+                    <h3 data-i18n="users.title">用户管理</h3>
+                    <button id="btn-add-user" class="btn btn-primary" onclick="userManager.showAddUserModal()">
+                        + <span data-i18n="users.addUser">添加用户</span>
+                    </button>
                 </div>
-
-                <!-- 项目列表视图 -->
-                <div id="projects-view" class="view">
-                    <div class="view-header">
-                        <h3 data-i18n="projects.title">项目管理</h3>
-                        <button onclick="app.showProjectForm()" class="btn-primary" data-i18n="projects.add">+ 新建项目</button>
-                    </div>
-                    <div id="projects-list" class="card-grid"></div>
-                </div>
-
-                <!-- 工序进度视图 -->
-                <div id="processes-view" class="view">
-                    <div class="view-header">
-                        <h3 data-i18n="processes.title">工序进度</h3>
-                        <select id="project-selector" onchange="app.loadProcesses(this.value)">
-                            <option value="" data-i18n="processes.selectProject">选择项目</option>
-                        </select>
-                    </div>
-                    <div id="processes-list" class="process-timeline"></div>
-                </div>
-
-                <!-- 材料管理视图 -->
-                <div id="materials-view" class="view">
-                    <div class="materials-toolbar">
-                        <div class="toolbar-left">
-                            <h3 data-i18n="materials.title">材料管理</h3>
-                            <select id="filter-material-status">
-                                <option value="">全部状态</option>
-                                <option value="ordered">已订购</option>
-                                <option value="arrived">已到货</option>
-                                <option value="in-use">使用中</option>
-                                <option value="depleted">已用完</option>
-                            </select>
-                        </div>
-                        <div class="toolbar-right">
-                            <button id="btn-refresh-materials" class="btn btn-secondary">
-                                🔄 刷新
-                            </button>
-                            <button id="btn-purchase-material" class="btn btn-primary">
-                                + 采购材料
-                            </button>
-                        </div>
-                    </div>
-                    <div id="materials-list"></div>
-                </div>
-
-                <!-- 现场照片视图 -->
-                <div id="photos-view" class="view">
-                    <div class="view-header">
-                        <h3 data-i18n="photos.title">现场照片</h3>
-                        <select id="photo-project-selector" onchange="app.loadPhotos(this.value)">
-                            <option value="" data-i18n="photos.selectProject">选择项目</option>
-                        </select>
-                    </div>
-                    <div id="photos-grid" class="photo-grid"></div>
-                </div>
-
-                <!-- 用户管理视图 -->
-                <div id="users-view" class="view">
-                    <div class="view-header">
-                        <h3 data-i18n="users.title">用户管理</h3>
-                        <button id="btn-add-user" class="btn btn-primary" onclick="userManager.showAddUserModal()">
-                            + <span data-i18n="users.addUser">添加用户</span>
-                        </button>
-                    </div>
                     <div class="user-stats">
                         <div class="stat-card">
                             <div class="stat-label" data-i18n="users.totalUsers">总用户数</div>
@@ -219,6 +130,8 @@
     <script src="js/i18n.js"></script>
     <script src="js/permissions.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/project-dashboard.js"></script>
+    <script src="js/project-detail.js"></script>
     <script src="js/app.js"></script>
     <script src="js/subtask-templates.js"></script>
     <script src="js/process-enhancements.js"></script>

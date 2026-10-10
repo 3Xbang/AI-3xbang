@@ -37,7 +37,25 @@ const i18n = {
             remove: '移除',
             close: '关闭',
             submit: '提交',
-            permissionDenied: '抱歉，您没有权限执行此操作'
+            permissionDenied: '抱歉，您没有权限执行此操作',
+            back: '返回'
+        },
+        dashboard: {
+            title: '项目仪表盘',
+            noProjects: '暂无项目',
+            noProjectsDesc: '开始创建您的第一个项目吧',
+            myProjects: '我的项目'
+        },
+        projectDetail: {
+            overview: '项目概览',
+            settings: '项目设置'
+        },
+        overview: {
+            totalProcesses: '总工序数',
+            completedProcesses: '已完成',
+            inProgress: '进行中',
+            teamMembers: '团队成员',
+            projectInfo: '项目信息'
         },
         projects: {
             title: '项目管理',
@@ -45,6 +63,7 @@ const i18n = {
             name: '项目名称',
             location: '项目地点',
             client: '客户名称',
+            clientPlaceholder: '请输入客户名称',
             startDate: '开始日期',
             endDate: '计划完工日期',
             status: '状态',
@@ -62,7 +81,11 @@ const i18n = {
             removeMemberSuccess: '移除成员成功',
             removeMemberError: '移除成员失败',
             confirmRemoveMember: '确认移除该成员？',
-            loadMembersError: '加载成员列表失败'
+            loadMembersError: '加载成员列表失败',
+            createSuccess: '项目创建成功',
+            createError: '项目创建失败',
+            createFirst: '创建第一个项目',
+            loadError: '加载项目失败'
         },
         processes: {
             title: '工序进度',
@@ -296,14 +319,33 @@ const i18n = {
             remove: 'ลบออก',
             close: 'ปิด',
             submit: 'ส่ง',
-            permissionDenied: 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้'
+            permissionDenied: 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้',
+            back: 'กลับ'
+        },
+        dashboard: {
+            title: 'แดชบอร์ดโครงการ',
+            noProjects: 'ยังไม่มีโครงการ',
+            noProjectsDesc: 'เริ่มต้นสร้างโครงการแรกของคุณ',
+            myProjects: 'โครงการของฉัน'
+        },
+        projectDetail: {
+            overview: 'ภาพรวมโครงการ',
+            settings: 'ตั้งค่าโครงการ'
+        },
+        overview: {
+            totalProcesses: 'จำนวนงานทั้งหมด',
+            completedProcesses: 'เสร็จแล้ว',
+            inProgress: 'กำลังดำเนินการ',
+            teamMembers: 'สมาชิกทีม',
+            projectInfo: 'ข้อมูลโครงการ'
         },
         projects: {
             title: 'จัดการโครงการ',
             add: '+ สร้างโครงการใหม่',
             name: 'ชื่อโครงการ',
-            location: 'ที่อยู่โครงการ',
+            location: 'ที่ตั้งโครงการ',
             client: 'ชื่อลูกค้า',
+            clientPlaceholder: 'กรุณากรอกชื่อลูกค้า',
             startDate: 'วันเริ่มงาน',
             endDate: 'วันแล้วเสร็จตามแผน',
             status: 'สถานะ',
@@ -321,7 +363,11 @@ const i18n = {
             removeMemberSuccess: 'ลบสมาชิกสำเร็จ',
             removeMemberError: 'ลบสมาชิกไม่สำเร็จ',
             confirmRemoveMember: 'ยืนยันลบสมาชิก?',
-            loadMembersError: 'โหลดรายการสมาชิกไม่สำเร็จ'
+            loadMembersError: 'โหลดรายการสมาชิกไม่สำเร็จ',
+            createSuccess: 'สร้างโครงการสำเร็จ',
+            createError: 'สร้างโครงการไม่สำเร็จ',
+            createFirst: 'สร้างโครงการแรก',
+            loadError: 'โหลดโครงการไม่สำเร็จ'
         },
         processes: {
             title: 'ความคืบหน้างาน',

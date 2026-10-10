@@ -125,7 +125,7 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
     await client.query(
       `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
        VALUES ($1, $2, $3, $4)`,
-      [project.id, req.user.id, req.user.role, req.user.id]
+      [project.id, req.user.id, req.user.id]
     );
     
     // 3. 自动创建16个标准工序节点
@@ -1521,7 +1521,7 @@ router.post('/users/:userId/assign-projects', authenticate, requirePermission('m
         await client.query(
           `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
            VALUES ($1, $2, $3, $4)`,
-          [projectId, userId, userRole, req.user.id]
+          [projectId, userId, req.user.id]
         );
       }
     }

@@ -165,20 +165,32 @@ const app = {
             return;
         }
 
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const isManager = user.role === 'manager';
+
         container.innerHTML = projects.map(project => `
-            <div class="project-card" onclick="app.viewProjectDetail(${project.id})">
-                <h4>${getI18nField(project, 'name')}</h4>
-                <div class="project-info">
-                    <span><strong>${t('projects.location')}:</strong> ${getI18nField(project, 'location') || '-'}</span>
-                    <span><strong>${t('projects.progress')}:</strong> ${project.progress || 0}%</span>
+            <div class="project-card">
+                <div onclick="app.viewProjectDetail(${project.id})" style="cursor: pointer;">
+                    <h4>${getI18nField(project, 'name')}</h4>
+                    <div class="project-info">
+                        <span><strong>${t('projects.location')}:</strong> ${getI18nField(project, 'location') || '-'}</span>
+                        <span><strong>${t('projects.progress')}:</strong> ${project.progress || 0}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.progress || 0}%"></div>
+                    </div>
+                    <div class="project-meta">
+                        <span>${project.start_date || '-'}</span>
+                        <span class="status-${project.status}">${project.status}</span>
+                    </div>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${project.progress || 0}%"></div>
-                </div>
-                <div class="project-meta">
-                    <span>${project.start_date || '-'}</span>
-                    <span class="status-${project.status}">${project.status}</span>
-                </div>
+                ${isManager ? `
+                    <div class="project-actions">
+                        <button class="btn btn-small" onclick="event.stopPropagation(); projectMembers.showMembersModal(${project.id}, '${project.name?.zh || project.name}')">
+                            👥 ${t('projects.members')}
+                        </button>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
     },

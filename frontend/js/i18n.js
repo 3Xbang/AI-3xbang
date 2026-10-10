@@ -31,7 +31,11 @@ const i18n = {
             notes: '备注',
             noData: '暂无数据',
             chinese: '中文',
-            thai: '泰语'
+            thai: '泰语',
+            add: '添加',
+            remove: '移除',
+            close: '关闭',
+            submit: '提交'
         },
         projects: {
             title: '项目管理',
@@ -43,7 +47,20 @@ const i18n = {
             endDate: '计划完工日期',
             status: '状态',
             progress: '进度',
-            selectProject: '选择项目'
+            selectProject: '选择项目',
+            members: '成员',
+            membersManagement: '成员管理',
+            currentMembers: '当前成员',
+            addMembers: '添加成员',
+            noMembers: '暂无成员',
+            allUsersAssigned: '所有用户都已分配到此项目',
+            assignedAt: '分配时间',
+            addMemberSuccess: '添加成员成功',
+            addMemberError: '添加成员失败',
+            removeMemberSuccess: '移除成员成功',
+            removeMemberError: '移除成员失败',
+            confirmRemoveMember: '确认移除该成员？',
+            loadMembersError: '加载成员列表失败'
         },
         processes: {
             title: '工序进度',
@@ -251,7 +268,11 @@ const i18n = {
             notes: 'หมายเหตุ',
             noData: 'ไม่มีข้อมูล',
             chinese: 'จีน',
-            thai: 'ไทย'
+            thai: 'ไทย',
+            add: 'เพิ่ม',
+            remove: 'ลบออก',
+            close: 'ปิด',
+            submit: 'ส่ง'
         },
         projects: {
             title: 'จัดการโครงการ',
@@ -263,7 +284,20 @@ const i18n = {
             endDate: 'วันแล้วเสร็จตามแผน',
             status: 'สถานะ',
             progress: 'ความคืบหน้า',
-            selectProject: 'เลือกโครงการ'
+            selectProject: 'เลือกโครงการ',
+            members: 'สมาชิก',
+            membersManagement: 'จัดการสมาชิก',
+            currentMembers: 'สมาชิกปัจจุบัน',
+            addMembers: 'เพิ่มสมาชิก',
+            noMembers: 'ยังไม่มีสมาชิก',
+            allUsersAssigned: 'ผู้ใช้ทั้งหมดถูกมอบหมายแล้ว',
+            assignedAt: 'เวลามอบหมาย',
+            addMemberSuccess: 'เพิ่มสมาชิกสำเร็จ',
+            addMemberError: 'เพิ่มสมาชิกไม่สำเร็จ',
+            removeMemberSuccess: 'ลบสมาชิกสำเร็จ',
+            removeMemberError: 'ลบสมาชิกไม่สำเร็จ',
+            confirmRemoveMember: 'ยืนยันลบสมาชิก?',
+            loadMembersError: 'โหลดรายการสมาชิกไม่สำเร็จ'
         },
         processes: {
             title: 'ความคืบหน้างาน',

@@ -1,0 +1,215 @@
+/* 项目成员管理样式 */
+
+/* 项目卡片操作按钮 */
+.project-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 8px;
+}
+
+/* 模态框大尺寸 */
+.modal-large {
+    max-width: 700px;
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* 成员区块 */
+.members-section {
+    margin-bottom: 30px;
+}
+
+.members-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #007bff;
+}
+
+.section-header h4 {
+    margin: 0;
+    color: #212529;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* 成员列表 */
+.members-list,
+.available-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 成员项 */
+.member-item,
+.available-user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.member-item:hover,
+.available-user-item:hover {
+    background: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 成员信息 */
+.member-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.member-avatar {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 50%;
+    font-size: 24px;
+}
+
+.member-details {
+    flex: 1;
+}
+
+.member-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 5px;
+}
+
+.member-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #007bff;
+    color: white;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.assigned-date {
+    color: #6c757d;
+}
+
+/* 空状态消息 */
+.empty-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.info-message {
+    text-align: center;
+    padding: 20px;
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* 按钮覆盖 */
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* 可用用户项特殊样式 */
+.available-user-item {
+    background: #fff;
+}
+
+.available-user-item:hover {
+    background: #f0f8ff;
+    border-color: #007bff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .modal-large {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .modal-body {
+        padding: 16px;
+        max-height: 70vh;
+    }
+    
+    .member-item,
+    .available-user-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .member-info {
+        width: 100%;
+    }
+    
+    .btn-small {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .member-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* 滚动条美化 */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

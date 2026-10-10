@@ -123,8 +123,8 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
     
     // 2. 自动将创建者添加为项目成员
     await client.query(
-      `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
-       VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO project_members (project_id, user_id, assigned_by) 
+       VALUES ($1, $2, $3)`,
       [project.id, req.user.id, req.user.id]
     );
     
@@ -1519,8 +1519,8 @@ router.post('/users/:userId/assign-projects', authenticate, requirePermission('m
         const userRole = userResult.rows[0].role;
         
         await client.query(
-          `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
-           VALUES ($1, $2, $3, $4)`,
+          `INSERT INTO project_members (project_id, user_id, assigned_by) 
+           VALUES ($1, $2, $3)`,
           [projectId, userId, req.user.id]
         );
       }

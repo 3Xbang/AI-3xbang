@@ -1208,18 +1208,23 @@ router.get('/users', authenticate, requirePermission('manage_users'), async (req
 });
 
 // 创建用户（仅管理者）
-router.post('/users', authenticate, requirePermission('users', 'create'), async (req, res) => {
+router.post('/users', authenticate, requirePermission('manage_users'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { username, password, full_name, role } = req.body;
     
     // 验证角色
     if (!['manager', 'purchaser', 'executor'].includes(role)) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '无效的角色' });
     }
     
     // 检查用户名是否已存在
-    const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    const existing = await client.query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '用户名已存在' });
     }
     
@@ -1227,28 +1232,36 @@ router.post('/users', authenticate, requirePermission('users', 'create'), async 
     const password_hash = await bcrypt.hash(password, 10);
     
     // 创建用户
-    const result = await pool.query(
+    const result = await client.query(
       'INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, full_name, role, created_at',
       [username, password_hash, full_name, role]
     );
     
     // 记录日志
-    await logActivity(req.user.id, 'create_user', 'user', result.rows[0].id, 
-      { username, full_name, role }, req.ip);
+    await logActivity(client, req.user.id, 'create_user', 'users', result.rows[0].id, 
+      `创建用户: ${username}`);
     
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0], message: '用户创建成功' });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 // 更新用户（仅管理者）
-router.put('/users/:id', authenticate, requirePermission('users', 'update'), async (req, res) => {
+router.put('/users/:id', authenticate, requirePermission('manage_users'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { full_name, role, password } = req.body;
     
     // 不能修改自己的角色
     if (req.params.id == req.user.id && role && role !== req.user.role) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '不能修改自己的角色' });
     }
     
@@ -1273,12 +1286,13 @@ router.put('/users/:id', authenticate, requirePermission('users', 'update'), asy
     }
     
     if (updates.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '没有要更新的字段' });
     }
     
     params.push(req.params.id);
     
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramIndex} 
        RETURNING id, username, full_name, role`,
@@ -1286,43 +1300,120 @@ router.put('/users/:id', authenticate, requirePermission('users', 'update'), asy
     );
     
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: '用户不存在' });
     }
     
     // 记录日志
-    await logActivity(req.user.id, 'update_user', 'user', req.params.id, 
-      { full_name, role, password_changed: !!password }, req.ip);
+    await logActivity(client, req.user.id, 'update_user', 'users', req.params.id, 
+      `更新用户: ${result.rows[0].username}`);
     
+    await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0], message: '用户更新成功' });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 
 // 删除用户（仅管理者）
-router.delete('/users/:id', authenticate, requirePermission('users', 'delete'), async (req, res) => {
+router.delete('/users/:id', authenticate, requirePermission('manage_users'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     // 不能删除自己
     if (req.params.id == req.user.id) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '不能删除自己' });
     }
     
-    const result = await pool.query(
+    const result = await client.query(
       'DELETE FROM users WHERE id = $1 RETURNING username',
       [req.params.id]
     );
     
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: '用户不存在' });
     }
     
     // 记录日志
-    await logActivity(req.user.id, 'delete_user', 'user', req.params.id, 
-      { username: result.rows[0].username }, req.ip);
+    await logActivity(client, req.user.id, 'delete_user', 'users', req.params.id, 
+      `删除用户: ${result.rows[0].username}`);
     
+    await client.query('COMMIT');
     res.json({ success: true, message: '用户删除成功' });
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 获取用户已分配的项目
+router.get('/users/:userId/projects', authenticate, requirePermission('manage_users'), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.id, p.name, p.location
+      FROM projects p
+      INNER JOIN project_members pm ON p.id = pm.project_id
+      WHERE pm.user_id = $1
+      ORDER BY p.name
+    `, [req.params.userId]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 批量分配用户到项目
+router.post('/users/:userId/assign-projects', authenticate, requirePermission('manage_users'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { project_ids } = req.body;
+    const userId = req.params.userId;
+    
+    // 先删除该用户的所有项目分配
+    await client.query('DELETE FROM project_members WHERE user_id = $1', [userId]);
+    
+    // 重新分配选中的项目
+    if (project_ids && project_ids.length > 0) {
+      for (const projectId of project_ids) {
+        // 获取用户角色
+        const userResult = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ success: false, message: '用户不存在' });
+        }
+        
+        const userRole = userResult.rows[0].role;
+        
+        await client.query(
+          `INSERT INTO project_members (project_id, user_id, role, assigned_by) 
+           VALUES ($1, $2, $3, $4)`,
+          [projectId, userId, userRole, req.user.id]
+        );
+      }
+    }
+    
+    // 记录日志
+    await logActivity(client, req.user.id, 'assign_projects', 'users', userId,
+      `分配 ${project_ids.length} 个项目`);
+    
+    await client.query('COMMIT');
+    res.json({ success: true, message: '项目分配成功' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    client.release();
   }
 });
 

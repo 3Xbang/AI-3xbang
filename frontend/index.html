@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/daily-tasks.css">
     <link rel="stylesheet" href="css/photo-manager.css">
     <link rel="stylesheet" href="css/material-manager.css">
+    <link rel="stylesheet" href="css/user-manager.css">
 </head>
 <body>
     <!-- 鐧诲綍椤甸潰 -->
@@ -61,7 +62,8 @@
                     <li><a href="#" onclick="app.showView('projects')" data-i18n="nav.projects">椤圭洰绠＄悊</a></li>
                     <li><a href="#" onclick="app.showView('processes')" data-i18n="nav.processes">宸ュ簭杩涘害</a></li>
                     <li><a href="#" onclick="app.showView('materials')" data-i18n="nav.materials">鏉愭枡绠＄悊</a></li>
-                    <li><a href="#" onclick="app.showView('photos')" data-i18n="nav.photos">鐜板満鐓х墖</a></li>
+                    <li><a href="#" onclick="app.showView('photos')" data-i18n="nav.photos">现场照片</a></li>
+                    <li id="nav-users" style="display: none;"><a href="#" onclick="app.showView('users')" data-i18n="nav.users">用户管理</a></li>
                 </ul>
             </nav>
 
@@ -144,15 +146,60 @@
                     <div id="materials-list"></div>
                 </div>
 
-                <!-- 鐜板満鐓х墖瑙嗗浘 -->
+                <!-- 现场照片视图 -->
                 <div id="photos-view" class="view">
                     <div class="view-header">
-                        <h3 data-i18n="photos.title">鐜板満鐓х墖</h3>
+                        <h3 data-i18n="photos.title">现场照片</h3>
                         <select id="photo-project-selector" onchange="app.loadPhotos(this.value)">
-                            <option value="" data-i18n="photos.selectProject">閫夋嫨椤圭洰</option>
+                            <option value="" data-i18n="photos.selectProject">选择项目</option>
                         </select>
                     </div>
                     <div id="photos-grid" class="photo-grid"></div>
+                </div>
+
+                <!-- 用户管理视图 -->
+                <div id="users-view" class="view">
+                    <div class="view-header">
+                        <h3 data-i18n="users.title">用户管理</h3>
+                        <button id="btn-add-user" class="btn btn-primary" onclick="userManager.showAddUserModal()">
+                            + <span data-i18n="users.addUser">添加用户</span>
+                        </button>
+                    </div>
+                    <div class="user-stats">
+                        <div class="stat-card">
+                            <div class="stat-label" data-i18n="users.totalUsers">总用户数</div>
+                            <div class="stat-value" id="stat-total-users">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label" data-i18n="users.managers">管理者</div>
+                            <div class="stat-value" id="stat-managers">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label" data-i18n="users.purchasers">采购者</div>
+                            <div class="stat-value" id="stat-purchasers">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label" data-i18n="users.executors">执行者</div>
+                            <div class="stat-value" id="stat-executors">0</div>
+                        </div>
+                    </div>
+                    <div class="users-table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="users.username">用户名</th>
+                                    <th data-i18n="users.fullName">全名</th>
+                                    <th data-i18n="users.role">角色</th>
+                                    <th data-i18n="users.assignedProjects">分配项目</th>
+                                    <th data-i18n="users.createdAt">创建时间</th>
+                                    <th data-i18n="users.actions">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- 用户列表将动态插入 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </main>
         </div>
@@ -177,5 +224,6 @@
     <script src="js/daily-tasks.js"></script>
     <script src="js/photo-manager.js"></script>
     <script src="js/material-manager.js"></script>
+    <script src="js/user-manager.js"></script>
 </body>
 </html>

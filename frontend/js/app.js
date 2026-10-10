@@ -71,7 +71,13 @@ const app = {
     // 加载用户信息
     loadUserInfo() {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        document.getElementById('user-name').textContent = user.username || '';
+        document.getElementById('user-name').textContent = user.full_name || user.username || '';
+        
+        // 只有manager角色可以看到用户管理菜单
+        const navUsers = document.getElementById('nav-users');
+        if (navUsers) {
+            navUsers.style.display = user.role === 'manager' ? 'block' : 'none';
+        }
     },
 
     // 退出登录

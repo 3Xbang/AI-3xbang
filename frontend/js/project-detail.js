@@ -138,6 +138,8 @@ const ProjectDetail = {
     // ---------- 总览提醒 ----------
     renderOverview() {
         const p = this.project || {};
+        const day = d => (d ? String(d).slice(0, 10) : '-');
+        const statusTxt = { active: '进行中 กำลังดำเนินการ', planning: '筹备中 เตรียมการ', completed: '已完工 เสร็จสิ้น', paused: '暂停 หยุดชั่วคราว' }[p.status] || (p.status || '-');
         return `
             <div class="project-overview">
                 <div class="overview-cards">
@@ -156,9 +158,9 @@ const ProjectDetail = {
                     <h3>项目信息 ข้อมูลโครงการ</h3>
                     <div class="info-table">
                         <div class="info-row"><span class="info-label">客户 ลูกค้า:</span><span class="info-value">${p.client_name || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">开始日期 วันเริ่ม:</span><span class="info-value">${p.start_date || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">结束日期 วันสิ้นสุด:</span><span class="info-value">${p.planned_end_date || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">状态 สถานะ:</span><span class="info-value"><span class="status-badge status-${p.status}">${getStatusText(p.status)}</span></span></div>
+                        <div class="info-row"><span class="info-label">开始日期 วันเริ่ม:</span><span class="info-value">${day(p.start_date)}</span></div>
+                        <div class="info-row"><span class="info-label">结束日期 วันสิ้นสุด:</span><span class="info-value">${day(p.planned_end_date)}</span></div>
+                        <div class="info-row"><span class="info-label">状态 สถานะ:</span><span class="info-value">${statusTxt}</span></div>
                     </div>
                 </div>
 

@@ -187,3 +187,8 @@ details[open] > .td-sum::before { content: '▾'; }
 .pp-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; max-width: 150px; }
 .pp-step .sb-btn[disabled] { opacity: .45; cursor: not-allowed; }
 @media (max-width: 560px) { .pp-step { flex-wrap: wrap; } .pp-act { flex: 1 1 100%; text-align: left; } }
+
+/* 项目页签：5 个页签在窄屏也要放得下 */
+.project-nav .nav-item { padding-left: 10px; padding-right: 10px; flex: 1 1 auto; }
+.project-nav .nav-label { font-size: 12.5px; white-space: normal; line-height: 1.25; text-align: left; }
+.project-nav .nav-icon { font-size: 18px; }

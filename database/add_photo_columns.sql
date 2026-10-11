@@ -1,0 +1,7 @@
+-- 修复现场照片表: 补齐代码使用的字段 (幂等)
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE;
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS material_id INTEGER;
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS photo_type VARCHAR(30) DEFAULT 'other';
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS file_size INTEGER DEFAULT 0;
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS uploaded_by VARCHAR(100);
+CREATE INDEX IF NOT EXISTS idx_photos_project ON photos(project_id);

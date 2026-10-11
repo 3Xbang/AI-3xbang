@@ -145,8 +145,9 @@ const ProjectDetail = {
                 MaterialManager.init(this.projectId);
                 break;
             case 'photos':
-                container.innerHTML = '<div id="photos-grid" class="photo-grid"></div>';
-                await this.loadPhotos();
+                container.innerHTML = '<div style="margin:8px 0 12px"><button class="btn-primary" onclick="photoManager.showUploadForm()">📷 上传照片 อัปโหลดรูป</button></div>' +
+                    '<div id="photos-grid" class="photo-grid"></div>';
+                photoManager.init(this.projectId);
                 break;
             case 'settings':
                 container.innerHTML = this.renderSettings();

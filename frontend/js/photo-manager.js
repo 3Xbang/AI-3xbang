@@ -18,7 +18,7 @@ const photoManager = {
         
         try {
             app.showLoading();
-            const result = await api.getProjectPhotos(this.currentProjectId);
+            const result = await api.getPhotos(this.currentProjectId);
             
             if (result.success) {
                 this.renderPhotos(result.data);
@@ -47,7 +47,7 @@ const photoManager = {
     // 渲染单个照片卡片
     renderPhotoCard(photo) {
         const uploadTime = new Date(photo.upload_time).toLocaleString('zh-CN');
-        const fileSize = this.formatFileSize(photo.file_size);
+        const fileSize = this.formatFileSize(photo.file_size || 0);
         
         return `
             <div class="photo-card" onclick="photoManager.viewPhoto(${photo.id})">
@@ -180,7 +180,10 @@ const photoManager = {
                     formData.append('process_execution_id', processExecutionId);
                 }
                 
-                await api.uploadPhoto(formData);
+                const up = await api.uploadPhoto(formData);
+                if (!up || !up.success) {
+                    throw new Error((up && up.message) || '服务器拒绝');
+                }
             }
             
             app.showToast(`成功上传 ${this.selectedFiles.length} 张照片`, 'success');

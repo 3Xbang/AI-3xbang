@@ -632,7 +632,12 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
   try {
     await client.query('BEGIN');
     
-    const { project_id, process_execution_id, material_id, photo_type } = req.body;
+    const { project_id, process_execution_id, material_id } = req.body;
+    const photo_type = req.body.photo_type || 'other';
+    if (!req.file) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: '请选择照片' });
+    }
     
     // 检查项目访问权限
     const hasAccess = await checkProjectAccess(client, req.user.id, req.user.role, project_id);
@@ -666,6 +671,20 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
+  }
+});
+
+router.get('/photos/project/:projectId', authenticate, async (req, res) => {
+  try {
+    const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, req.params.projectId);
+    if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问此项目' });
+    const result = await pool.query(
+      'SELECT * FROM photos WHERE project_id = $1 ORDER BY upload_time DESC, id DESC',
+      [req.params.projectId]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

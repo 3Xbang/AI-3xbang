@@ -345,115 +345,222 @@ if (typeof app !== 'undefined') {
                 { key: 'width', label: '宽度', unit: 'm', required: true, hint: '开挖区域的宽度' },
                 { key: 'depth', label: '深度', unit: 'm', required: true, hint: '开挖深度' }
             ],
-            'P001': [ // 地基开挖
+            'FND-01-01': [ // 场地平整
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'FND-01-02': [ // 基坑开挖
                 { key: 'length', label: '长度', unit: 'm', required: true },
                 { key: 'width', label: '宽度', unit: 'm', required: true },
                 { key: 'depth', label: '深度', unit: 'm', required: true }
             ],
-            'P005': [ // 地基回填
-                { key: 'volume', label: '回填体积', unit: 'm³', required: true }
+            'FND-01-03': [ // 地基处理
+                { key: 'area', label: '面积', unit: 'm²', required: true }
             ],
-            
-            // 混凝土类 - 需要体积或面积+厚度
-            'P002': [ // 垫层浇筑
+            'FND-01-04': [ // 混凝土垫层
                 { key: 'area', label: '面积', unit: 'm²', required: true },
                 { key: 'thickness', label: '厚度', unit: 'cm', required: true }
             ],
-            'P004': [ // 基础混凝土
+            'FND-01-05': [ // 基础防水
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'FND-01-06': [ // 基础混凝土浇筑
                 { key: 'volume', label: '混凝土体积', unit: 'm³', required: true }
             ],
-            'P008': [ // 柱混凝土
-                { key: 'count', label: '柱子数量', unit: '根', required: true }
-            ],
-            'P013': [ // 楼板混凝土
+            'N02_FOUNDATION': [ // 地基浇筑
                 { key: 'volume', label: '混凝土体积', unit: 'm³', required: true }
             ],
             
-            // 钢筋类 - 需要面积
-            'P003': [ // 基础钢筋
-                { key: 'area', label: '钢筋面积', unit: 'm²', required: true }
-            ],
-            'P007': [ // 柱钢筋
+            // 结构类
+            'STR-02-01': [ // 柱钢筋绑扎
                 { key: 'count', label: '柱子数量', unit: '根', required: true }
             ],
-            'P010': [ // 梁钢筋
-                { key: 'area', label: '梁底面积', unit: 'm²', required: true }
-            ],
-            'P012': [ // 楼板钢筋
-                { key: 'area', label: '楼板面积', unit: 'm²', required: true }
-            ],
-            
-            // 模板类
-            'P006': [ // 柱模板
+            'STR-02-02': [ // 柱模板安装
                 { key: 'count', label: '柱子数量', unit: '根', required: true }
             ],
-            'P009': [ // 梁模板
-                { key: 'area', label: '梁底面积', unit: 'm²', required: true }
+            'STR-02-03': [ // 柱混凝土浇筑
+                { key: 'count', label: '柱子数量', unit: '根', required: true }
             ],
-            'P011': [ // 楼板模板
-                { key: 'area', label: '楼板面积', unit: 'm²', required: true }
+            'STR-02-04': [ // 梁板钢筋绑扎
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'STR-02-05': [ // 梁板模板安装
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'STR-02-06': [ // 梁板混凝土浇筑
+                { key: 'volume', label: '混凝土体积', unit: 'm³', required: true }
+            ],
+            'STR-02-07': [ // 楼梯施工
+                { key: 'count', label: '楼梯数量', unit: '段', required: true }
+            ],
+            'STR-02-08': [ // 屋面结构层
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'STR-02-09': [ // 屋面防水层
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            'N03_STRUCTURE': [ // 主体框架
+                { key: 'area', label: '建筑面积', unit: 'm²', required: true }
+            ],
+            'N04_ROOF_FRAME': [ // 屋面封顶
+                { key: 'area', label: '屋面面积', unit: 'm²', required: true }
             ],
             
             // 砌筑类
-            'P014': [ // 砌墙
+            'MAS-03-01': [ // 砖墙砌筑
+                { key: 'area', label: '墙体面积', unit: 'm²', required: true }
+            ],
+            'MAS-03-02': [ // 构造柱施工
+                { key: 'count', label: '构造柱数量', unit: '根', required: true }
+            ],
+            'MAS-03-03': [ // 圈梁施工
+                { key: 'length', label: '长度', unit: 'm', required: true }
+            ],
+            'N08_WALL_PARTITION': [ // 砌墙隔断
                 { key: 'area', label: '墙体面积', unit: 'm²', required: true }
             ],
             
-            // 防水类
-            'P015': [ // 屋面防水
-                { key: 'area', label: '屋面面积', unit: 'm²', required: true }
+            // 装修类 - 抹灰
+            'FIN-01-01': [ // 墙面基层处理
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
             ],
-            'P016': [ // 卫生间防水
-                { key: 'count', label: '卫生间数量', unit: '间', required: true }
+            'FIN-01-02': [ // 内墙抹灰
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'FIN-01-03': [ // 外墙抹灰
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'FIN-01-04': [ // 天花抹灰
+                { key: 'area', label: '天花面积', unit: 'm²', required: true }
+            ],
+            'N09_PLASTERING': [ // 泥瓦抹灰
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            
+            // 地面类
+            'FLR-02-01': [ // 地面找平层
+                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            ],
+            'FLR-02-02': [ // 地砖铺贴
+                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            ],
+            'FLR-02-03': [ // 木地板安装
+                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            ],
+            'FLR-02-04': [ // 石材地面
+                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            ],
+            'N10_TILING': [ // 瓷砖铺贴
+                { key: 'area', label: '面积', unit: 'm²', required: true }
+            ],
+            
+            // 吊顶类
+            'CLG-03-01': [ // 轻钢龙骨骨架
+                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            ],
+            'CLG-03-02': [ // 石膏板吊顶
+                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            ],
+            'CLG-03-03': [ // 铝扣板吊顶
+                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            ],
+            'N11_CEILING': [ // 木工吊顶
+                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            ],
+            
+            // 墙面装修类
+            'WAL-04-01': [ // 墙面找平
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'WAL-04-02': [ // 腻子批刮
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'WAL-04-03': [ // 乳胶漆涂刷
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'WAL-04-04': [ // 墙砖铺贴
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'WAL-04-05': [ // 墙纸粘贴
+                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            ],
+            'N12_PAINTING': [ // 油漆涂刷
+                { key: 'area', label: '涂刷面积', unit: 'm²', required: true }
+            ],
+            
+            // 门窗类
+            'DOR-05-01': [ // 门窗框安装
+                { key: 'count', label: '门窗数量', unit: '樘', required: true }
+            ],
+            'DOR-05-02': [ // 门扇安装
+                { key: 'count', label: '门扇数量', unit: '扇', required: true }
+            ],
+            'DOR-05-03': [ // 窗扇安装
+                { key: 'count', label: '窗扇数量', unit: '扇', required: true }
+            ],
+            'DOR-05-04': [ // 玻璃安装
+                { key: 'area', label: '玻璃面积', unit: 'm²', required: true }
+            ],
+            'N13_DOOR_WINDOW': [ // 门窗安装
+                { key: 'count', label: '门窗数量', unit: '樘', required: true }
             ],
             
             // 水电类
-            'P017': [ // 水电预埋
+            'MEP-06-01': [ // 给水管道安装
+                { key: 'length', label: '管道长度', unit: 'm', required: true }
+            ],
+            'MEP-06-02': [ // 排水管道安装
+                { key: 'length', label: '管道长度', unit: 'm', required: true }
+            ],
+            'MEP-06-03': [ // 强电线路敷设
                 { key: 'area', label: '建筑面积', unit: 'm²', required: true }
             ],
-            'P018': [ // 给水管
+            'MEP-06-04': [ // 弱电线路敷设
                 { key: 'area', label: '建筑面积', unit: 'm²', required: true }
             ],
-            'P019': [ // 排水管
+            'MEP-06-05': [ // 灯具安装
+                { key: 'count', label: '灯具数量', unit: '盏', required: true }
+            ],
+            'MEP-06-06': [ // 开关插座安装
+                { key: 'count', label: '开关插座数量', unit: '个', required: true }
+            ],
+            'N05_MEP_ROUGH': [ // 水电布管
                 { key: 'area', label: '建筑面积', unit: 'm²', required: true }
             ],
-            'P020': [ // 电线穿管
+            'N06_MEP_HIDDEN': [ // 水电隐蔽工程
                 { key: 'area', label: '建筑面积', unit: 'm²', required: true }
+            ],
+            'N15_LIGHTING': [ // 灯具开关
+                { key: 'count', label: '灯具数量', unit: '盏', required: true }
             ],
             
-            // 装修类
-            'P021': [ // 内墙抹灰
-                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            // 防水类
+            'SAN-07-01': [ // 卫生间防水
+                { key: 'area', label: '防水面积', unit: 'm²', required: true }
             ],
-            'P022': [ // 地面找平
-                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            'SAN-07-02': [ // 卫生洁具安装
+                { key: 'count', label: '洁具数量', unit: '件', required: true }
             ],
-            'P023': [ // 墙面贴砖
-                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            'SAN-07-03': [ // 淋浴房安装
+                { key: 'count', label: '淋浴房数量', unit: '间', required: true }
             ],
-            'P024': [ // 地面铺砖
-                { key: 'area', label: '地面面积', unit: 'm²', required: true }
+            'N07_WATERPROOF': [ // 防水工程
+                { key: 'area', label: '防水面积', unit: 'm²', required: true }
             ],
-            'P025': [ // 吊顶龙骨
-                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            'N14_SANITARY': [ // 洁具安装
+                { key: 'count', label: '洁具数量', unit: '件', required: true }
             ],
-            'P026': [ // 吊顶封板
-                { key: 'area', label: '吊顶面积', unit: 'm²', required: true }
+            
+            // 厨房类
+            'KIT-07-04': [ // 橱柜安装
+                { key: 'length', label: '橱柜长度', unit: 'm', required: true }
             ],
-            'P027': [ // 墙面涂料
-                { key: 'area', label: '墙面面积', unit: 'm²', required: true }
+            'KIT-07-05': [ // 台面安装
+                { key: 'length', label: '台面长度', unit: 'm', required: true }
             ],
-            'P028': [ // 门窗安装
-                { key: 'count', label: '门窗数量', unit: '樘', required: true }
-            ],
-            'P029': [ // 洁具安装
-                { key: 'count', label: '洁具件数', unit: '件', required: true }
-            ],
-            'P030': [ // 灯具安装
-                { key: 'area', label: '建筑面积', unit: 'm²', required: true }
-            ],
-            'P031': [ // 验收
-                { key: 'area', label: '建筑面积', unit: 'm²', required: true }
+            
+            // 其他
+            'N16_CLEANING': [ // 清洁验收
+                { key: 'area', label: '清洁面积', unit: 'm²', required: true }
             ]
         };
         
@@ -726,6 +833,20 @@ console.log('✓ 工序进度页面增强功能已加载');
         // 获取工序类型对应的字段
         const fields = app.getQuantityFields(processCode);
         
+        // 如果没有找到字段定义，使用通用字段
+        if (!fields || fields.length === 0) {
+            this.showToast('该工序暂不支持工程量输入，或使用通用工程量字段', 'warning');
+            
+            // 使用通用字段：数量
+            const genericFields = [
+                { key: 'quantity', label: '工程量', unit: '', required: true, placeholder: '请输入工程量' },
+                { key: 'unit', label: '单位', unit: '', required: false, placeholder: '例如：m³、m²、个等' }
+            ];
+            
+            await this.showGenericQuantityInput(process, genericFields);
+            return;
+        }
+        
         // 解析现有的 measurements 数据
         let existingMeasurements = {};
         if (process.measurements) {
@@ -885,4 +1006,93 @@ console.log('✓ 工序进度页面增强功能已加载');
         
         // 调用原有的 showQuantityInput 函数
         await this.showQuantityInput(process);
+    };
+    
+    // 通用工程量输入（用于没有预定义字段的工序）
+    app.showGenericQuantityInput = async function(process, fields) {
+        const processName = getI18nField(process, 'process_name');
+        const processId = process.id;
+        
+        // 解析现有数据
+        let existingMeasurements = {};
+        if (process.measurements) {
+            try {
+                existingMeasurements = typeof process.measurements === 'string' 
+                    ? JSON.parse(process.measurements) 
+                    : process.measurements;
+            } catch (e) {
+                console.error('Parse measurements error:', e);
+            }
+        }
+        
+        const modal = app.createModal(`工程量 - ${processName}`, `
+            <form id="quantity-form" class="form-vertical">
+                <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
+                    <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? '保存后工序将自动开始。' : ''}
+                </div>
+                
+                <div class="form-group">
+                    <label>工程量 *</label>
+                    <input type="number" id="qty-quantity" value="${existingMeasurements.quantity || process.planned_quantity || ''}" min="0" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>单位</label>
+                    <input type="text" id="qty-unit" value="${existingMeasurements.unit || process.quantity_unit || ''}" placeholder="例如：m³、m²、个、kg等">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
+                        取消
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ${process.status === 'not_started' ? '保存并开始' : '保存'}
+                    </button>
+                </div>
+            </form>
+        `);
+        
+        document.getElementById('quantity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const quantity = parseFloat(document.getElementById('qty-quantity').value);
+            const unit = document.getElementById('qty-unit').value || '';
+            
+            if (!quantity || quantity <= 0) {
+                this.showToast('请输入有效的工程量', 'error');
+                return;
+            }
+            
+            try {
+                this.showLoading();
+                
+                const updateData = {
+                    measurements: JSON.stringify({ quantity, unit }),
+                    planned_quantity: quantity,
+                    quantity_unit: unit
+                };
+                
+                // 如果是未开始状态，自动开始
+                if (process.status === 'not_started') {
+                    updateData.status = 'in_progress';
+                    updateData.actual_start_date = new Date().toISOString().split('T')[0];
+                }
+                
+                const result = await api.processes.update(processId, updateData);
+                
+                if (result.success) {
+                    app.closeModal();
+                    this.showToast(process.status === 'not_started' ? '工序已开始' : '工程量已更新');
+                    
+                    if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                        await ProjectDetail.loadProcesses();
+                    }
+                }
+            } catch (error) {
+                console.error('Save generic quantity error:', error);
+                this.showToast('保存失败', 'error');
+            } finally {
+                this.hideLoading();
+            }
+        });
     };

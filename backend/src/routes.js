@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const authenticate = require('./middleware-auth');
 const { requirePermission, requireProjectAccess, checkProjectAccess, logActivity } = require('./middleware-permissions');
 const { STANDARD_PROCESSES } = require('./process-templates');
+const SiteService = require('./site-service');
 const multer = require('multer');
 const path = require('path');
 
@@ -339,7 +340,7 @@ router.get('/projects/:id/summary', authenticate, requireProjectAccess(), async 
 router.get('/projects/:projectId/processes', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT pe.*, pn.process_code, pn.process_name, pn.sequence_number
+      SELECT pe.*, pn.process_code, pn.process_name, pn.sequence_number, pn.master_code, pn.floor_no
       FROM process_nodes pn
       LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
       WHERE pn.project_id = $1
@@ -409,6 +410,12 @@ router.put('/processes/:id', authenticate, async (req, res) => {
       planned_duration
     } = req.body;
     
+    // 从「未开始」改成「进行中」时，对由总库生成的工序检查前置条件；
+    // 没满足就返回 409 和原因；带了 force_reason 则允许提前开始，并记录、通知上级和老板
+    if (status === 'in_progress') {
+      await SiteService.startProcess(client, Number(req.params.id), req.user, req.body.force_reason);
+    }
+    
     const result = await client.query(`
       UPDATE process_execution 
       SET status = COALESCE($1, status),
@@ -447,6 +454,10 @@ router.put('/processes/:id', authenticate, async (req, res) => {
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');
+    // 前置条件没满足时，把原因和状态码原样返回，页面据此让工头填写提前开始的原因
+    if (error instanceof SiteService.HttpError) {
+      return res.status(error.status).json(Object.assign({ success: false, message: error.message }, error.extra));
+    }
     res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
@@ -2392,3 +2403,6 @@ async function checkCircularDependency(client, processId, dependsOnId, visited =
   return false;
 }
 
+
+// ============ 现场安排：项目申请表、团队、看板、派工、通知 ============
+router.use(require('./site-routes'));

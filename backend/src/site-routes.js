@@ -1,0 +1,263 @@
+// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+const express = require('express');
+const router = express.Router();
+const pool = require('./config/db');
+const authenticate = require('./middleware-auth');
+const { requirePermission, requireProjectAccess, checkProjectAccess, logActivity } = require('./middleware-permissions');
+const S = require('./site-service');
+const { canStart } = require('./advisor');
+const { describeReason, crewsFromTeam } = require('./advisor');
+const { todayInBangkok } = require('./work-calendar');
+
+const wrap = fn => async (req, res) => {
+  try { await fn(req, res); }
+  catch (e) {
+    if (!(e instanceof S.HttpError)) console.error('site-routes error:', e);
+    res.status(e.status || 500).json(Object.assign({ success: false, message: e.message }, e.extra || {}));
+  }
+};
+
+async function tx(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const out = await fn(client);
+    await client.query('COMMIT');
+    return out;
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+    throw e;
+  } finally { client.release(); }
+}
+
+async function execProject(client, execId) {
+  const r = await client.query(
+    'SELECT pn.project_id FROM process_execution pe JOIN process_nodes pn ON pn.id = pe.process_node_id WHERE pe.id = $1', [execId]);
+  if (!r.rows.length) throw new S.HttpError(404, '工序不存在');
+  return r.rows[0].project_id;
+}
+async function requireAccessToExec(client, req, execId) {
+  const projectId = await execProject(client, execId);
+  if (!(await checkProjectAccess(client, req.user.id, req.user.role, projectId))) throw new S.HttpError(403, '无权访问此项目');
+  return projectId;
+}
+const validDate = d => (d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayInBangkok());
+const TRADE_KEYS = Object.keys(S.TRADES);
+
+// ---------- 基础信息 ----------
+router.get('/site/meta', authenticate, (req, res) => {
+  res.json({ success: true, data: { trades: S.TRADES, defaults: S.DEFAULT_PROFILE } });
+});
+
+// ---------- 项目申请表 ----------
+router.get('/projects/:projectId/profile', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const p = await S.getProfile(pool, req.params.projectId);
+  res.json({ success: true, data: { answers: p ? p.answers : {}, planGeneratedAt: p ? p.plan_generated_at : null, defaults: S.DEFAULT_PROFILE } });
+}));
+
+router.put('/projects/:projectId/profile', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  const answers = req.body.answers;
+  if (!answers || typeof answers !== 'object') throw new S.HttpError(400, '缺少申请表答案');
+  try { await S.saveProfile(pool, req.params.projectId, answers, req.user.id); }
+  catch (e) { throw new S.HttpError(400, e.message); }
+  res.json({ success: true, message: '申请表已保存' });
+}));
+
+router.post('/projects/:projectId/plan/preview', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  let answers = req.body.answers;
+  if (!answers) { const p = await S.getProfile(pool, req.params.projectId); answers = p ? p.answers : {}; }
+  let data;
+  try { data = await S.previewPlan(pool, req.params.projectId, answers); }
+  catch (e) { throw new S.HttpError(400, e.message); }
+  res.json({ success: true, data });
+}));
+
+router.post('/projects/:projectId/plan/apply', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  const projectId = req.params.projectId;
+  const p = await S.getProfile(pool, projectId);
+  const answers = req.body.answers || (p ? p.answers : {});
+  const result = await tx(async client => {
+    await S.saveProfile(client, projectId, answers, req.user.id);
+    let r;
+    try { r = await S.applyPlan(client, projectId, answers, { legacy: req.body.legacy || null }); }
+    catch (e) { if (e instanceof S.HttpError) throw e; throw new S.HttpError(400, e.message); }
+    await logActivity(client, req.user.id, 'apply_plan', 'project', Number(projectId), { message: `按申请表生成工序：新增 ${r.added}，移除 ${r.removed}` });
+    return r;
+  });
+  res.json({ success: true, message: '工序已生成', data: result });
+}));
+
+// ---------- 团队名册（沿用 workers 表） ----------
+function cleanMember(b) {
+  const level = b.level === 'skilled' ? 'skilled' : 'helper';
+  const name = String(b.name || '').trim();
+  if (!name) throw new S.HttpError(400, '请填写姓名');
+  let skills = Array.isArray(b.skills) ? b.skills : [];
+  skills = skills.filter(s => s === '*' || TRADE_KEYS.includes(s));
+  if (level === 'skilled' && !skills.length) throw new S.HttpError(400, '技工至少要选一个工种');
+  if (level === 'skilled' && skills.includes('*')) skills = skills.filter(s => s !== '*');
+  if (level === 'helper' && !skills.length) skills = ['*'];
+  return { name, level, skills, phone: b.phone || null, role: b.role || null, daily_wage: Number(b.daily_wage) || 0 };
+}
+
+router.get('/projects/:projectId/team', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const r = await pool.query(
+    `SELECT worker_id AS id, name, level, skills, role, phone, daily_wage FROM workers WHERE project_id = $1 AND status = 'active' ORDER BY worker_id`,
+    [req.params.projectId]);
+  const members = r.rows.map(w => ({ id: w.id, name: w.name, level: w.level === 'skilled' ? 'skilled' : 'helper',
+    skills: Array.isArray(w.skills) && w.skills.length ? w.skills : (w.level === 'skilled' ? [] : ['*']), role: w.role, phone: w.phone, daily_wage: w.daily_wage }));
+  res.json({ success: true, data: { members, crewCapacity: crewsFromTeam({ members }) } });
+}));
+
+router.post('/projects/:projectId/team', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  const m = cleanMember(req.body);
+  const r = await pool.query(
+    `INSERT INTO workers (project_id, name, role, phone, daily_wage, level, skills) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb) RETURNING worker_id AS id`,
+    [req.params.projectId, m.name, m.role, m.phone, m.daily_wage, m.level, JSON.stringify(m.skills)]);
+  res.json({ success: true, data: { id: r.rows[0].id } });
+}));
+
+router.put('/team/:workerId', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  const m = cleanMember(req.body);
+  const r = await pool.query(
+    `UPDATE workers SET name = $1, role = $2, phone = $3, daily_wage = $4, level = $5, skills = $6::jsonb WHERE worker_id = $7 RETURNING worker_id`,
+    [m.name, m.role, m.phone, m.daily_wage, m.level, JSON.stringify(m.skills), req.params.workerId]);
+  if (!r.rows.length) throw new S.HttpError(404, '成员不存在');
+  res.json({ success: true });
+}));
+
+router.delete('/team/:workerId', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  const r = await pool.query(`UPDATE workers SET status = 'inactive' WHERE worker_id = $1 RETURNING worker_id`, [req.params.workerId]);
+  if (!r.rows.length) throw new S.HttpError(404, '成员不存在');
+  res.json({ success: true });
+}));
+
+// ---------- 出勤 ----------
+router.get('/projects/:projectId/attendance', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const date = validDate(req.query.date);
+  const r = await pool.query(
+    `SELECT w.worker_id AS id, w.name, COALESCE(a.status, 'present') AS status
+       FROM workers w LEFT JOIN daily_attendance a ON a.worker_id = w.worker_id AND a.attendance_date = $2
+      WHERE w.project_id = $1 AND w.status = 'active' ORDER BY w.worker_id`, [req.params.projectId, date]);
+  res.json({ success: true, data: { date, members: r.rows } });
+}));
+
+// 工头标记今天没来的人，其余默认来了
+router.put('/projects/:projectId/attendance', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const date = validDate(req.body.date);
+  const absent = (req.body.absent || []).map(Number);
+  await tx(async client => {
+    const w = await client.query(`SELECT worker_id FROM workers WHERE project_id = $1 AND status = 'active'`, [req.params.projectId]);
+    for (const row of w.rows) {
+      const st = absent.includes(row.worker_id) ? 'absent' : 'present';
+      await client.query(
+        `INSERT INTO daily_attendance (project_id, worker_id, attendance_date, status, created_by) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (worker_id, attendance_date) DO UPDATE SET status = EXCLUDED.status, created_by = EXCLUDED.created_by`,
+        [req.params.projectId, row.worker_id, date, st, req.user.id]);
+    }
+    if (absent.length) {
+      // 没来的人，当天已经安排的任务要撤掉
+      await client.query('DELETE FROM site_assignments WHERE project_id = $1 AND work_date = $2 AND worker_id = ANY($3::int[])', [req.params.projectId, date, absent]);
+    }
+  });
+  res.json({ success: true });
+}));
+
+// ---------- 现场看板 ----------
+router.get('/projects/:projectId/site-board', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const data = await S.buildBoard(pool, req.params.projectId, validDate(req.query.date));
+  res.json({ success: true, data });
+}));
+
+// 工头给今天派人：{ date, assignments: { 工序id: [工人id] } }（整天覆盖）
+router.put('/projects/:projectId/site-assignments', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const projectId = Number(req.params.projectId);
+  const date = validDate(req.body.date);
+  const input = req.body.assignments || {};
+  await tx(async client => {
+    const L = await S.loadPlanState(client, projectId, date);
+    const w = await client.query(`SELECT worker_id FROM workers WHERE project_id = $1 AND status = 'active'`, [projectId]);
+    const valid = new Set(w.rows.map(r => r.worker_id));
+    const ab = await client.query(`SELECT worker_id FROM daily_attendance WHERE project_id = $1 AND attendance_date = $2 AND status <> 'present'`, [projectId, date]);
+    const absent = new Set(ab.rows.map(r => r.worker_id));
+    const seen = new Set();
+    for (const execId of Object.keys(input)) {
+      const pid = await execProject(client, Number(execId));
+      if (pid !== projectId) throw new S.HttpError(400, '工序不属于这个项目');
+      for (const wid of input[execId].map(Number)) {
+        if (!valid.has(wid)) throw new S.HttpError(400, `成员 ${wid} 不在这个项目的团队里`);
+        if (absent.has(wid)) throw new S.HttpError(400, `成员 ${wid} 今天没来，不能安排`);
+        if (seen.has(wid)) throw new S.HttpError(400, `成员 ${wid} 被安排到了多个任务，一个人一天只能在一个任务上`);
+        seen.add(wid);
+      }
+      // 还没开始的、前置没满足的任务，不能派人（要先「提前开始」并写原因）
+      if (L.planned && L.keyByExec.has(Number(execId))) {
+        const key = L.keyByExec.get(Number(execId));
+        const st = L.state.tasks[key];
+        if (!st || st.status === 'not_started') {
+          const check = canStart(L.plan, L.state, key);
+          if (!check.allowed) {
+            const label = k => { const t = L.plan.tasks.find(x => x.key === k); return t.zh + (t.floor != null ? `（${t.floor}层）` : ''); };
+            throw new S.HttpError(409, '这个任务前置条件还没满足，不能派人。需要提前开始的话，请先点「提前开始」并写原因',
+              { code: 'BLOCKED', reasons: check.reasons.map(r => describeReason(r, label)) });
+          }
+        }
+      }
+    }
+    await client.query('DELETE FROM site_assignments WHERE project_id = $1 AND work_date = $2', [projectId, date]);
+    for (const execId of Object.keys(input)) {
+      for (const wid of input[execId].map(Number)) {
+        await client.query(
+          `INSERT INTO site_assignments (project_id, process_execution_id, worker_id, work_date, created_by) VALUES ($1, $2, $3, $4, $5)`,
+          [projectId, Number(execId), wid, date, req.user.id]);
+      }
+    }
+  });
+  res.json({ success: true });
+}));
+
+// ---------- 开始工序（有把关；提前开始必须写原因并通知） ----------
+router.post('/processes/:id/start', authenticate, wrap(async (req, res) => {
+  const execId = Number(req.params.id);
+  const out = await tx(async client => {
+    await requireAccessToExec(client, req, execId);
+    const r = await S.startProcess(client, execId, req.user, req.body.force_reason);
+    if (r.started) await logActivity(client, req.user.id, r.override ? 'force_start_process' : 'start_process', 'process_execution', execId, { message: r.override ? r.override.message : '开始工序' });
+    return r;
+  });
+  res.json({ success: true, data: out });
+}));
+
+router.get('/projects/:projectId/overrides', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const r = await pool.query(
+    `SELECT o.id, o.severity, o.reason, o.unmet, o.decided_by_name, to_char(o.created_at, 'YYYY-MM-DD HH24:MI') AS created_at, pn.process_name
+       FROM process_overrides o JOIN process_execution pe ON pe.id = o.process_execution_id JOIN process_nodes pn ON pn.id = pe.process_node_id
+      WHERE o.project_id = $1 ORDER BY o.created_at DESC LIMIT 100`, [req.params.projectId]);
+  res.json({ success: true, data: r.rows });
+}));
+
+// ---------- 通知 ----------
+router.get('/notifications', authenticate, wrap(async (req, res) => {
+  const params = [req.user.id];
+  let where = 'to_user_id = $1';
+  if (req.query.project_id) { params.push(Number(req.query.project_id)); where += ` AND project_id = $${params.length}`; }
+  if (req.query.unread === '1') where += ' AND read_at IS NULL';
+  const r = await pool.query(
+    `SELECT id, project_id, title, body, severity, related_type, related_id, read_at IS NOT NULL AS is_read,
+            to_char(created_at, 'YYYY-MM-DD HH24:MI') AS created_at
+       FROM notifications WHERE ${where} ORDER BY created_at DESC LIMIT 100`, params);
+  const unread = await pool.query('SELECT count(*)::int AS n FROM notifications WHERE to_user_id = $1 AND read_at IS NULL', [req.user.id]);
+  res.json({ success: true, data: { items: r.rows, unread: unread.rows[0].n } });
+}));
+
+router.post('/notifications/read-all', authenticate, wrap(async (req, res) => {
+  await pool.query('UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE to_user_id = $1 AND read_at IS NULL', [req.user.id]);
+  res.json({ success: true });
+}));
+
+router.post('/notifications/:id/read', authenticate, wrap(async (req, res) => {
+  await pool.query('UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE id = $1 AND to_user_id = $2', [req.params.id, req.user.id]);
+  res.json({ success: true });
+}));
+
+module.exports = router;

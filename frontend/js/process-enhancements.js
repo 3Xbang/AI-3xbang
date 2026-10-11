@@ -195,10 +195,13 @@ if (typeof app !== 'undefined') {
             
             if (result.success) {
                 this.showToast('工序已开始');
-                const projectId = document.getElementById('project-selector').value;
-                if (projectId) this.loadProcesses(projectId);
+                // 重新加载工序列表
+                if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                    await ProjectDetail.loadProcesses();
+                }
             }
         } catch (error) {
+            console.error('Start process error:', error);
             this.showToast('操作失败', 'error');
         } finally {
             this.hideLoading();
@@ -220,10 +223,13 @@ if (typeof app !== 'undefined') {
             
             if (result.success) {
                 this.showToast('状态已更新');
-                const projectId = document.getElementById('project-selector').value;
-                if (projectId) this.loadProcesses(projectId);
+                // 重新加载工序列表
+                if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                    await ProjectDetail.loadProcesses();
+                }
             }
         } catch (error) {
+            console.error('Pause process error:', error);
             this.showToast('操作失败', 'error');
         } finally {
             this.hideLoading();
@@ -244,10 +250,13 @@ if (typeof app !== 'undefined') {
             
             if (result.success) {
                 this.showToast('工序已完成！');
-                const projectId = document.getElementById('project-selector').value;
-                if (projectId) this.loadProcesses(projectId);
+                // 重新加载工序列表
+                if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                    await ProjectDetail.loadProcesses();
+                }
             }
         } catch (error) {
+            console.error('Complete process error:', error);
             this.showToast('操作失败', 'error');
         } finally {
             this.hideLoading();

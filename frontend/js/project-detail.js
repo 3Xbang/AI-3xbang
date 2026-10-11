@@ -259,7 +259,7 @@ const ProjectDetail = {
     // 加载工序
     async loadProcesses() {
         try {
-            const result = await api.getProcesses(this.projectId);
+            const result = await api.processes.getList(this.projectId);
             if (result.success) {
                 app.renderProcesses(result.data);
             }

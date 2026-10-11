@@ -31,7 +31,23 @@ const translations = {
         submit: '提交 ส่ง',
         back: '返回 กลับ',
         next: '下一步 ถัดไป',
-        create: '创建 สร้าง'
+        create: '创建 สร้าง',
+        fillRequired: '请填写必填项 กรุณากรอกข้อมูลที่จำเป็น',
+        updateError: '更新失败 อัพเดทไม่สำเร็จ'
+    },
+    quantities: {
+        instruction: '说明 คำอธิบาย',
+        instructionText: '请填写下列工程量数据 กรุณากรอกปริมาณงานด้านล่าง',
+        enterData: '输入工程量 กรอกปริมาณงาน',
+        calculationResult: '计算结果 ผลการคำนวณ',
+        notSupported: '该工序未预设字段，使用通用输入 งานนี้ไม่มีช่องกรอกที่กำหนดไว้ ใช้การกรอกทั่วไป',
+        quantity: '工程量 ปริมาณงาน',
+        enterQuantity: '请输入数量 กรุณากรอกจำนวน',
+        unit: '单位 หน่วย',
+        unitPlaceholder: '如 m²、m³、个 เช่น m², m³, ชิ้น',
+        unitExample: '如 m²、m³、个 เช่น m², m³, ชิ้น',
+        validQuantityError: '请输入大于0的数量 กรุณากรอกจำนวนที่มากกว่า 0',
+        updateSuccess: '工程量已保存 บันทึกปริมาณงานแล้ว'
     },
     dashboard: {
         title: '项目概览 แดชบอร์ดโครงการ',
@@ -81,6 +97,9 @@ const translations = {
         noProcessesDesc: '开始添加工序 เริ่มเพิ่มงาน',
         addFirst: '添加第一个工序 เพิ่มงานแรก',
         processCode: '工序编号 รหัสงาน',
+        startSuccess: '工序已开始 เริ่มงานแล้ว',
+        completeSuccess: '工序已完成 งานเสร็จสมบูรณ์',
+        notFound: '未找到工序 ไม่พบงาน',
         status: {
             not_started: '未开始 ยังไม่เริ่ม',
             in_progress: '进行中 กำลังดำเนินการ',

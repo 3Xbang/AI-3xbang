@@ -975,16 +975,16 @@ console.log('✓ 工序进度页面增强功能已加载');
             `;
         }).join('');
         
-        // ${t('quantities.calculationResult')}显示（使用数据库中的单位）
-        const resultHtml = fields.formula ? `
+        // 计算结果显示（始终显示，随输入实时更新）
+        const resultHtml = `
             <div class="form-group">
                 <label style="font-weight: bold; color: #059669;">${t('quantities.calculationResult')}</label>
                 <div id="quantity-result" style="font-size: 1.2em; color: #059669; padding: 10px; background: #f0fdf4; border-radius: 0.5rem; text-align: center;">
                     ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '等待输入 รอการป้อน'}
                 </div>
-                ${process.quantity_unit ? `<small class="form-hint" style="text-align: center; display: block; color: #059669;">单位 หน่วย: ${process.quantity_unit}</small>` : ''}
+                <div id="quantity-derived" style="text-align: center; color: #6b7280; font-size: 0.9em; margin-top: 6px;"></div>
             </div>
-        ` : '';
+        `;
         
         const modal = app.createModal(`工程量 ปริมาณงาน - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
@@ -1006,23 +1006,31 @@ console.log('✓ 工序进度页面增强功能已加载');
             </form>
         `);
         
-        // 实时计算（使用数据库中的单位）
-        if (fields.formula) {
-            fields.forEach(field => {
-                const input = document.getElementById(`qty-${field.key}`);
-                if (input) {
-                    input.addEventListener('input', () => {
-                        const result = app.calculateQuantity(fields, processCode);
-                        const resultDiv = document.getElementById('quantity-result');
-                        if (resultDiv && result) {
-                            // 使用process中的quantity_unit，如果没有则使用计算结果的单位
-                            const displayUnit = process.quantity_unit || result.unit;
-                            resultDiv.textContent = `${result.value} ${displayUnit}`;
-                        }
-                    });
-                }
+        // 实时计算：每次输入后刷新结果和推算值
+        const refreshResult = () => {
+            const m = {};
+            fields.forEach(f => {
+                const el = document.getElementById(`qty-${f.key}`);
+                const v = el ? parseFloat(el.value) : NaN;
+                if (!isNaN(v) && v > 0) m[f.key] = v;
             });
-        }
+            const calc = app.computeQuantity(m);
+            const resultDiv = document.getElementById('quantity-result');
+            const derivedDiv = document.getElementById('quantity-derived');
+            if (!resultDiv) return;
+            if (calc.value > 0) {
+                const unit = process.quantity_unit || calc.unit;
+                resultDiv.textContent = `${Math.round(calc.value * 100) / 100} ${unit}`;
+            } else {
+                resultDiv.textContent = '等待输入 รอการป้อน';
+            }
+            if (derivedDiv) derivedDiv.textContent = calc.note || '';
+        };
+        fields.forEach(f => {
+            const el = document.getElementById(`qty-${f.key}`);
+            if (el) el.addEventListener('input', refreshResult);
+        });
+        refreshResult();
         
         // 表单提交
         document.getElementById('quantity-form').addEventListener('submit', async (e) => {
@@ -1059,52 +1067,27 @@ console.log('✓ 工序进度页面增强功能已加载');
         try {
             this.showLoading();
             
-            // 获取当前process数据，以获取数据库中已设置的单位
-            const processResponse = await api.processes.getById(processId);
-            const currentProcess = processResponse.process || {};
+            // 从已加载的工序列表取当前工序（api.processes 没有 getById）
+            const currentProcess = (app._currentProcesses || []).find(p => p.id === processId) || {};
             
-            // 计算总量（但单位从数据库获取，不覆盖）
-            let plannedQuantity = 0;
-            let quantityUnit = currentProcess.quantity_unit || ''; // 优先使用数据库中的单位
+            // 统一计算：主工程量 + 单位
+            const calc = app.computeQuantity(measurements);
+            const plannedQuantity = Math.round(calc.value * 100) / 100;
             
-            // 根据字段类型计算数量
-            if (measurements.length && measurements.width && measurements.depth) {
-                // 体积 = 长 × 宽 × 深
-                plannedQuantity = measurements.length * measurements.width * measurements.depth;
-                // 只在数据库单位为空时才设置单位
-                if (!quantityUnit) quantityUnit = 'm³';
-            } else if (measurements.area && measurements.thickness) {
-                // 体积 = 面积 × 厚度（厚度单位是cm，需要转换）
-                plannedQuantity = measurements.area * (measurements.thickness / 100);
-                if (!quantityUnit) quantityUnit = 'm³';
-            } else if (measurements.volume) {
-                plannedQuantity = measurements.volume;
-                if (!quantityUnit) quantityUnit = 'm³';
-            } else if (measurements.area) {
-                plannedQuantity = measurements.area;
-                if (!quantityUnit) quantityUnit = 'm²';
-            } else if (measurements.steps) {
-                // 楼梯：按台阶数计算
-                plannedQuantity = measurements.steps;
-                if (!quantityUnit) quantityUnit = '步';
-            } else if (measurements.count) {
-                plannedQuantity = measurements.count;
-                if (!quantityUnit) quantityUnit = fields.find(f => f.key === 'count')?.unit || '个';
-            } else if (measurements.length) {
-                plannedQuantity = measurements.length;
-                if (!quantityUnit) quantityUnit = 'm';
-            } else {
-                // 默认取第一个字段的值
-                const firstField = fields[0];
-                plannedQuantity = measurements[firstField.key] || 0;
-                if (!quantityUnit) quantityUnit = firstField.unit || '';
+            // 数据库里的单位是准的；如果算出来的单位和它不一致，提示出来方便排查
+            if (currentProcess.quantity_unit && calc.unit && currentProcess.quantity_unit !== calc.unit) {
+                console.warn('Quantity unit mismatch:', currentProcess.process_code, 'DB=', currentProcess.quantity_unit, 'calc=', calc.unit);
             }
             
             const updateData = {
                 measurements: JSON.stringify(measurements),
                 planned_quantity: plannedQuantity
-                // 注意：不再包含 quantity_unit，保持数据库中的值不变
+                // 不传 quantity_unit，保持数据库中的值不变
             };
+            // 数据库里没有单位时才补上
+            if (!currentProcess.quantity_unit && calc.unit) {
+                updateData.quantity_unit = calc.unit;
+            }
             
             // 如果是未开始状态，自动开始
             if (shouldStart) {
@@ -1131,6 +1114,41 @@ console.log('✓ 工序进度页面增强功能已加载');
         } finally {
             this.hideLoading();
         }
+    };
+    
+    // 统一计算主工程量（保存和实时显示共用）
+    // 返回 { value, unit, note }：note 是附带的推算值，仅用于显示
+    app.computeQuantity = function(m) {
+        const r = { value: 0, unit: '', note: '' };
+        if (m.length && m.width && m.depth) {
+            // 土方：体积 = 长 × 宽 × 深
+            r.value = m.length * m.width * m.depth; r.unit = 'm³';
+        } else if (m.area && m.thickness) {
+            // 垫层：体积 = 面积 × 厚度（cm 转 m）
+            r.value = m.area * (m.thickness / 100); r.unit = 'm³';
+        } else if (m.volume) {
+            r.value = m.volume; r.unit = 'm³';
+        } else if (m.area) {
+            r.value = m.area; r.unit = 'm²';
+        } else if (m.steps) {
+            // 楼梯：按台阶数计量，同时推算水平投影面积
+            r.value = m.steps; r.unit = '步';
+            if (m.width && m.step_depth) {
+                const proj = m.steps * (m.step_depth / 100) * m.width;
+                r.note = `水平投影面积 พื้นที่ฉายแนวนอน ≈ ${proj.toFixed(2)} m²`;
+            }
+            if (m.step_height) {
+                r.note += `${r.note ? ' ｜ ' : ''}总高 ความสูงรวม ≈ ${(m.steps * m.step_height / 100).toFixed(2)} m`;
+            }
+        } else if (m.count) {
+            r.value = m.count; r.unit = '';
+        } else if (m.length) {
+            r.value = m.length; r.unit = 'm';
+        } else {
+            const first = Object.values(m).find(v => v > 0);
+            r.value = first || 0;
+        }
+        return r;
     };
     
     // 通过ID显示工程量输入（新增的包装函数）

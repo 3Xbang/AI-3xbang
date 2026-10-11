@@ -959,13 +959,42 @@ console.log('✓ 工序进度页面增强功能已加载');
         try {
             this.showLoading();
             
-            // 计算总量
-            const result = app.calculateQuantity(fields, fields[0].processCode);
+            // 计算总量和单位
+            let plannedQuantity = 0;
+            let quantityUnit = '';
+            
+            // 根据字段类型计算
+            if (measurements.length && measurements.width && measurements.depth) {
+                // 体积 = 长 × 宽 × 深
+                plannedQuantity = measurements.length * measurements.width * measurements.depth;
+                quantityUnit = 'm³';
+            } else if (measurements.area && measurements.thickness) {
+                // 体积 = 面积 × 厚度（厚度单位是cm，需要转换）
+                plannedQuantity = measurements.area * (measurements.thickness / 100);
+                quantityUnit = 'm³';
+            } else if (measurements.volume) {
+                plannedQuantity = measurements.volume;
+                quantityUnit = 'm³';
+            } else if (measurements.area) {
+                plannedQuantity = measurements.area;
+                quantityUnit = 'm²';
+            } else if (measurements.count) {
+                plannedQuantity = measurements.count;
+                quantityUnit = fields.find(f => f.key === 'count')?.unit || '个';
+            } else if (measurements.length) {
+                plannedQuantity = measurements.length;
+                quantityUnit = 'm';
+            } else {
+                // 默认取第一个字段的值
+                const firstField = fields[0];
+                plannedQuantity = measurements[firstField.key] || 0;
+                quantityUnit = firstField.unit || '';
+            }
             
             const updateData = {
                 measurements: JSON.stringify(measurements),
-                planned_quantity: result.value,
-                quantity_unit: result.unit
+                planned_quantity: plannedQuantity,
+                quantity_unit: quantityUnit
             };
             
             // 如果是未开始状态，自动开始
@@ -984,10 +1013,12 @@ console.log('✓ 工序进度页面增强功能已加载');
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
                 }
+            } else {
+                this.showToast(apiResult.message || '保存失败', 'error');
             }
         } catch (error) {
             console.error('Save quantity error:', error);
-            this.showToast('保存失败', 'error');
+            this.showToast('保存失败: ' + (error.message || '未知错误'), 'error');
         } finally {
             this.hideLoading();
         }

@@ -197,7 +197,7 @@ const photoManager = {
     // 加载工序列表用于选择
     async loadProcessesForSelect() {
         try {
-            const result = await api.getProcesses(this.currentProjectId);
+            const result = await api.processes.getList(this.currentProjectId);
             if (result.success) {
                 const select = document.getElementById('process-execution-id');
                 select.innerHTML = '<option value="">无</option>' +

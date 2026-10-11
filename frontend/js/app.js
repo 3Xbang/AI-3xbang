@@ -420,7 +420,7 @@ const app = {
         
         try {
             this.showLoading();
-            const result = await api.getProcesses(projectId);
+            const result = await api.processes.getList(projectId);
             if (result.success) {
                 this.renderProcesses(result.data);
             }

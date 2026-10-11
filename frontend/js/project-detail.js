@@ -223,7 +223,7 @@ const ProjectDetail = {
     async loadOverviewData() {
         try {
             // 加载工序统计
-            const processResult = await api.getProcesses(this.projectId);
+            const processResult = await api.processes.getList(this.projectId);
             if (processResult.success) {
                 const processes = processResult.data;
                 document.getElementById('overview-processes').textContent = processes.length;

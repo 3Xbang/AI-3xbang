@@ -282,4 +282,55 @@ router.post('/notifications/:id/read', authenticate, wrap(async (req, res) => {
   res.json({ success: true });
 }));
 
+// ---------- 导入工程量清单（Excel） ----------
+const multer = require('multer');
+const { generatePlan } = require('./process-master');
+const BOQ = require('./boq-import');
+const boqUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+async function boqMapping(projectId, file) {
+  if (!file) throw new S.HttpError(400, '请选择清单文件（.xlsx）');
+  if (!/\.xlsx$/i.test(file.originalname || '')) throw new S.HttpError(400, '目前只支持 Excel（.xlsx）清单。Word/PDF 请先另存为 Excel');
+  const prof = await S.getProfile(pool, projectId);
+  if (!prof) throw new S.HttpError(400, '请先填写并保存项目申请表，再导入清单');
+  const plan = generatePlan(prof.answers);
+  let boq;
+  try { boq = BOQ.readBoq(file.buffer); } catch (e) { throw new S.HttpError(400, e.message); }
+  return { plan, result: BOQ.mapBoq(boq, plan, plan.profile) };
+}
+
+router.post('/projects/:projectId/boq/preview', authenticate, requireProjectAccess(), requirePermission('manage_projects'), boqUpload.single('boq'), wrap(async (req, res) => {
+  const { result } = await boqMapping(req.params.projectId, req.file);
+  const cur = await pool.query(
+    `SELECT pn.master_code, pn.floor_no, pe.planned_quantity FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id = pn.id
+      WHERE pn.project_id = $1 AND pn.master_code IS NOT NULL AND pe.planned_quantity > 0`, [req.params.projectId]);
+  const have = new Map(cur.rows.map(r => [r.floor_no != null ? `${r.master_code}@${r.floor_no}` : r.master_code, Number(r.planned_quantity)]));
+  result.matches.forEach(m => { if (have.has(m.key)) m.existing = have.get(m.key); });
+  res.json({ success: true, data: result });
+}));
+
+// 确认后写入：只写“工序的计划数量”，其余数据不动。skip: 不想导入的工序 key 列表（JSON）
+router.post('/projects/:projectId/boq/apply', authenticate, requireProjectAccess(), requirePermission('manage_projects'), boqUpload.single('boq'), wrap(async (req, res) => {
+  const projectId = Number(req.params.projectId);
+  const { result } = await boqMapping(projectId, req.file);
+  let skip = [];
+  try { skip = JSON.parse(req.body.skip || '[]'); } catch (_) { skip = []; }
+  const skipSet = new Set(skip);
+  const out = await tx(async client => {
+    let written = 0;
+    for (const m of result.matches) {
+      if (skipSet.has(m.key)) continue;
+      const r = await client.query(
+        `UPDATE process_execution pe SET planned_quantity = $1, quantity_unit = COALESCE(pe.quantity_unit, $2), updated_at = CURRENT_TIMESTAMP
+           FROM process_nodes pn
+          WHERE pn.id = pe.process_node_id AND pn.project_id = $3 AND pn.master_code = $4 AND pn.floor_no IS NOT DISTINCT FROM $5`,
+        [m.qty, m.unit, projectId, m.code, m.floor]);
+      written += r.rowCount;
+    }
+    await logActivity(client, req.user.id, 'import_boq', 'project', projectId, { message: `导入工程量清单：写入 ${written} 道工序的计划数量` });
+    return { written };
+  });
+  res.json({ success: true, data: out });
+}));
+
 module.exports = router;

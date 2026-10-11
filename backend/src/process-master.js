@@ -173,6 +173,7 @@ D('I04', '整改与保修登记', null, 'I', 'once', '项', null, [P('I03', 'onc
 const DEFAULT_PROFILE = {
   structure: 'rc_frame',      // rc_frame 钢筋混凝土框架（目前仅支持这个）
   floors: 2,                  // 地上层数
+  units: 1,                   // 套数（联排/多户整排一起盖时填，例如 6）；工序仍按层展开，数量按整排合计
   attic: false,               // 阁楼/夹层，算一层
   basement: false,            // 地下室
   total_area: null,           // 总建筑面积 m²（本步骤不用）
@@ -234,6 +235,8 @@ function normalizeProfile(input) {
   }
   p.floors = parseInt(p.floors, 10);
   if (!(p.floors >= 1 && p.floors <= 10)) throw new Error('地上层数必须在 1 到 10 之间');
+  p.units = parseInt(p.units, 10) || 1;
+  if (!(p.units >= 1 && p.units <= 100)) throw new Error('套数必须在 1 到 100 之间');
   p.floorCount = p.floors + (p.attic ? 1 : 0);
   p.floorInfo = floorInfoOf(p);
   const infos = Object.values(p.floorInfo);

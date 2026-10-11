@@ -158,3 +158,7 @@ details[open] > .td-sum::before { content: '▾'; }
 .td-sum .td-count { margin-left: 6px; }
 .td-sum .td-th { margin-left: 6px; }
 @media (max-width: 720px) { .td-sum .td-th { flex-basis: auto; margin-left: 6px; } }
+
+.sb-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.sb-table th, .sb-table td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; vertical-align: top; }
+.sb-table th { background: #f8fafc; color: #475569; font-weight: 600; }

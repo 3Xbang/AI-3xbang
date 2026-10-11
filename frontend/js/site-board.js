@@ -170,7 +170,8 @@
     const FORM = [
         { t: '建筑概况 ข้อมูลอาคาร', f: [
             { k: 'floors', type: 'num', l: '地上几层 กี่ชั้น (ไม่รวมใต้ดิน)', min: 1, max: 10 },
-            { k: 'total_area', type: 'num', l: '总建筑面积 พื้นที่รวม (ตร.ม.)', min: 0 },
+            { k: 'units', type: 'num', l: '一共几套（联排/多户整排一起盖时填，单栋填 1）จำนวนยูนิต', min: 1, max: 100 },
+            { k: 'total_area', type: 'num', l: '总建筑面积 พื้นที่รวม (ตร.ม.) — 多套时填整排合计', min: 0 },
             { k: 'attic', type: 'chk', l: '有阁楼或夹层 มีห้องใต้หลังคา' },
             { k: 'basement', type: 'chk', l: '有地下室 มีชั้นใต้ดิน' },
             { k: 'roof', type: 'sel', l: '屋面形式 รูปแบบหลังคา', o: OPT([['flat', '平屋面 ดาดฟ้า'], ['pitched', '坡屋面 หลังคาลาด'], ['both', '两种都有 มีทั้งสอง']]) },
@@ -362,6 +363,7 @@
             const menu = `<details class="td-menu"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
                 `<a href="#" data-menu="team">👥 施工团队与工种 ทีมงานและประเภทช่าง</a>` +
                 (isManager() ? `<a href="#" data-menu="profile">📝 项目申请表 แบบฟอร์มโครงการ</a>` : '') +
+                (isManager() ? `<a href="#" data-menu="boq">📥 导入工程量清单 นำเข้า BOQ</a>` : '') +
                 `<a href="#" data-menu="overrides">📋 提前开始记录 บันทึกการเริ่มก่อน</a>` +
                 `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
                 `<a href="#" data-menu="refresh">🔄 刷新 รีเฟรช</a></div></details>`;
@@ -510,6 +512,7 @@
                 document.querySelectorAll('.td-menu[open]').forEach(m => m.removeAttribute('open'));
                 if (k === 'team') SiteTeam.open(pid);
                 else if (k === 'profile') SiteProfile.open(pid);
+                else if (k === 'boq') SiteBoq.open(pid);
                 else if (k === 'overrides') this.showOverrides(pid);
                 else if (k === 'notify') SiteNotify.open(pid);
                 else this.refresh();
@@ -704,6 +707,67 @@
         document.querySelectorAll('.td-menu[open]').forEach(m => { if (!m.contains(e.target)) m.removeAttribute('open'); });
     });
 
+    // ================= 导入工程量清单（Excel） =================
+    const SiteBoq = {
+        async post(projectId, action, file, extra) {
+            const fd = new FormData();
+            fd.append('boq', file);
+            if (extra) Object.keys(extra).forEach(k => fd.append(k, extra[k]));
+            const res = await fetch(`${API_BASE}/api/projects/${projectId}/boq/${action}`, {
+                method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd
+            });
+            const j = await res.json().catch(() => ({}));
+            if (!res.ok || !j.success) throw new Error(j.message || '导入失败');
+            return j.data;
+        },
+        open(projectId) {
+            const d = overlay('导入工程量清单 นำเข้า BOQ',
+                `<div class="sb-note">选择报价单/工程量清单的 Excel 文件（.xlsx）。系统会把每一行对应到工序，先给你看对照表，你确认后才会写入。<br>` +
+                `Word 或 PDF 的清单，请先另存为 Excel。系统只写入各工序的「计划数量」，不会改动别的数据。</div>` +
+                `<div class="sb-field"><input type="file" id="boq-file" accept=".xlsx"></div><div id="boq-result"></div>`,
+                `<button class="sb-btn primary" data-preview>读取并预览 ดูตัวอย่าง</button>`);
+            let file = null;
+            d.q('[data-preview]').onclick = async () => {
+                file = d.q('#boq-file').files[0];
+                if (!file) { toast('请先选择文件', 'error'); return; }
+                try {
+                    busy(true);
+                    const r = await SiteBoq.post(projectId, 'preview', file);
+                    busy(false);
+                    SiteBoq.showResult(d, projectId, file, r);
+                } catch (e) { busy(false); toast(e.message, 'error'); }
+            };
+        },
+        showResult(d, projectId, file, r) {
+            const kindTag = k => k === 'split' ? '<span class="td-tag">分摊</span>' : k === 'converted' ? '<span class="td-tag">已换算</span>' : '';
+            const rows = r.matches.map((m, i) =>
+                `<tr><td><input type="checkbox" data-sel="${esc(m.key)}" checked></td><td>${esc(m.name)}${m.floor != null ? ` · ${m.floor}层` : ''}</td>` +
+                `<td style="text-align:right"><b>${m.qty}</b> ${esc(m.unit)}${m.existing ? `<div class="sb-sub">原来：${m.existing}</div>` : ''}</td>` +
+                `<td>${kindTag(m.kind)}<div class="sb-sub">${m.sources.map(s => esc(s.desc) + ' ' + s.qty + ' ' + esc(s.unit)).slice(0, 4).join('；')}${m.notes.length ? '<br>' + m.notes.map(esc).join('；') : ''}</div></td></tr>`).join('');
+            const list = (arr, f) => arr.length ? `<ul class="sb-list">${arr.map(f).join('')}</ul>` : '<div class="sb-sub">无</div>';
+            d.q('#boq-result').innerHTML =
+                `<div class="sb-note">清单 ${r.itemCount} 行：可对应 <b>${r.matches.length}</b> 道工序，未对应 ${r.unmapped.length} 行，计划里还缺数量的工序 ${r.missing.length} 道。</div>` +
+                (r.warnings.length ? `<div class="td-warn">${r.warnings.map(w => '⚠ ' + esc(w)).join('<br>')}</div>` : '') +
+                `<div style="overflow-x:auto"><table class="sb-table"><thead><tr><th>导入</th><th>工序</th><th>数量</th><th>来源与说明</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+                `<details><summary class="td-sum">清单里没对应的行 (${r.unmapped.length})</summary>${list(r.unmapped, u => `<li>${esc(u.section)} / ${esc(u.desc)} ${u.qty == null ? '' : u.qty} ${esc(u.unit)}<span class="sb-sub"> · ${esc(u.reason)}</span></li>`)}</details>` +
+                `<details><summary class="td-sum">还没有数量的工序，需要现场补 (${r.missing.length})</summary>${list(r.missing, m => `<li>${esc(m.name)}${m.floor != null ? ` · ${m.floor}层` : ''} <span class="sb-sub">(${esc(m.unit)})</span></li>`)}</details>`;
+            const foot = d.el.querySelector('footer');
+            foot.innerHTML = '<button class="sb-btn primary" data-apply>确认导入选中的工序 นำเข้า</button>';
+            foot.querySelector('[data-apply]').onclick = async () => {
+                const skip = d.qa('[data-sel]').filter(c => !c.checked).map(c => c.dataset.sel);
+                try {
+                    busy(true);
+                    const out = await SiteBoq.post(projectId, 'apply', file, { skip: JSON.stringify(skip) });
+                    busy(false);
+                    d.close();
+                    toast(`已写入 ${out.written} 道工序的计划数量 บันทึกปริมาณแล้ว`);
+                    if (window.SiteBoard && window.ProjectDetail) SiteBoard.refresh();
+                } catch (e) { busy(false); toast(e.message, 'error'); }
+            };
+        }
+    };
+
+    window.SiteBoq = SiteBoq;
     window.SiteBoard = SiteBoard;
     window.SiteProfile = SiteProfile;
     window.SiteTeam = SiteTeam;

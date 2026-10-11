@@ -153,7 +153,7 @@ const projectMembers = {
                         </div>
                     </div>
                     <button class="btn btn-small btn-primary" onclick="projectMembers.addMember(${user.id})">
-                        ➕ ${i18n."添加 เพิ่ม"}
+                        ➕ 添加 เพิ่ม
                     </button>
                 </div>
             `;

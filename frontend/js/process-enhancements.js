@@ -907,7 +907,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             <div class="form-group">
                 <label style="font-weight: bold; color: #059669;">${t('quantities.calculationResult')}</label>
                 <div id="quantity-result" style="font-size: 1.2em; color: #059669; padding: 10px; background: #f0fdf4; border-radius: 0.5rem; text-align: center;">
-                    ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '${t('quantities.waitingInput')}'}
+                    ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '等待输入 รอการป้อน'}
                 </div>
             </div>
         ` : '';
@@ -915,7 +915,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         const modal = app.createModal(`${t.quantity} - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
-                    <strong>${t('quantities.instruction')}:</strong> ${t('quantities.instructionText')}${process.status === 'not_started' ? '${t('quantities.autoStart')}' : ''}
+                    <strong>${t('quantities.instruction')}:</strong> ${t('quantities.instructionText')}${process.status === 'not_started' ? ' 保存后将自动开始此流程 บันทึกจะเริ่มกระบวนการนี้โดยอัตโนมัติ' : ''}
                 </div>
                 
                 ${fieldsHtml}

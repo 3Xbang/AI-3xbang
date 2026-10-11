@@ -32,9 +32,6 @@ const app = {
             e.preventDefault();
             this.handleLogin();
         });
-
-        // 应用翻译
-        updateTranslations();
     },
 
     // 显示登录页

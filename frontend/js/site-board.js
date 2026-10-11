@@ -57,7 +57,7 @@
             });
         },
         async start(execId, force) {
-            return call('POST', `/processes/${execId}/start`, force ? { force_reason: force } : {});
+            return call('POST', `/processes/${execId}/start`, Object.assign({}, force ? { force_reason: force } : {}, (window.SiteBoard && SiteBoard.date) ? { date: SiteBoard.date } : {}));
         }
     };
 
@@ -429,8 +429,10 @@
             const near = d.blocked.filter(b => b.reasons.every(r => (r.type === 'lag' && r.daysLeft <= 5) || ((r.type === 'pred_not_finished' || r.type === 'ss_progress') && doingKeys.has(r.pred))));
             near.sort((a, b) => a.reasons.length - b.reasons.length || a.key.localeCompare(b.key));
             const nearTop = near.slice(0, 8), nearSet = new Set(nearTop.map(x => x.key));
-            html += `<section class="td-sec"><h3><span class="td-num">4</span>${bi('快要能开始', 'ใกล้เริ่มได้')} <span class="td-count">${nearTop.length}</span></h3>` +
-                (nearTop.length ? nearTop.map(x => this.rowWaiting(x)).join('') : '<div class="td-empty">暂时没有</div>') + `</section>`;
+            if (nearTop.length) {
+                html += `<section class="td-sec"><h3><span class="td-num">4</span>${bi('快要能开始', 'ใกล้เริ่มได้')} <span class="td-count">${nearTop.length}</span></h3>` +
+                    nearTop.map(x => this.rowWaiting(x)).join('') + `</section>`;
+            }
 
             const rest = d.blocked.filter(b => !nearSet.has(b.key));
             if (rest.length) {

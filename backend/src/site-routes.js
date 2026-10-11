@@ -1,4 +1,4 @@
-// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+﻿// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
 const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
@@ -221,7 +221,7 @@ router.post('/processes/:id/start', authenticate, wrap(async (req, res) => {
   const execId = Number(req.params.id);
   const out = await tx(async client => {
     await requireAccessToExec(client, req, execId);
-    const r = await S.startProcess(client, execId, req.user, req.body.force_reason);
+    const r = await S.startProcess(client, execId, req.user, req.body.force_reason, /^\d{4}-\d{2}-\d{2}$/.test(req.body.date || '') ? req.body.date : undefined);
     if (r.started) await logActivity(client, req.user.id, r.override ? 'force_start_process' : 'start_process', 'process_execution', execId, { message: r.override ? r.override.message : '开始工序' });
     return r;
   });

@@ -244,11 +244,11 @@ if (typeof app !== 'undefined') {
         if (area.classList.contains('expanded')) {
             // 收起
             area.classList.remove('expanded');
-            toggleText.textContent = t.viewSubtasks + ' ▼';
+            if (toggleText) toggleText.textContent = t.viewSubtasks + ' ▼';
         } else {
             // 展开并加载子任务
             area.classList.add('expanded');
-            toggleText.textContent = t.collapseSubtasks + ' ▲';
+            if (toggleText) toggleText.textContent = t.collapseSubtasks + ' ▲';
             
             try {
                 const result = await api.getSubtasks(processExecutionId);

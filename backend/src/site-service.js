@@ -1,4 +1,4 @@
-// 现场安排的服务层：项目申请表 → 生成计划 → 写入工序表；现场看板；提前开始的把关与通知。
+﻿// 现场安排的服务层：项目申请表 → 生成计划 → 写入工序表；现场看板；提前开始的把关与通知。
 // 数据库里已有的工序表 (process_nodes / process_execution / process_dependencies) 继续沿用，
 // 由总库生成的工序用 master_code 和 floor_no 标记。
 
@@ -307,7 +307,7 @@ async function notifyManagers(client, projectId, actorId, title, body, severity,
 }
 
 // 返回 { started, override }。调用者负责事务。
-async function startProcess(client, execId, user, forceReason) {
+async function startProcess(client, execId, user, forceReason, dateISO) {
   const r = await client.query(
     `SELECT pe.id, pe.status, pn.project_id, pn.master_code, pn.floor_no
        FROM process_execution pe JOIN process_nodes pn ON pn.id = pe.process_node_id WHERE pe.id = $1`, [execId]);
@@ -317,7 +317,7 @@ async function startProcess(client, execId, user, forceReason) {
 
   let override = null;
   if (row.master_code) {                                    // 只对总库生成的工序把关；旧的固定模板工序保持原样
-    const L = await loadPlanState(client, row.project_id);
+    const L = await loadPlanState(client, row.project_id, dateISO);
     const key = keyOfRow(row);
     const check = canStart(L.plan, L.state, key);
     if (!check.allowed) {

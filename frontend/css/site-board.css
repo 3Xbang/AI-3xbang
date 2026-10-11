@@ -142,3 +142,10 @@
   .td-pop { right: auto; left: 0; }
   .td-row { flex-wrap: wrap; }
 }
+
+/* 手机：标题行不换行，「更多」按钮保持一行；折叠标题的泰文换到下一行 */
+.td-head .td-menu > summary { white-space: nowrap; }
+.td-sum { flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .td-sum .td-th { flex-basis: 100%; margin-left: 32px; }
+}

@@ -408,7 +408,7 @@ router.put('/processes/:id', authenticate, async (req, res) => {
     `, [status, actual_start_date, actual_end_date, notes, req.params.id]);
     
     await logActivity(client, req.user.id, 'update_process', 'process_execution', req.params.id,
-      `更新工序状态: ${status || '未变更'}`);
+      { message: `更新工序状态: ${status || '未变更'}` });
     
     await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });

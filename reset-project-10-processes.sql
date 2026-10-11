@@ -1,5 +1,6 @@
 -- 重置项目10的工序数据，用于测试
 -- Reset processes for project 10 for testing
+-- PostgreSQL Version
 
 -- 将所有工序状态改为未开始
 UPDATE process_executions 
@@ -33,5 +34,6 @@ SET
     status = 'not_started'
 WHERE id = 10;
 
+-- 显示结果
 SELECT 'Project 10 has been reset successfully!' AS message;
 SELECT COUNT(*) AS total_processes FROM process_executions WHERE project_id = 10;

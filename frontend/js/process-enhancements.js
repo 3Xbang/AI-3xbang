@@ -1038,11 +1038,11 @@ console.log('✓ 工序进度页面增强功能已加载');
                     await ProjectDetail.loadProcesses();
                 }
             } else {
-                this.showToast(apiResult.message || '${t('common.save')}失败', 'error');
+                this.showToast(apiResult.message || '保存失败 บันทึกล้มเหลว', 'error');
             }
         } catch (error) {
             console.error('Save quantity error:', error);
-            this.showToast('${t('common.save')}失败: ' + (error.message || '未知错误'), 'error');
+            this.showToast('保存失败 บันทึกล้มเหลว: ' + (error.message || '未知错误'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -1083,7 +1083,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         const modal = app.createModal(`${t.quantity} - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
-                    <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? '${t('quantities.autoStart')}' : ''}
+                    <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? ' 保存后将自动开始此流程 บันทึกจะเริ่มกระบวนการนี้โดยอัตโนมัติ' : ''}
                 </div>
                 
                 <div class="form-group">
@@ -1145,7 +1145,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                 }
             } catch (error) {
                 console.error('Save generic quantity error:', error);
-                this.showToast('${t('common.save')}失败', 'error');
+                this.showToast('保存失败 บันทึกล้มเหลว', 'error');
             } finally {
                 this.hideLoading();
             }

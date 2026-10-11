@@ -78,6 +78,9 @@ const api = {
 
     getProjectSummary: (projectId) => apiRequest(`/api/projects/${projectId}/summary`),
 
+    // 项目成员
+    getProjectMembers: (projectId) => apiRequest(`/api/projects/${projectId}/members`),
+
     // 工序管理
     processes: {
         // 获取工序列表

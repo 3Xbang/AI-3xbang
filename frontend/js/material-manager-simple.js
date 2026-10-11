@@ -1,4 +1,21 @@
 // Material Manager (Simplified)
+
+// 双语文本定义 (中文 + 泰语)
+const MaterialTexts = {
+    loadError: '加载失败 โหลดไม่สำเร็จ',
+    loadMaterialsError: '加载材料列表失败 โหลดรายการวัสดุไม่สำเร็จ',
+    noMaterials: '还没有材料记录 ยังไม่มีข้อมูลวัสดุ',
+    noMaterialsDesc: '开始添加项目所需的材料 เริ่มเพิ่มวัสดุสำหรับโครงการ',
+    addMaterial: '添加材料 เพิ่มวัสดุ',
+    materialList: '材料列表 รายการวัสดุ',
+    unnamed: '未命名 ไม่มีชื่อ',
+    purchased: '采购 สั่งซื้อ',
+    received: '到货 เข้าคลัง',
+    used: '已用 ใช้แล้ว',
+    stock: '库存 คงเหลือ',
+    addFromLibrary: '材料添加功能开发中，请从材料库中选择<br>ฟีเจอร์เพิ่มวัสดุกำลังพัฒนา กรุณาเลือกจากคลังวัสดุ'
+};
+
 const MaterialManager = {
     currentProjectId: null,
     materials: [],
@@ -28,7 +45,7 @@ const MaterialManager = {
     },
 
     render() {
-        const t = getMaterialTexts();
+        const t = MaterialTexts;
         const container = document.getElementById('materials-container');
         if (!container) {
             console.error('Materials container not found');
@@ -64,7 +81,7 @@ const MaterialManager = {
     },
 
     renderMaterialCard(material) {
-        const t = getMaterialTexts();
+        const t = MaterialTexts;
         // Parse JSON fields
         let materialName = material.material_name;
         let unit = material.unit;
@@ -118,7 +135,7 @@ const MaterialManager = {
     },
 
     showAddForm() {
-        const t = getMaterialTexts();
+        const t = MaterialTexts;
         app.showToast(t.addFromLibrary, 'info');
     }
 };

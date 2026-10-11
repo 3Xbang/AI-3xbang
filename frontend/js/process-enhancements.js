@@ -1,53 +1,28 @@
-﻿// 工序进度页面增强功能
-// Process Progress Page Enhancements
+﻿// 工序进度页面增强功能 / Process Progress Page Enhancements
 
-// 获取当前语言文本
-function getProcessTexts() {
-    const lang = localStorage.getItem('language') || 'zh';
-    return lang === 'zh' ? {
-        startProcess: '开始工序',
-        updateProgress: '更新进度',
-        pause: '暂停',
-        complete: '完成',
-        completed: '已完成',
-        viewSubtasks: '查看子任务',
-        collapseSubtasks: '收起子任务',
-        quantity: '工程量',
-        schedule: '计划',
-        dependencies: '依赖',
-        days: '天',
-        loading: '加载中...',
-        noSubtasks: '暂无子任务',
-        createFromTemplate: '从模板创建子任务',
-        subtaskList: '子任务列表',
-        addMoreSubtasks: '+ 添加更多子任务',
-        loadError: '加载失败',
-        estimated: '预计',
-        completed_qty: '已完成',
-        recordProgress: '记录进度'
-    } : {
-        startProcess: 'เริ่มงาน',
-        updateProgress: 'อัพเดทความคืบหน้า',
-        pause: 'หยุดชั่วคราว',
-        complete: 'เสร็จสิ้น',
-        completed: 'เสร็จแล้ว',
-        viewSubtasks: 'ดูงานย่อย',
-        collapseSubtasks: 'ซ่อนงานย่อย',
-        quantity: 'ปริมาณงาน',
-        schedule: 'แผนงาน',
-        dependencies: 'งานที่เกี่ยวข้อง',
-        days: 'วัน',
-        loading: 'กำลังโหลด...',
-        noSubtasks: 'ยังไม่มีงานย่อย',
-        createFromTemplate: 'สร้างจากเทมเพลต',
-        subtaskList: 'รายการงานย่อย',
-        addMoreSubtasks: '+ เพิ่มงานย่อย',
-        loadError: 'โหลดไม่สำเร็จ',
-        estimated: 'ประมาณการ',
-        completed_qty: 'เสร็จแล้ว',
-        recordProgress: 'บันทึกความคืบหน้า'
-    };
-}
+// 双语文本定义 (中文 + 泰语)
+const BilingualTexts = {
+    startProcess: '开始工序 เริ่มงาน',
+    updateProgress: '更新进度 อัพเดทความคืบหน้า',
+    pause: '暂停 หยุดชั่วคราว',
+    complete: '完成 เสร็จสิ้น',
+    completed: '已完成 เสร็จแล้ว',
+    viewSubtasks: '查看子任务 ดูงานย่อย',
+    collapseSubtasks: '收起子任务 ซ่อนงานย่อย',
+    quantity: '工程量 ปริมาณงาน',
+    schedule: '计划 แผนงาน',
+    dependencies: '依赖 งานที่เกี่ยวข้อง',
+    days: '天 วัน',
+    loading: '加载中... กำลังโหลด...',
+    noSubtasks: '暂无子任务 ยังไม่มีงานย่อย',
+    createFromTemplate: '从模板创建子任务 สร้างจากเทมเพลต',
+    subtaskList: '子任务列表 รายการงานย่อย',
+    addMoreSubtasks: '+ 添加更多子任务 เพิ่มงานย่อย',
+    loadError: '加载失败 โหลดไม่สำเร็จ',
+    estimated: '预计 ประมาณการ',
+    completed_qty: '已完成 เสร็จแล้ว',
+    recordProgress: '记录进度 บันทึกความคืบหน้า'
+};
 
 if (typeof app !== 'undefined') {
     // ${t('common.save')}原始的renderProcesses函数
@@ -59,7 +34,7 @@ if (typeof app !== 'undefined') {
     // 替换renderProcesses函数以使用新设计
     app.renderProcesses = function(processes) {
         app._currentProcesses = processes || [];
-        const t = getProcessTexts();  // 获取当前语言文本
+        const t = BilingualTexts;  // 使用双语文本
         
         const container = document.getElementById('processes-list');
         
@@ -194,7 +169,7 @@ if (typeof app !== 'undefined') {
     
     // 展开/收起子任务（内联显示）
     app.toggleSubtasksInline = async function(processExecutionId) {
-        const t = getProcessTexts();
+        const t = BilingualTexts;
         const area = document.getElementById(`subtasks-area-${processExecutionId}`);
         const toggleText = document.getElementById(`subtask-toggle-text-${processExecutionId}`);
         

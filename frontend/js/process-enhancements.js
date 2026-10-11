@@ -43,10 +43,10 @@ if (typeof app !== 'undefined') {
         if (typeof PermissionManager !== 'undefined' && PermissionManager.canManageProjects()) {
             header = `
                 <div class="processes-header">
-                    <h3>${t('nav.processes')}</h3>
+                    <h3>工序管理 การจัดการกระบวนการ</h3>
                     <button class="btn btn-primary" onclick="ProcessManager.showAddProcessModal()">
                         <span class="btn-icon">+</span>
-                        <span>${t('processes.addProcess')}</span>
+                        <span>添加工序 เพิ่มกระบวนการ</span>
                     </button>
                 </div>
             `;
@@ -57,12 +57,12 @@ if (typeof app !== 'undefined') {
                 ${header}
                 <div class="empty-state">
                     <div class="empty-icon">🔧</div>
-                    <h3>${t('processes.noProcesses')}</h3>
-                    <p>${t('processes.noProcessesDesc')}</p>
+                    <h3>暂无工序 ยังไม่มีกระบวนการ</h3>
+                    <p>请添加项目工序开始管理 โปรดเพิ่มกระบวนการเพื่อเริ่มการจัดการ</p>
                     ${PermissionManager.canManageProjects() ? `
                         <button class="btn btn-primary btn-large" onclick="ProcessManager.showAddProcessModal()">
                             <span class="btn-icon">+</span>
-                            <span>${t('processes.addFirst')}</span>
+                            <span>添加第一个工序 เพิ่มกระบวนการแรก</span>
                         </button>
                     ` : ''}
                 </div>
@@ -251,12 +251,12 @@ if (typeof app !== 'undefined') {
             // 获取工序信息
             const processesResult = await api.processes.getList(ProjectDetail.projectId);
             if (!processesResult.success) {
-                throw new Error(t('processes.loadError'));
+                throw new Error('加载工序失败 โหลดกระบวนการล้มเหลว');
             }
             
             const process = processesResult.data.find(p => p.id === processExecutionId);
             if (!process) {
-                throw new Error(t('processes.notFound'));
+                throw new Error('工序不存在 ไม่พบกระบวนการ');
             }
             
             app.hideLoading();
@@ -267,7 +267,7 @@ if (typeof app !== 'undefined') {
         } catch (error) {
             app.hideLoading();
             console.error('Start process error:', error);
-            app.showToast(error.message || t('common.error'), 'error');
+            app.showToast(error.message || '操作失败 การดำเนินการล้มเหลว', 'error');
         }
     };
     

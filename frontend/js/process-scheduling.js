@@ -241,9 +241,29 @@ const ProcessScheduling = {
 
     // 显示工序时间规划
     async showProcessSchedule(processExecutionId, processName) {
-        const process = this.processes.find(p => p.id === processExecutionId);
-        
-        const modal = app.createModal(t('scheduling.scheduleProcess'), `
+        try {
+            app.showLoading();
+            
+            // 加载工序列表
+            if (!this.projectId) {
+                this.projectId = ProjectDetail.projectId;
+            }
+            
+            const processesResult = await api.processes.getList(this.projectId);
+            if (!processesResult.success) {
+                throw new Error('加载工序列表失败');
+            }
+            
+            this.processes = processesResult.data;
+            const process = this.processes.find(p => p.id === processExecutionId);
+            
+            if (!process) {
+                throw new Error('工序不存在');
+            }
+            
+            app.hideLoading();
+            
+            const modal = app.createModal(t('scheduling.scheduleProcess'), `
             <form id="schedule-form" class="form-vertical">
                 <div class="form-group">
                     <h4>${processName}</h4>
@@ -283,6 +303,11 @@ const ProcessScheduling = {
             e.preventDefault();
             await this.handleUpdateSchedule(processExecutionId);
         });
+        } catch (error) {
+            app.hideLoading();
+            console.error('Show schedule error:', error);
+            app.showToast(error.message || '加载失败', 'error');
+        }
     },
 
     // 处理更新进度计划

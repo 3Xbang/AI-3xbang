@@ -12,22 +12,22 @@ const ProcessManager = {
 
     // 显示添加工序模态框
     async showAddProcessModal() {
-        const modal = app.createModal(t('processes.addProcess'), `
+        const modal = app.createModal('添加工序 เพิ่มงาน', `
             <div class="add-process-options">
                 <div class="option-card" onclick="ProcessManager.showTemplateSelection()">
                     <div class="option-icon">📚</div>
-                    <h4>${t('processes.fromTemplate')}</h4>
-                    <p>${t('processes.fromTemplateDesc')}</p>
+                    <h4>从模板添加 เพิ่มจากเทมเพลต</h4>
+                    <p>从工序库选择 เลือกจากคลังงาน</p>
                 </div>
                 <div class="option-card" onclick="ProcessManager.showCustomProcessForm()">
                     <div class="option-icon">✏️</div>
-                    <h4>${t('processes.customProcess')}</h4>
-                    <p>${t('processes.customProcessDesc')}</p>
+                    <h4>自定义工序 งานกำหนดเอง</h4>
+                    <p>手动创建工序 สร้างงานด้วยตนเอง</p>
                 </div>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                    ${t('common.cancel')}
+                    取消 ยกเลิก
                 </button>
             </div>
         `);
@@ -67,16 +67,16 @@ const ProcessManager = {
             
             app.hideLoading();
             
-            const modal = app.createModal(t('processes.selectFromTemplate'), `
+            const modal = app.createModal('从模板选择工序 เลือกงานจากเทมเพลต', `
                 <div class="process-selection-container">
                     <div class="process-selection-header">
-                        <p class="help-text">${t('processes.selectTemplateHelp')}</p>
+                        <p class="help-text">选择要添加的工序 เลือกงานที่ต้องการเพิ่ม</p>
                         <div class="selection-actions">
                             <button type="button" class="btn btn-sm" onclick="ProcessManager.selectAllAvailableProcesses()">
-                                ${t('projects.selectAll')}
+                                全选 เลือกทั้งหมด
                             </button>
                             <button type="button" class="btn btn-sm" onclick="ProcessManager.deselectAllProcesses()">
-                                ${t('projects.deselectAll')}
+                                取消全选 ยกเลิกทั้งหมด
                             </button>
                         </div>
                     </div>
@@ -88,10 +88,10 @@ const ProcessManager = {
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="ProcessManager.showAddProcessModal()">
-                        ${t('common.back')}
+                        返回 กลับ
                     </button>
                     <button type="button" class="btn btn-primary" onclick="ProcessManager.handleAddFromTemplate()">
-                        ${t('common.add')} (<span id="selected-count">0</span> ${t('projects.processesSelected')})
+                        添加 เพิ่ม (<span id="selected-count">0</span> 个工序已选 งานถูกเลือก)
                     </button>
                 </div>
             `);
@@ -102,7 +102,7 @@ const ProcessManager = {
         } catch (error) {
             app.hideLoading();
             console.error('Load process templates error:', error);
-            app.showToast(t('projects.loadProcessError'), 'error');
+            app.showToast('加载工序失败 โหลดงานไม่สำเร็จ', 'error');
         }
     },
 
@@ -113,7 +113,7 @@ const ProcessManager = {
                 <div class="category-header" onclick="ProcessManager.toggleCategory('${category.category}')">
                     <div class="category-info">
                         <h4>${getI18nField(category, 'name')}</h4>
-                        <span class="category-count">${templates.length} ${t('projects.processes')}</span>
+                        <span class="category-count">${templates.length} 工序 งาน</span>
                     </div>
                     <button type="button" class="btn-icon-only">▼</button>
                 </div>
@@ -139,7 +139,7 @@ const ProcessManager = {
                         ${isExisting ? '<span class="badge-existing">已添加</span>' : ''}
                     </div>
                     ${template.quality_points ? `
-                        <div class="process-quality">${t('projects.qualityPoints')}: ${template.quality_points}</div>
+                        <div class="process-quality">质量要点 จุดตรวจสอบคุณภาพ: ${template.quality_points}</div>
                     ` : ''}
                 </div>
             </label>
@@ -195,7 +195,7 @@ const ProcessManager = {
     // 处理从模板添加
     async handleAddFromTemplate() {
         if (this.selectedTemplates.length === 0) {
-            app.showToast(t('processes.selectAtLeastOne'), 'warning');
+            app.showToast('请至少选择一个工序 กรุณาเลือกงานอย่างน้อยหนึ่งรายการ', 'warning');
             return;
         }
 
@@ -205,15 +205,15 @@ const ProcessManager = {
             
             if (result.success) {
                 app.closeModal();
-                app.showToast(t('processes.addSuccess'));
+                app.showToast('工序添加成功 เพิ่มงานสำเร็จ');
                 // 刷新工序列表
                 await ProjectDetail.loadProcesses();
             } else {
-                app.showToast(result.message || t('processes.addError'), 'error');
+                app.showToast(result.message || '工序添加失败 เพิ่มงานไม่สำเร็จ', 'error');
             }
         } catch (error) {
             console.error('Add processes error:', error);
-            app.showToast(t('common.error'), 'error');
+            app.showToast('错误 ผิดพลาด', 'error');
         } finally {
             app.hideLoading();
         }
@@ -221,27 +221,27 @@ const ProcessManager = {
 
     // 显示自定义工序表单
     showCustomProcessForm() {
-        const modal = app.createModal(t('processes.customProcess'), `
+        const modal = app.createModal('自定义工序 งานกำหนดเอง', `
             <form id="custom-process-form" class="form-vertical">
                 <div class="form-group">
-                    <label>${t('processes.processCode')} *</label>
-                    <input type="text" id="custom-code" required placeholder="${t('processes.codeExample')}">
-                    <small class="form-hint">${t('processes.codeHint')}</small>
+                    <label>工序编号 รหัสงาน *</label>
+                    <input type="text" id="custom-code" required placeholder="例如: A01 เช่น: A01">
+                    <small class="form-hint">请输入工序编号 กรุณาใส่รหัสงาน</small>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>${t('processes.processName')} (${t('common.thai')}) *</label>
+                        <label>工序名称 ชื่องาน (泰语 ภาษาไทย) *</label>
                         <input type="text" id="custom-name-th" required placeholder="เช่น: งานพิเศษ">
                     </div>
                     <div class="form-group">
-                        <label>${t('processes.processName')} (${t('common.chinese')})</label>
+                        <label>工序名称 ชื่องาน (中文 中文)</label>
                         <input type="text" id="custom-name-zh" placeholder="例如：特殊工序">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label>${t('processes.unit')} *</label>
+                    <label>单位 หน่วย *</label>
                     <select id="custom-unit" required>
                         <option value="m²">m² (平方米)</option>
                         <option value="m³">m³ (立方米)</option>
@@ -254,10 +254,10 @@ const ProcessManager = {
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="ProcessManager.showAddProcessModal()">
-                        ${t('common.back')}
+                        返回 กลับ
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${t('common.add')}
+                        添加 เพิ่ม
                     </button>
                 </div>
             </form>

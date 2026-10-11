@@ -50,7 +50,7 @@ const ProjectDetail = {
             <div class="project-detail-header">
                 <div class="header-left">
                     <button class="btn-back" onclick="ProjectDetail.backToDashboard()">
-                        <span>←</span> ${t('common.back')}
+                        <span>←</span> 返回 กลับ
                     </button>
                     <div class="project-title">
                         <h2>${getI18nField(this.project, 'name')}</h2>
@@ -59,7 +59,7 @@ const ProjectDetail = {
                 </div>
                 <div class="header-right">
                     <div class="project-progress-mini">
-                        <span>${t('projects.progress')}: </span>
+                        <span>进度 ความคืบหน้า: </span>
                         <strong>${Math.round(this.project.progress || 0)}%</strong>
                     </div>
                 </div>
@@ -190,25 +190,25 @@ const ProjectDetail = {
                 </div>
                 <div class="overview-details">
                     <div class="detail-section">
-                        <h3>${t('overview.projectInfo')}</h3>
+                        <h3>项目信息 ข้อมูลโครงการ</h3>
                         <div class="info-table">
                             <div class="info-row">
-                                <span class="info-label">${t('projects.client')}:</span>
+                                <span class="info-label">客户 ลูกค้า:</span>
                                 <span class="info-value">${this.project.client_name || '-'}</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">${t('projects.startDate')}:</span>
+                                <span class="info-label">开始日期 วันเริ่ม:</span>
                                 <span class="info-value">${this.project.start_date || '-'}</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">${t('projects.endDate')}:</span>
+                                <span class="info-label">结束日期 วันสิ้นสุด:</span>
                                 <span class="info-value">${this.project.planned_end_date || '-'}</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">${t('projects.status')}:</span>
+                                <span class="info-label">状态 สถานะ:</span>
                                 <span class="info-value">
                                     <span class="status-badge status-${this.project.status}">
-                                        ${t('projects.status.' + this.project.status)}
+                                        ${getStatusText(this.project.status)}
                                     </span>
                                 </span>
                             </div>

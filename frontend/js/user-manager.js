@@ -20,7 +20,7 @@ const userManager = {
             }
         } catch (error) {
             console.error('加载用户失败:', error);
-            app.showError(i18n.t('users.loadError'));
+            app.showError('加载用户失败 โหลดผู้ใช้ไม่สำเร็จ');
         }
     },
     
@@ -42,12 +42,12 @@ const userManager = {
         if (!tbody) return;
         
         if (this.users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">' + i18n.t('users.noUsers') + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">暂无用户 ยังไม่มีผู้ใช้</td></tr>';
             return;
         }
         
         tbody.innerHTML = this.users.map(user => {
-            const roleText = i18n.t(`roles.${user.role}`);
+            const roleText = this.getRoleText(user.role);
             const roleBadge = this.getRoleBadge(user.role);
             const createdAt = new Date(user.created_at).toLocaleDateString('zh-CN');
             
@@ -58,21 +58,31 @@ const userManager = {
                     <td>${roleBadge} ${roleText}</td>
                     <td>
                         <button class="btn btn-small" onclick="userManager.showProjectAssignModal(${user.id})">
-                            📋 ${i18n.t('users.assignProjects')}
+                            📋 分配项目 จัดโครงการ
                         </button>
                     </td>
                     <td>${createdAt}</td>
                     <td>
                         <button class="btn btn-small" onclick="userManager.showEditUserModal(${user.id})">
-                            ✏️ ${i18n."编辑 แก้ไข"}
+                            ✏️ 编辑 แก้ไข
                         </button>
                         <button class="btn btn-small btn-danger" onclick="userManager.confirmDeleteUser(${user.id})">
-                            🗑️ ${i18n."删除 ลบ"}
+                            🗑️ 删除 ลบ
                         </button>
                     </td>
                 </tr>
             `;
         }).join('');
+    },
+    
+    // 获取角色文本
+    getRoleText(role) {
+        const roles = {
+            manager: '经理 ผู้จัดการ',
+            purchaser: '采购 จัดซื้อ',
+            executor: '执行者 ผู้ปฏิบัติ'
+        };
+        return roles[role] || role;
     },
     
     // 更新统计信息
@@ -106,38 +116,38 @@ const userManager = {
             <div class="modal" id="add-user-modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3>${i18n.t('users.addUser')}</h3>
+                        <h3>添加用户 เพิ่มผู้ใช้</h3>
                         <button class="close-btn" onclick="userManager.closeModal()">&times;</button>
                     </div>
                     <form id="add-user-form" onsubmit="userManager.handleAddUser(event)">
                         <div class="form-group">
-                            <label>${i18n.t('users.username')} *</label>
+                            <label>用户名 ชื่อผู้ใช้ *</label>
                             <input type="text" name="username" required minlength="3" maxlength="50">
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.password')} *</label>
+                            <label>密码 รหัสผ่าน *</label>
                             <input type="password" name="password" required minlength="6">
-                            <small>${i18n.t('users.passwordHint')}</small>
+                            <small>至少6个字符 อย่างน้อย 6 ตัวอักษร</small>
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.fullName')} *</label>
+                            <label>全名 ชื่อเต็ม *</label>
                             <input type="text" name="full_name" required maxlength="100">
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.role')} *</label>
+                            <label>角色 บทบาท *</label>
                             <select name="role" required>
-                                <option value="">${i18n.t('users.selectRole')}</option>
-                                <option value="manager">👔 ${i18n.t('roles.manager')}</option>
-                                <option value="purchaser">🛒 ${i18n.t('roles.purchaser')}</option>
-                                <option value="executor">👷 ${i18n.t('roles.executor')}</option>
+                                <option value="">选择角色 เลือกบทบาท</option>
+                                <option value="manager">👔 经理 ผู้จัดการ</option>
+                                <option value="purchaser">🛒 采购 จัดซื้อ</option>
+                                <option value="executor">👷 执行者 ผู้ปฏิบัติ</option>
                             </select>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                ${i18n."取消 ยกเลิก"}
+                                取消 ยกเลิก
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                ${i18n.t('common.submit')}
+                                提交 ส่ง
                             </button>
                         </div>
                     </form>
@@ -167,17 +177,17 @@ const userManager = {
             const response = await api.post('/users', userData);
             
             if (response.success) {
-                app.showSuccess(i18n.t('users.addSuccess'));
+                app.showSuccess('添加用户成功 เพิ่มผู้ใช้สำเร็จ');
                 this.closeModal();
                 await this.loadUsers();
                 this.renderUsers();
                 this.updateStats();
             } else {
-                app.showError(response.message || i18n.t('users.addError'));
+                app.showError(response.message || '添加用户失败 เพิ่มผู้ใช้ไม่สำเร็จ');
             }
         } catch (error) {
             console.error('添加用户失败:', error);
-            app.showError(i18n.t('users.addError'));
+            app.showError('添加用户失败 เพิ่มผู้ใช้ไม่สำเร็จ');
         } finally {
             app.hideLoading();
         }
@@ -192,38 +202,38 @@ const userManager = {
             <div class="modal" id="edit-user-modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3>${i18n.t('users.editUser')}</h3>
+                        <h3>编辑用户 แก้ไขผู้ใช้</h3>
                         <button class="close-btn" onclick="userManager.closeModal()">&times;</button>
                     </div>
                     <form id="edit-user-form" onsubmit="userManager.handleEditUser(event, ${userId})">
                         <div class="form-group">
-                            <label>${i18n.t('users.username')}</label>
+                            <label>用户名 ชื่อผู้ใช้</label>
                             <input type="text" value="${this.escapeHtml(user.username)}" disabled>
-                            <small>${i18n.t('users.usernameCannotChange')}</small>
+                            <small>用户名不可更改 ชื่อผู้ใช้ไม่สามารถเปลี่ยนได้</small>
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.newPassword')}</label>
+                            <label>新密码 รหัสผ่านใหม่</label>
                             <input type="password" name="password" minlength="6">
-                            <small>${i18n.t('users.passwordOptional')}</small>
+                            <small>不填则不修改 ไม่กรอกก็ไม่เปลี่ยน</small>
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.fullName')} *</label>
+                            <label>全名 ชื่อเต็ม *</label>
                             <input type="text" name="full_name" value="${this.escapeHtml(user.full_name || '')}" required maxlength="100">
                         </div>
                         <div class="form-group">
-                            <label>${i18n.t('users.role')} *</label>
+                            <label>角色 บทบาท *</label>
                             <select name="role" required>
-                                <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>👔 ${i18n.t('roles.manager')}</option>
-                                <option value="purchaser" ${user.role === 'purchaser' ? 'selected' : ''}>🛒 ${i18n.t('roles.purchaser')}</option>
-                                <option value="executor" ${user.role === 'executor' ? 'selected' : ''}>👷 ${i18n.t('roles.executor')}</option>
+                                <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>👔 经理 ผู้จัดการ</option>
+                                <option value="purchaser" ${user.role === 'purchaser' ? 'selected' : ''}>🛒 采购 จัดซื้อ</option>
+                                <option value="executor" ${user.role === 'executor' ? 'selected' : ''}>👷 执行者 ผู้ปฏิบัติ</option>
                             </select>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                ${i18n."取消 ยกเลิก"}
+                                取消 ยกเลิก
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                ${i18n."保存 บันทึก"}
+                                保存 บันทึก
                             </button>
                         </div>
                     </form>
@@ -257,17 +267,17 @@ const userManager = {
             const response = await api.put(`/users/${userId}`, userData);
             
             if (response.success) {
-                app.showSuccess(i18n.t('users.updateSuccess'));
+                app.showSuccess('更新用户成功 อัพเดทผู้ใช้สำเร็จ');
                 this.closeModal();
                 await this.loadUsers();
                 this.renderUsers();
                 this.updateStats();
             } else {
-                app.showError(response.message || i18n.t('users.updateError'));
+                app.showError(response.message || '更新用户失败 อัพเดทผู้ใช้ไม่สำเร็จ');
             }
         } catch (error) {
             console.error('更新用户失败:', error);
-            app.showError(i18n.t('users.updateError'));
+            app.showError('更新用户失败 อัพเดทผู้ใช้ไม่สำเร็จ');
         } finally {
             app.hideLoading();
         }
@@ -278,7 +288,7 @@ const userManager = {
         const user = this.users.find(u => u.id === userId);
         if (!user) return;
         
-        if (confirm(i18n.t('users.confirmDelete').replace('{name}', user.username))) {
+        if (confirm(`确认删除用户 ${user.username}？ ยืนยันลบผู้ใช้ ${user.username}?`)) {
             this.deleteUser(userId);
         }
     },
@@ -290,16 +300,16 @@ const userManager = {
             const response = await api.delete(`/users/${userId}`);
             
             if (response.success) {
-                app.showSuccess(i18n.t('users.deleteSuccess'));
+                app.showSuccess('删除用户成功 ลบผู้ใช้สำเร็จ');
                 await this.loadUsers();
                 this.renderUsers();
                 this.updateStats();
             } else {
-                app.showError(response.message || i18n.t('users.deleteError'));
+                app.showError(response.message || '删除用户失败 ลบผู้ใช้ไม่สำเร็จ');
             }
         } catch (error) {
             console.error('删除用户失败:', error);
-            app.showError(i18n.t('users.deleteError'));
+            app.showError('删除用户失败 ลบผู้ใช้ไม่สำเร็จ');
         } finally {
             app.hideLoading();
         }
@@ -333,22 +343,22 @@ const userManager = {
                 <div class="modal" id="assign-projects-modal">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>${i18n.t('users.assignProjectsTo').replace('{name}', user.full_name || user.username)}</h3>
+                            <h3>为 ${user.full_name || user.username} 分配项目 จัดโครงการให้ ${user.full_name || user.username}</h3>
                             <button class="close-btn" onclick="userManager.closeModal()">&times;</button>
                         </div>
                         <form id="assign-projects-form" onsubmit="userManager.handleAssignProjects(event, ${userId})">
                             <div class="form-group">
-                                <label>${i18n.t('users.selectProjects')}</label>
+                                <label>选择项目 เลือกโครงการ</label>
                                 <div class="checkbox-group">
-                                    ${projectCheckboxes || '<p>' + i18n.t('projects.noProjects') + '</p>'}
+                                    ${projectCheckboxes || '<p>暂无项目 ยังไม่มีโครงการ</p>'}
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                    ${i18n."取消 ยกเลิก"}
+                                    取消 ยกเลิก
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    ${i18n."保存 บันทึก"}
+                                    保存 บันทึก
                                 </button>
                             </div>
                         </form>
@@ -360,7 +370,7 @@ const userManager = {
             document.getElementById('assign-projects-modal').style.display = 'flex';
         } catch (error) {
             console.error('加载项目分配失败:', error);
-            app.showError(i18n.t('users.loadProjectsError'));
+            app.showError('加载项目失败 โหลดโครงการไม่สำเร็จ');
         } finally {
             app.hideLoading();
         }
@@ -380,14 +390,14 @@ const userManager = {
             });
             
             if (response.success) {
-                app.showSuccess(i18n.t('users.assignProjectsSuccess'));
+                app.showSuccess('分配项目成功 จัดโครงการสำเร็จ');
                 this.closeModal();
             } else {
-                app.showError(response.message || i18n.t('users.assignProjectsError'));
+                app.showError(response.message || '分配项目失败 จัดโครงการไม่สำเร็จ');
             }
         } catch (error) {
             console.error('分配项目失败:', error);
-            app.showError(i18n.t('users.assignProjectsError'));
+            app.showError('分配项目失败 จัดโครงการไม่สำเร็จ');
         } finally {
             app.hideLoading();
         }

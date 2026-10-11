@@ -135,7 +135,7 @@ const ProjectDetail = {
                 await this.loadProcesses();
                 break;
             case 'materials':
-                container.innerHTML = '<div id="materials-list"></div>';
+                container.innerHTML = '<div id="materials-container"></div>';
                 MaterialManager.init(this.projectId);
                 break;
             case 'photos':

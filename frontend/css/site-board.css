@@ -192,3 +192,8 @@ details[open] > .td-sum::before { content: '▾'; }
 .project-nav .nav-item { padding-left: 10px; padding-right: 10px; flex: 1 1 auto; }
 .project-nav .nav-label { font-size: 12.5px; white-space: normal; line-height: 1.25; text-align: left; }
 .project-nav .nav-icon { font-size: 18px; }
+
+.sb-skill-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #eef2f7; }
+.sb-skill-name { flex:1; min-width:0; font-size:14px; }
+.sb-skill-num { white-space:nowrap; font-size:14px; color:#475569; }
+.sb-skill-num input { width:64px; padding:6px 8px; border:1.5px solid #cbd5e1; border-radius:8px; text-align:center; font-size:15px; font-weight:600; }

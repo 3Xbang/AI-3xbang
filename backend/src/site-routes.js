@@ -132,7 +132,19 @@ router.delete('/team/:workerId', authenticate, requirePermission('manage_project
   res.json({ success: true });
 }));
 
-// ---------- 施工班组：只填班组名、大工(会什么)、普工人数；系统自动生成对应的“人”用于出勤和派工 ----------
+// ---------- 施工班组：只填班组名、大工/普工人数、“几个大工会什么”；系统自动生成对应的“人”用于出勤和派工 ----------
+// 泰国现场不分细工种，只用 7 个大类；每个大类对应系统内部的若干细工种。
+const COARSE = {
+  structure: ['rebar', 'carpenter', 'concrete', 'scaffold'],   // 结构工：钢筋、模板、浇筑、脚手架
+  mason: ['mason', 'tiler', 'waterproof'],                     // 泥水工：砌墙、抹灰、贴砖、防水
+  mep: ['plumber', 'electrician'],                             // 水电工
+  painter: ['painter'],                                        // 油漆工
+  finish: ['installer'],                                       // 安装工：吊顶、门窗、橱柜、洁具、灯具
+  roof: ['roof'],                                              // 屋面/钢结构
+  machine: ['mach']                                            // 机械操作
+};
+const COARSE_KEYS = Object.keys(COARSE);
+
 function cleanCrew(b) {
   const name = String(b.name || '').trim();
   if (!name) throw new S.HttpError(400, '请填写班组名称');
@@ -140,17 +152,37 @@ function cleanCrew(b) {
   const helper = Math.floor(Number(b.helper_count));
   if (!(skilled >= 0 && skilled <= 100) || !(helper >= 0 && helper <= 300)) throw new S.HttpError(400, '人数不正确');
   if (skilled + helper < 1) throw new S.HttpError(400, '班组至少要有 1 个人');
-  const skills = (Array.isArray(b.skills) ? b.skills : []).filter(s => TRADE_KEYS.includes(s));
-  if (skilled > 0 && !skills.length) throw new S.HttpError(400, '请选择大工会干的工种');
-  return { name, skilled, helper, skills };
+  const counts = {};
+  const input = b.skill_counts && typeof b.skill_counts === 'object' ? b.skill_counts : {};
+  COARSE_KEYS.forEach(k => {
+    const n = Math.floor(Number(input[k]));
+    if (n > 0) {
+      if (n > skilled) throw new S.HttpError(400, '某个工种的人数不能比大工总数多');
+      counts[k] = n;
+    }
+  });
+  if (skilled > 0 && !Object.keys(counts).length) throw new S.HttpError(400, '请填写有几个大工会干什么');
+  return { name, skilled, helper, counts };
+}
+
+// 把“几个人会什么”分到具体每个大工身上：按顺序轮流分配，各项人数加起来不超过大工总数时互不重叠，超过时就是多能工
+function skillsPerPerson(total, counts) {
+  const people = Array.from({ length: total }, () => new Set());
+  let p = 0;
+  COARSE_KEYS.forEach(k => {
+    const n = counts[k] || 0;
+    for (let i = 0; i < n; i++) COARSE[k].forEach(fine => people[(p + i) % total].add(fine));
+    p = (p + n) % Math.max(total, 1);
+  });
+  return people.map(s => Array.from(s));
 }
 
 // 让 workers 表里这个班组的人数、名字、工种与班组设置一致（多出来的设为 inactive，不删历史派工）
 async function syncCrewWorkers(client, projectId, crewId, c) {
+  const perPerson = skillsPerPerson(c.skilled, c.counts);
   for (const level of ['skilled', 'helper']) {
     const want = level === 'skilled' ? c.skilled : c.helper;
     const label = level === 'skilled' ? '大工' : '普工';
-    const skills = level === 'skilled' ? c.skills : ['*'];
     const have = (await client.query(
       `SELECT worker_id FROM workers WHERE crew_id = $1 AND level = $2 AND status = 'active' ORDER BY worker_id`, [crewId, level])).rows;
     if (have.length > want) {
@@ -158,12 +190,13 @@ async function syncCrewWorkers(client, projectId, crewId, c) {
     }
     for (let i = 0; i < want; i++) {
       const nm = `${c.name} ${label}${i + 1}`;
+      const skills = JSON.stringify(level === 'skilled' ? perPerson[i] : ['*']);
       if (i < have.length) {
-        await client.query('UPDATE workers SET name = $1, skills = $2::jsonb WHERE worker_id = $3', [nm, JSON.stringify(skills), have[i].worker_id]);
+        await client.query('UPDATE workers SET name = $1, skills = $2::jsonb WHERE worker_id = $3', [nm, skills, have[i].worker_id]);
       } else {
         await client.query(
           `INSERT INTO workers (project_id, name, daily_wage, level, skills, crew_id) VALUES ($1, $2, 0, $3, $4::jsonb, $5)`,
-          [projectId, nm, level, JSON.stringify(skills), crewId]);
+          [projectId, nm, level, skills, crewId]);
       }
     }
   }
@@ -171,7 +204,7 @@ async function syncCrewWorkers(client, projectId, crewId, c) {
 
 router.get('/projects/:projectId/crews', authenticate, requireProjectAccess(), wrap(async (req, res) => {
   const r = await pool.query(
-    `SELECT id, name, skilled_count, helper_count, skills FROM project_crews WHERE project_id = $1 AND status = 'active' ORDER BY id`, [req.params.projectId]);
+    `SELECT id, name, skilled_count, helper_count, skills AS skill_counts FROM project_crews WHERE project_id = $1 AND status = 'active' ORDER BY id`, [req.params.projectId]);
   const crews = r.rows;
   const tot = crews.reduce((s, c) => ({ skilled: s.skilled + c.skilled_count, helper: s.helper + c.helper_count }), { skilled: 0, helper: 0 });
   res.json({ success: true, data: { crews, total: tot } });
@@ -182,7 +215,7 @@ router.post('/projects/:projectId/crews', authenticate, requireProjectAccess(), 
   const id = await tx(async client => {
     const r = await client.query(
       `INSERT INTO project_crews (project_id, name, skilled_count, helper_count, skills) VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING id`,
-      [req.params.projectId, c.name, c.skilled, c.helper, JSON.stringify(c.skills)]);
+      [req.params.projectId, c.name, c.skilled, c.helper, JSON.stringify(c.counts)]);
     await syncCrewWorkers(client, Number(req.params.projectId), r.rows[0].id, c);
     return r.rows[0].id;
   });
@@ -198,7 +231,7 @@ router.put('/crews/:id', authenticate, requirePermission('manage_projects'), wra
     if (!(await checkProjectAccess(client, req.user.id, req.user.role, pid))) throw new S.HttpError(403, '无权访问此项目');
     await client.query(
       `UPDATE project_crews SET name = $1, skilled_count = $2, helper_count = $3, skills = $4::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = $5`,
-      [c.name, c.skilled, c.helper, JSON.stringify(c.skills), req.params.id]);
+      [c.name, c.skilled, c.helper, JSON.stringify(c.counts), req.params.id]);
     await syncCrewWorkers(client, pid, Number(req.params.id), c);
   });
   res.json({ success: true });

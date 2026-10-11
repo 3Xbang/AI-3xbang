@@ -56,10 +56,10 @@ const MaterialManager = {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📦</div>
-                    <h3>${t.noMaterials}</h3>
-                    <p>${t.noMaterialsDesc}</p>
+                    <h3>暂无材料 ยังไม่มีวัสดุ</h3>
+                    <p>请添加项目材料开始管理 โปรดเพิ่มวัสดุโครงการ</p>
                     <button class="btn btn-primary" onclick="MaterialManager.showAddForm()">
-                        + ${t.addMaterial}
+                        + 添加材料 เพิ่มวัสดุ
                     </button>
                 </div>
             `;
@@ -114,19 +114,19 @@ const MaterialManager = {
                 </div>
                 <div class="material-card-body">
                     <div class="material-stat">
-                        <span class="label">${t.purchased}:</span>
+                        <span class="label">已采购 ซื้อแล้ว:</span>
                         <span class="value">${purchaseQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">${t.received}:</span>
+                        <span class="label">已到货 ได้รับแล้ว:</span>
                         <span class="value">${receivedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">${t.used}:</span>
+                        <span class="label">已使用 ใช้แล้ว:</span>
                         <span class="value">${usedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat highlight">
-                        <span class="label">${t.stock}:</span>
+                        <span class="label">库存 คงเหลือ:</span>
                         <span class="value">${stock} ${displayUnit}</span>
                     </div>
                 </div>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>双语测试 / Bilingual Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-item { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .fail { background: #f8d7da; border-color: #f5c6cb; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Mira Villa 双语系统测试</h1>
+    
+    <div id="results"></div>
+
+    <script src="frontend/js/i18n.js"></script>
+    <script>
+        const results = document.getElementById('results');
+        
+        function testTranslation(key, expected) {
+            const actual = t(key);
+            const isCorrect = actual.includes('项目') || actual.includes('จัดการ') || actual.includes('ความ');
+            
+            results.innerHTML += `
+                <div class="test-item ${isCorrect ? 'success' : 'fail'}">
+                    <strong>测试键：</strong> ${key}<br>
+                    <strong>返回值：</strong> ${actual}<br>
+                    <strong>状态：</strong> ${isCorrect ? '✅ 包含双语' : '❌ 未包含双语'}
+                </div>
+            `;
+        }
+        
+        // 测试各种翻译
+        testTranslation('nav.projects', '项目管理 จัดการโครงการ');
+        testTranslation('nav.processes', '工序进度 ความคืบหน้างาน');
+        testTranslation('common.save', '保存 บันทึก');
+        testTranslation('common.cancel', '取消 ยกเลิก');
+        testTranslation('overview.totalProcesses', '总工序数 จำนวนงานทั้งหมด');
+        testTranslation('processes.status.completed', '已完成 เสร็จแล้ว');
+        
+        // 测试 BilingualTexts
+        if (typeof BilingualTexts !== 'undefined') {
+            results.innerHTML += `
+                <div class="test-item success">
+                    <strong>BilingualTexts 已定义</strong><br>
+                    startProcess: ${BilingualTexts.startProcess}<br>
+                    quantity: ${BilingualTexts.quantity}
+                </div>
+            `;
+        } else {
+            results.innerHTML += `
+                <div class="test-item fail">
+                    <strong>⚠️ BilingualTexts 未定义</strong>
+                </div>
+            `;
+        }
+        
+        // 测试 MaterialTexts
+        if (typeof MaterialTexts !== 'undefined') {
+            results.innerHTML += `
+                <div class="test-item success">
+                    <strong>MaterialTexts 已定义</strong><br>
+                    materialList: ${MaterialTexts.materialList}
+                </div>
+            `;
+        }
+        
+        results.innerHTML += `
+            <div class="test-item" style="background: #e3f2fd;">
+                <h3>✅ 测试完成</h3>
+                <p>如果以上所有项都显示"✅ 包含双语"，说明双语系统工作正常。</p>
+                <p>如果显示"❌"，说明翻译还是单语的，需要修复。</p>
+            </div>
+        `;
+    </script>
+</body>
+</html>

@@ -79,15 +79,15 @@ if (typeof app !== 'undefined') {
             // 状态对应的操作按钮
             let actionButtons = '';
             if (statusClass === 'not_started') {
-                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">${t.startProcess}</button>`;
+                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">开始 เริ่ม</button>`;
             } else if (statusClass === 'in_progress') {
                 actionButtons = `
-                    <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">${t.updateProgress}</button>
-                    <button class="btn-pause" onclick="app.pauseProcess(${process.id})">${t.pause}</button>
-                    <button class="btn-complete" onclick="app.completeProcess(${process.id})">${t.complete}</button>
+                    <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">更新进度 อัปเดตความคืบหน้า</button>
+                    <button class="btn-pause" onclick="app.pauseProcess(${process.id})">暂停 หยุดชั่วคราว</button>
+                    <button class="btn-complete" onclick="app.completeProcess(${process.id})">完成 เสร็จสิ้น</button>
                 `;
             } else if (statusClass === 'completed') {
-                actionButtons = `<span style="color: #10b981; font-weight: 600;">✓ ${t.completed}</span>`;
+                actionButtons = `<span style="color: #10b981; font-weight: 600;">✓ 已完成 เสร็จแล้ว</span>`;
             }
             
             // 删除按钮（只有未开始和管理员权限才能删除）
@@ -108,9 +108,9 @@ if (typeof app !== 'undefined') {
                 const endDate = process.planned_end_date ? new Date(process.planned_end_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定';
                 scheduledInfo = `
                     <div class="process-schedule-info">
-                        <span class="schedule-label">📅 ${t.schedule}:</span>
+                        <span class="schedule-label">📅 计划日期 วันที่วางแผน:</span>
                         <span class="schedule-dates">${startDate} → ${endDate}</span>
-                        ${process.planned_duration ? `<span class="schedule-duration">(${process.planned_duration}${t.days})</span>` : ''}
+                        ${process.planned_duration ? `<span class="schedule-duration">(${process.planned_duration}天 วัน)</span>` : ''}
                     </div>
                 `;
             }
@@ -120,7 +120,7 @@ if (typeof app !== 'undefined') {
             if (process.planned_quantity && process.quantity_unit) {
                 quantityInfo = `
                     <div class="process-quantity-info">
-                        <span class="quantity-label">📊 ${t.quantity}:</span>
+                        <span class="quantity-label">📊 工程量 ปริมาณงาน:</span>
                         <span class="quantity-value">${process.planned_quantity} ${process.quantity_unit}</span>
                     </div>
                 `;
@@ -145,22 +145,22 @@ if (typeof app !== 'undefined') {
                     <div class="process-actions">
                         ${actionButtons}
                         <button class="btn-quantity" onclick="app.showQuantityInputById(${process.id})" data-process-id="${process.id}">
-                            📊 ${t.quantity}
+                            📊 工程量 ปริมาณงาน
                         </button>
                         <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
-                            <span id="subtask-toggle-text-${process.id}">${t.viewSubtasks} ▼</span>
+                            <span id="subtask-toggle-text-${process.id}">查看子任务 ดูงานย่อย ▼</span>
                         </button>
                         ${PermissionManager.canManageProjects() ? `
                             <button class="btn-schedule" onclick="ProcessScheduling.showDependencyManager(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
-                                🔗 ${t.dependencies}
+                                🔗 依赖关系 ความสัมพันธ์
                             </button>
                             <button class="btn-schedule" onclick="ProcessScheduling.showProcessSchedule(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
-                                📅 ${t.schedule}
+                                📅 计划日期 วันที่วางแผน
                             </button>
                         ` : ''}
                     </div>
                     <div class="process-subtasks-area" id="subtasks-area-${process.id}">
-                        <div class="loading-subtasks">${t.loading}</div>
+                        <div class="loading-subtasks">加载中... กำลังโหลด...</div>
                     </div>
                 </div>
             `;
@@ -190,26 +190,26 @@ if (typeof app !== 'undefined') {
                     // 没有子任务，显示创建模板选项
                     area.innerHTML = `
                         <div style="text-align: center; padding: 1rem; color: #6b7280;">
-                            <p>${t.noSubtasks}</p>
+                            <p>暂无子任务 ยังไม่มีงานย่อย</p>
                             <button class="btn-start" onclick="app.showSubtaskTemplates(${processExecutionId})" style="margin-top: 0.5rem;">
-                                ${t.createFromTemplate}
+                                从模板创建 สร้างจากเทมเพลต
                             </button>
                         </div>
                     `;
                 } else {
                     // 显示子任务列表
                     area.innerHTML = `
-                        <h5 style="margin-bottom: 0.75rem; color: #374151;">📋 ${t.subtaskList}</h5>
+                        <h5 style="margin-bottom: 0.75rem; color: #374151;">📋 子任务列表 รายการงานย่อย</h5>
                         <div class="subtask-list-inline">
                             ${subtasks.map(subtask => this.renderSubtaskInline(subtask, processExecutionId)).join('')}
                         </div>
                         <button class="btn-toggle-subtasks" onclick="app.showSubtaskTemplates(${processExecutionId})" style="margin-top: 0.75rem;">
-                            + ${t.addMoreSubtasks}
+                            + 添加更多子任务 เพิ่มงานย่อย
                         </button>
                     `;
                 }
             } catch (error) {
-                area.innerHTML = `<p style="color: #ef4444;">${t.loadError}</p>`;
+                area.innerHTML = `<p style="color: #ef4444;">加载失败 โหลดล้มเหลว</p>`;
             }
         }
     };
@@ -226,14 +226,14 @@ if (typeof app !== 'undefined') {
                     <div class="subtask-name-inline">${getI18nField(subtask, 'subtask_name' || 'name')}</div>
                     <div class="subtask-progress-inline">
                         <span>${percentage}%</span>
-                        <span>${t.estimated}: ${subtask.planned_quantity || subtask.estimated_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
-                        <span>${t.completed_qty}: ${subtask.actual_quantity || subtask.completed_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
+                        <span>预计 ประมาณ: ${subtask.planned_quantity || subtask.estimated_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
+                        <span>完成 เสร็จแล้ว: ${subtask.actual_quantity || subtask.completed_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
                     </div>
                 </div>
                 <div class="subtask-actions-inline">
                     ${!isCompleted ? `
                         <button class="btn-xs btn-primary" onclick="app.recordSubtaskProgress(${subtask.id}, ${processExecutionId})">
-                            ${t.recordProgress}
+                            记录进度 บันทึกความคืบหน้า
                         </button>
                     ` : `
                         <span style="color: #10b981; font-weight: 600;">✓</span>
@@ -286,7 +286,7 @@ if (typeof app !== 'undefined') {
             return;
         }
         
-        const modal = app.createModal(`${t.startProcess}: ${processName}`, `
+        const modal = app.createModal(`开始工序 เริ่มกระบวนการ: ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-section">
                     <h4 style="margin-bottom: 20px;">📊 ${t('quantities.enterData')}</h4>
@@ -780,7 +780,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                         ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${t.updateProgress}
+                        更新进度 อัปเดตความคืบหน้า
                     </button>
                 </div>
             </form>
@@ -912,7 +912,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             </div>
         ` : '';
         
-        const modal = app.createModal(`${t.quantity} - ${processName}`, `
+        const modal = app.createModal(`工程量 ปริมาณงาน - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
                     <strong>${t('quantities.instruction')}:</strong> ${t('quantities.instructionText')}${process.status === 'not_started' ? ' 保存后将自动开始此流程 บันทึกจะเริ่มกระบวนการนี้โดยอัตโนมัติ' : ''}
@@ -1080,7 +1080,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             }
         }
         
-        const modal = app.createModal(`${t.quantity} - ${processName}`, `
+        const modal = app.createModal(`工程量 ปริมาณงาน - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
                     <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? ' 保存后将自动开始此流程 บันทึกจะเริ่มกระบวนการนี้โดยอัตโนมัติ' : ''}

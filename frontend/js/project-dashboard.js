@@ -1,3 +1,16 @@
+
+// 获取状态双语文本
+function getStatusText(status) {
+    const statusTexts = {
+        'not_started': '未开始 ยังไม่เริ่ม',
+        'in_progress': '进行中 กำลังดำเนินการ',
+        'waiting_material': '等待材料 รอวัสดุ',
+        'weather_stop': '天气停工 หยุดเพราะสภาพอากาศ',
+        'completed': '已完成 เสร็จแล้ว',
+        'paused': '已暂停 หยุดชั่วคราว'
+    };
+    return statusTexts[status] || status;
+}
 // 项目仪表盘模块 - 登录后的首页
 const ProjectDashboard = {
     projects: [],
@@ -212,7 +225,7 @@ const ProjectDashboard = {
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        ${t('common.cancel')}
+                        ${"取消 ยกเลิก"}
                     </button>
                     <button type="submit" class="btn btn-primary">
                         ${t('common.next')}
@@ -512,10 +525,10 @@ const ProjectDashboard = {
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        ${t('common.cancel')}
+                        ${"取消 ยกเลิก"}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${t('common.save')}
+                        ${"保存 บันทึก"}
                     </button>
                 </div>
             </form>
@@ -596,7 +609,7 @@ const ProjectDashboard = {
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                    ${t('common.cancel')}
+                    ${"取消 ยกเลิก"}
                 </button>
                 <button type="button" class="btn btn-danger" onclick="ProjectDashboard.handleDeleteProject(${projectId})">
                     ${t('common.confirmDelete')}

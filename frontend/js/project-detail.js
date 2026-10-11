@@ -70,33 +70,33 @@ const ProjectDetail = {
                 <button class="nav-item ${this.currentView === 'overview' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('overview')">
                     <span class="nav-icon">📊</span>
-                    <span class="nav-label">${t('projectDetail.overview')}</span>
+                    <span class="nav-label">${"项目概览 ภาพรวมโครงการ"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'tasks' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('tasks')">
                     <span class="nav-icon">📋</span>
-                    <span class="nav-label">${t('nav.dailyTasks')}</span>
+                    <span class="nav-label">${"今日任务 งานวันนี้"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'processes' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('processes')">
                     <span class="nav-icon">🔧</span>
-                    <span class="nav-label">${t('nav.processes')}</span>
+                    <span class="nav-label">${"工序进度 ความคืบหน้างาน"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'materials' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('materials')">
                     <span class="nav-icon">🧱</span>
-                    <span class="nav-label">${t('nav.materials')}</span>
+                    <span class="nav-label">${"材料管理 จัดการวัสดุ"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'photos' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('photos')">
                     <span class="nav-icon">📷</span>
-                    <span class="nav-label">${t('nav.photos')}</span>
+                    <span class="nav-label">${"现场照片 รูปถ่ายหน้างาน"}</span>
                 </button>
                 ${PermissionManager.canManageProjects() ? `
                     <button class="nav-item ${this.currentView === 'settings' ? 'active' : ''}" 
                             onclick="ProjectDetail.showSubView('settings')">
                         <span class="nav-icon">⚙️</span>
-                        <span class="nav-label">${t('projectDetail.settings')}</span>
+                        <span class="nav-label">${"项目设置 ตั้งค่าโครงการ"}</span>
                     </button>
                 ` : ''}
             </div>
@@ -162,28 +162,28 @@ const ProjectDetail = {
                     <div class="overview-card">
                         <div class="card-icon">📊</div>
                         <div class="card-content">
-                            <h3>${t('overview.totalProcesses')}</h3>
+                            <h3>${"总工序数 จำนวนงานทั้งหมด"}</h3>
                             <p class="card-value" id="overview-processes">-</p>
                         </div>
                     </div>
                     <div class="overview-card">
                         <div class="card-icon">✅</div>
                         <div class="card-content">
-                            <h3>${t('overview.completedProcesses')}</h3>
+                            <h3>${"已完成 เสร็จแล้ว"}</h3>
                             <p class="card-value" id="overview-completed">-</p>
                         </div>
                     </div>
                     <div class="overview-card">
                         <div class="card-icon">🚧</div>
                         <div class="card-content">
-                            <h3>${t('overview.inProgress')}</h3>
+                            <h3>${"进行中 กำลังดำเนินการ"}</h3>
                             <p class="card-value" id="overview-inprogress">-</p>
                         </div>
                     </div>
                     <div class="overview-card">
                         <div class="card-icon">👷</div>
                         <div class="card-content">
-                            <h3>${t('overview.teamMembers')}</h3>
+                            <h3>${"团队成员 สมาชิกทีม"}</h3>
                             <p class="card-value" id="overview-members">-</p>
                         </div>
                     </div>
@@ -284,7 +284,7 @@ const ProjectDetail = {
     renderSettings() {
         return `
             <div class="project-settings">
-                <h3>${t('projectDetail.settings')}</h3>
+                <h3>${"项目设置 ตั้งค่าโครงการ"}</h3>
                 <div class="settings-section">
                     <button class="btn btn-secondary" onclick="projectMembers.showMembersModal(${this.projectId}, '${getI18nField(this.project, 'name')}')">
                         <span>👥</span> ${t('projects.membersManagement')}

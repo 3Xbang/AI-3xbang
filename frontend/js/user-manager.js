@@ -64,10 +64,10 @@ const userManager = {
                     <td>${createdAt}</td>
                     <td>
                         <button class="btn btn-small" onclick="userManager.showEditUserModal(${user.id})">
-                            ✏️ ${i18n.t('common.edit')}
+                            ✏️ ${i18n."编辑 แก้ไข"}
                         </button>
                         <button class="btn btn-small btn-danger" onclick="userManager.confirmDeleteUser(${user.id})">
-                            🗑️ ${i18n.t('common.delete')}
+                            🗑️ ${i18n."删除 ลบ"}
                         </button>
                     </td>
                 </tr>
@@ -134,7 +134,7 @@ const userManager = {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                ${i18n.t('common.cancel')}
+                                ${i18n."取消 ยกเลิก"}
                             </button>
                             <button type="submit" class="btn btn-primary">
                                 ${i18n.t('common.submit')}
@@ -220,10 +220,10 @@ const userManager = {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                ${i18n.t('common.cancel')}
+                                ${i18n."取消 ยกเลิก"}
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                ${i18n.t('common.save')}
+                                ${i18n."保存 บันทึก"}
                             </button>
                         </div>
                     </form>
@@ -345,10 +345,10 @@ const userManager = {
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" onclick="userManager.closeModal()">
-                                    ${i18n.t('common.cancel')}
+                                    ${i18n."取消 ยกเลิก"}
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    ${i18n.t('common.save')}
+                                    ${i18n."保存 บันทึก"}
                                 </button>
                             </div>
                         </form>

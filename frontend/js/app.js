@@ -1,3 +1,16 @@
+
+// 获取状态双语文本
+function getStatusText(status) {
+    const statusTexts = {
+        'not_started': '未开始 ยังไม่เริ่ม',
+        'in_progress': '进行中 กำลังดำเนินการ',
+        'waiting_material': '等待材料 รอวัสดุ',
+        'weather_stop': '天气停工 หยุดเพราะสภาพอากาศ',
+        'completed': '已完成 เสร็จแล้ว',
+        'paused': '已暂停 หยุดชั่วคราว'
+    };
+    return statusTexts[status] || status;
+}
 // 主应用逻辑
 const app = {
     currentView: 'projects',
@@ -218,8 +231,8 @@ const app = {
                     <input type="date" id="project-end-date">
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
-                    <button type="submit" class="btn-primary">${t('common.save')}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
+                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
                 </div>
             </form>
         `);
@@ -373,8 +386,8 @@ const app = {
                     <textarea id="progress-notes" rows="3" placeholder="${t('common.notes')}..."></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
-                    <button type="submit" class="btn-primary">${t('common.save')}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
+                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
                 </div>
             </form>
         `);
@@ -443,7 +456,7 @@ const app = {
 
         container.innerHTML = processes.map(process => {
             const statusClass = process.status || 'not_started';
-            const statusText = t(`processes.status.${statusClass}`);
+            const statusText = getStatusText(statusClass);
             const percentage = Math.round(process.completion_percentage || 0);
             const progressColor = percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#f59e0b';
             
@@ -638,8 +651,8 @@ const app = {
                     </select>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
-                    <button type="submit" class="btn-primary">${t('common.save')}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
+                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
                 </div>
             </form>
         `);
@@ -709,8 +722,8 @@ const app = {
                         <textarea id="update-subtask-notes" rows="3" placeholder="${t('common.notes')}...">${getI18nField(subtask, 'notes') || ''}</textarea>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="app.closeModal()">${t('common.cancel')}</button>
-                        <button type="submit" class="btn-primary">${t('common.save')}</button>
+                        <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
+                        <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
                     </div>
                 </form>
             `);

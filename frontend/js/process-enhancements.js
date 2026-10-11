@@ -70,7 +70,7 @@ if (typeof app !== 'undefined') {
             return;
         }
 
-        container.innerHTML = header + processes.map(process => {
+        container.innerHTML = header + `<div class="processes-grid">` + processes.map(process => {
             const statusClass = process.status || 'not_started';
             const statusText = getStatusText(statusClass);
             const percentage = Math.round(process.completion_percentage || 0);
@@ -127,44 +127,112 @@ if (typeof app !== 'undefined') {
             }
             
             return `
-                <div class="process-item status-${statusClass}" id="process-${process.id}">
-                    <div class="process-header">
-                        <span class="process-code">${process.process_code}</span>
-                        <h4>${getI18nField(process, 'process_name')}</h4>
-                        ${deleteButton}
-                        <span class="process-status">${statusText}</span>
-                        <span class="progress-text" style="font-weight: 600; color: ${progressColor};">${percentage}%</span>
-                    </div>
-                    ${scheduledInfo}
-                    ${quantityInfo}
-                    <div class="process-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percentage}%; background: ${progressColor}"></div>
+                <div class="process-card status-${statusClass.replace('_', '-')}" id="process-${process.id}">
+                    <!-- 状态条 -->
+                    <div class="process-card-status-bar"></div>
+                    
+                    <!-- 卡片内容 -->
+                    <div class="process-card-content">
+                        <!-- 头部：代码和标题 -->
+                        <div class="process-card-header">
+                            <div class="process-code-badge">${process.process_code}</div>
+                            <h3 class="process-card-title">${getI18nField(process, 'process_name')}</h3>
+                        </div>
+                        
+                        <!-- 进度条 -->
+                        <div class="process-card-progress">
+                            <div class="progress-header">
+                                <span class="progress-label">完成度 ความคืบหน้า</span>
+                                <span class="progress-percentage">${percentage}%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 关键信息 -->
+                        ${(scheduledInfo || quantityInfo) ? `
+                            <div class="process-card-info">
+                                ${scheduledInfo ? `
+                                    <div class="info-item">
+                                        <span class="info-icon">📅</span>
+                                        <div class="info-content">
+                                            <div class="info-label">计划日期</div>
+                                            <div class="info-value">${process.planned_start_date ? new Date(process.planned_start_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定'} → ${process.planned_end_date ? new Date(process.planned_end_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定'}</div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${quantityInfo ? `
+                                    <div class="info-item">
+                                        <span class="info-icon">📊</span>
+                                        <div class="info-content">
+                                            <div class="info-label">工程量</div>
+                                            <div class="info-value">${process.planned_quantity} ${process.quantity_unit}</div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- 操作按钮 -->
+                        <div class="process-card-actions">
+                            ${statusClass === 'not_started' ? `
+                                <button class="primary-action" onclick="app.startProcess(${process.id})">
+                                    <span>▶️</span>
+                                    <span>开始工序 เริ่มกระบวนการ</span>
+                                </button>
+                            ` : statusClass === 'in_progress' ? `
+                                <button class="primary-action" onclick="app.showUpdateProgress(${process.id}, ${percentage})">
+                                    <span>📈</span>
+                                    <span>更新进度 อัปเดตความคืบหน้า</span>
+                                </button>
+                            ` : `
+                                <div class="status-badge">
+                                    <span>✅</span>
+                                    <span>已完成 เสร็จสิ้น</span>
+                                </div>
+                            `}
+                            
+                            <div class="secondary-actions">
+                                <button class="secondary-action" onclick="app.showQuantityInputById(${process.id})">
+                                    <span>📊</span>
+                                    <span>工程量</span>
+                                </button>
+                                <button class="secondary-action" onclick="app.toggleSubtasksInline(${process.id})">
+                                    <span>📋</span>
+                                    <span>子任务</span>
+                                </button>
+                                ${PermissionManager.canManageProjects() ? `
+                                    <button class="secondary-action" onclick="ProcessScheduling.showDependencyManager(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
+                                        <span>🔗</span>
+                                        <span>依赖</span>
+                                    </button>
+                                    <button class="secondary-action" onclick="ProcessScheduling.showProcessSchedule(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
+                                        <span>📅</span>
+                                        <span>计划</span>
+                                    </button>
+                                ` : ''}
+                                ${statusClass === 'in_progress' ? `
+                                    <button class="secondary-action" onclick="app.pauseProcess(${process.id})">
+                                        <span>⏸️</span>
+                                        <span>暂停</span>
+                                    </button>
+                                    <button class="secondary-action" onclick="app.completeProcess(${process.id})">
+                                        <span>✅</span>
+                                        <span>完成</span>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                    <div class="process-actions">
-                        ${actionButtons}
-                        <button class="btn-quantity" onclick="app.showQuantityInputById(${process.id})" data-process-id="${process.id}">
-                            📊 工程量 ปริมาณงาน
-                        </button>
-                        <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
-                            <span id="subtask-toggle-text-${process.id}">查看子任务 ดูงานย่อย ▼</span>
-                        </button>
-                        ${PermissionManager.canManageProjects() ? `
-                            <button class="btn-schedule" onclick="ProcessScheduling.showDependencyManager(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
-                                🔗 依赖关系 ความสัมพันธ์
-                            </button>
-                            <button class="btn-schedule" onclick="ProcessScheduling.showProcessSchedule(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
-                                📅 计划日期 วันที่วางแผน
-                            </button>
-                        ` : ''}
-                    </div>
+                    
+                    <!-- 子任务展开区域 -->
                     <div class="process-subtasks-area" id="subtasks-area-${process.id}">
                         <div class="loading-subtasks">加载中... กำลังโหลด...</div>
                     </div>
                 </div>
             `;
-        }).join('');
+        }).join('') + `</div>`; // 闭合 processes-grid
     };
     
     // 展开/收起子任务（内联显示）

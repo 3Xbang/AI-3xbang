@@ -1,0 +1,458 @@
+/* ========================================
+   Mira Villa - 工序卡片 v2.0 优化设计
+   Process Cards v2.0 - Optimized Design
+   ======================================== */
+
+/* 工序网格布局 */
+.processes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* 工序卡片基础样式 */
+.process-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.process-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 卡片顶部状态条 */
+.process-card-status-bar {
+    height: 6px;
+    width: 100%;
+}
+
+/* 卡片内容区 */
+.process-card-content {
+    padding: 24px;
+}
+
+/* 工序代码和标题 */
+.process-card-header {
+    margin-bottom: 16px;
+}
+
+.process-code-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+    color: #FFFFFF;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.process-card-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1F2937;
+    line-height: 1.4;
+}
+
+.process-card-title-bilingual {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* 进度区域 */
+.process-card-progress {
+    margin: 20px 0;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.progress-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6B7280;
+}
+
+.progress-percentage {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1F2937;
+}
+
+.progress-bar-container {
+    height: 12px;
+    background: #E5E7EB;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* 关键信息区域 */
+.process-card-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+    padding: 16px;
+    background: #F9FAFB;
+    border-radius: 12px;
+}
+
+.info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.info-icon {
+    font-size: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.info-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #9CA3AF;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 14px;
+    color: #1F2937;
+    font-weight: 500;
+    word-wrap: break-word;
+}
+
+/* 状态标签 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* 操作按钮区域 */
+.process-card-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #E5E7EB;
+}
+
+/* 主要操作 */
+.primary-action {
+    width: 100%;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.primary-action:active {
+    transform: translateY(0);
+}
+
+/* 次要操作按钮组 */
+.secondary-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.secondary-action {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 16px;
+    border: 1.5px solid #E5E7EB;
+    background: #FFFFFF;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6B7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.secondary-action:hover {
+    border-color: #3B82F6;
+    color: #3B82F6;
+    background: #EFF6FF;
+}
+
+/* ========================================
+   状态特定样式
+   ======================================== */
+
+/* 未开始 - 灰色 */
+.process-card.status-not-started .process-card-status-bar {
+    background: linear-gradient(90deg, #9CA3AF 0%, #6B7280 100%);
+}
+
+.process-card.status-not-started {
+    border-color: #E5E7EB;
+}
+
+.process-card.status-not-started .status-badge {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+.process-card.status-not-started .primary-action {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.process-card.status-not-started .primary-action:hover {
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* 进行中 - 蓝色 */
+.process-card.status-in-progress .process-card-status-bar {
+    background: linear-gradient(90deg, #3B82F6 0%, #2563EB 100%);
+}
+
+.process-card.status-in-progress {
+    border-color: #BFDBFE;
+    background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
+}
+
+.process-card.status-in-progress .status-badge {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.process-card.status-in-progress .progress-bar-fill {
+    background: linear-gradient(90deg, #3B82F6 0%, #2563EB 100%);
+}
+
+.process-card.status-in-progress .primary-action {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.process-card.status-in-progress .primary-action:hover {
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* 已完成 - 绿色 */
+.process-card.status-completed .process-card-status-bar {
+    background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+}
+
+.process-card.status-completed {
+    border-color: #A7F3D0;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%);
+}
+
+.process-card.status-completed .status-badge {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.process-card.status-completed .progress-bar-fill {
+    background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+}
+
+.process-card.status-completed .primary-action {
+    background: #E5E7EB;
+    color: #6B7280;
+    cursor: default;
+    box-shadow: none;
+}
+
+.process-card.status-completed .primary-action:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 等待材料 - 橙色 */
+.process-card.status-waiting-material .process-card-status-bar {
+    background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
+}
+
+.process-card.status-waiting-material {
+    border-color: #FED7AA;
+}
+
+.process-card.status-waiting-material .status-badge {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+/* 暂停 - 黄色 */
+.process-card.status-paused .process-card-status-bar {
+    background: linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%);
+}
+
+.process-card.status-paused {
+    border-color: #FDE68A;
+}
+
+.process-card.status-paused .status-badge {
+    background: #FEF3C7;
+    color: #78350F;
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .processes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .processes-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .process-card-content {
+        padding: 20px;
+    }
+    
+    .process-card-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .secondary-actions {
+        flex-direction: column;
+    }
+    
+    .secondary-action {
+        width: 100%;
+    }
+}
+
+/* ========================================
+   加载状态
+   ======================================== */
+
+.process-card.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.process-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========================================
+   空状态优化
+   ======================================== */
+
+.empty-processes {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
+    border-radius: 20px;
+    margin: 40px 0;
+}
+
+.empty-processes-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-processes h3 {
+    font-size: 24px;
+    color: #475569;
+    margin: 0 0 12px 0;
+}
+
+.empty-processes p {
+    font-size: 16px;
+    color: #64748B;
+    margin: 0 0 32px 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}

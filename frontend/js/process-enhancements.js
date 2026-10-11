@@ -926,7 +926,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                         ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${process.status === 'not_started' ? '${t('quantities.saveAndStart')}' : '${t('common.save')}'}
+                        ${process.status === 'not_started' ? '保存并开始 บันทึกและเริ่ม' : '保存 บันทึก'}
                     </button>
                 </div>
             </form>
@@ -1101,7 +1101,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                         ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${process.status === 'not_started' ? '${t('quantities.saveAndStart')}' : '${t('common.save')}'}
+                        ${process.status === 'not_started' ? '保存并开始 บันทึกและเริ่ม' : '保存 บันทึก'}
                     </button>
                 </div>
             </form>

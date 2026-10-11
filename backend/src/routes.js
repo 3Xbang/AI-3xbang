@@ -1916,14 +1916,14 @@ router.post('/projects/:projectId/processes/batch', authenticate, requirePermiss
         
         const nodeResult = await client.query(`
           INSERT INTO process_nodes 
-          (project_id, process_code, process_name, parent_id, display_order)
-          VALUES ($1, $2, $3::jsonb, NULL, $4)
+          (project_id, process_code, process_name, sequence_number)
+          VALUES ($1, $2, $3::jsonb, $4)
           RETURNING id
         `, [
           projectId,
           template.code,
           JSON.stringify({ zh: template.name_zh, th: template.name_th }),
-          template.display_order
+          template.display_order || 0
         ]);
         
         const nodeId = nodeResult.rows[0].id;
@@ -2016,10 +2016,10 @@ router.post('/projects/:projectId/processes/single', authenticate, requirePermis
     // 创建工序节点
     const nodeResult = await client.query(`
       INSERT INTO process_nodes 
-      (project_id, process_code, process_name, parent_id, display_order)
-      VALUES ($1, $2, $3::jsonb, NULL, $4)
+      (project_id, process_code, process_name, sequence_number)
+      VALUES ($1, $2, $3::jsonb, $4)
       RETURNING id
-    `, [projectId, processCode, JSON.stringify(processName), displayOrder]);
+    `, [projectId, processCode, JSON.stringify(processName), displayOrder || 0]);
     
     const nodeId = nodeResult.rows[0].id;
     

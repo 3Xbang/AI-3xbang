@@ -1,946 +1,173 @@
-// 国际化配置
-            loadError: 'โหลดข้อมูลงานไม่สำเร็จ',
-            notFound: 'ไม่พบงานนี้',
-            statusUpdated: 'อัพเดทสถานะแล้ว',
-            pauseReason: 'เลือกเหตุผลหยุดงาน:\n1. รอวัสดุ\n2. สภาพอากาศ\n3. อื่นๆ\n\nใส่ตัวเลข:',
-            confirmComplete: 'ยืนยันว่างานนี้เสร็จสมบูรณ์?',
-            completeSuccess: 'งานเสร็จสมบูรณ์!',
-            startSuccess: 'เริ่มงานแล้ว',
-            confirmAndStart: 'ยืนยันและเริ่มงาน',
-const i18n = {
-    zh: {
-        app: {
-            title: 'Mira Villa 管理系统',
-            subtitle: '别墅项目管理'
-        },
-        nav: {
-            projects: '项目管理',
-            processes: '工序进度',
-            materials: '材料管理',
-            photos: '现场照片',
-            dailyTasks: '今日任务',
-            users: '用户管理'
-        },
-        login: {
-            username: '用户名',
-            password: '密码',
-            submit: '登录',
-            error: '用户名或密码错误'
-        },
-        common: {
-            logout: '退出',
-            save: '保存',
-            cancel: '取消',
-            delete: '删除',
-            edit: '编辑',
-            confirm: '确认',
-            confirmDelete: '确认删除',
-            loading: '加载中...',
-            success: '操作成功',
-            error: '操作失败',
-            notes: '备注',
-            noData: '暂无数据',
-            chinese: '中文',
-            thai: '泰语',
-            add: '添加',
-            remove: '移除',
-            close: '关闭',
-            submit: '提交',
-            permissionDenied: '抱歉，您没有权限执行此操作',
-            back: '返回',
-            next: '下一步',
-            create: '创建'
-            loadError: '加载失败',
-            updateError: '更新失败',
-            saveError: '保存失败',
-            unknownError: '未知错误',
-            pleaseEnter: '请输入',
-            fillRequired: '请填写所有必填字段',
-        },
-        dashboard: {
-            title: '项目仪表盘',
-            noProjects: '暂无项目',
-            noProjectsDesc: '开始创建您的第一个项目吧',
-            myProjects: '我的项目'
-        },
-        projectDetail: {
-            overview: '项目概览',
-            settings: '项目设置'
-        },
-        overview: {
-            totalProcesses: '总工序数',
-            completedProcesses: '已完成',
-            inProgress: '进行中',
-            teamMembers: '团队成员',
-            projectInfo: '项目信息'
-        },
-        projects: {
-            title: '项目管理',
-            add: '+ 新建项目',
-            name: '项目名称',
-            location: '项目地点',
-            client: '客户名称',
-            clientPlaceholder: '请输入客户名称',
-            startDate: '开始日期',
-            endDate: '计划完工日期',
-            status: '状态',
-            progress: '进度',
-            selectProject: '选择项目',
-            members: '成员',
-            membersManagement: '成员管理',
-            currentMembers: '当前成员',
-            addMembers: '添加成员',
-            noMembers: '暂无成员',
-            allUsersAssigned: '所有用户都已分配到此项目',
-            assignedAt: '分配时间',
-            addMemberSuccess: '添加成员成功',
-            addMemberError: '添加成员失败',
-            removeMemberSuccess: '移除成员成功',
-            removeMemberError: '移除成员失败',
-            confirmRemoveMember: '确认移除该成员？',
-            loadMembersError: '加载成员列表失败',
-            createSuccess: '项目创建成功',
-            createError: '项目创建失败',
-            createSuccessProcessWarning: '项目创建成功，但部分工序添加失败',
-            createFirst: '创建第一个项目',
-            loadError: '加载项目失败',
-            basicInfo: '基本信息',
-            selectProcesses: '选择工序',
-            selectProcessesHelp: '从标准工序库中选择您项目需要的工序，也可以稍后添加',
-            selectAll: '全选',
-            deselectAll: '取消全选',
-            processes: '工序',
-            processesSelected: '个工序已选',
-            qualityPoints: '质量要点',
-            loadProcessError: '加载工序模板失败',
-            edit: '编辑项目',
-            delete: '删除项目',
-            confirmDelete: '确认删除项目？',
-            deleteWarning: '您即将删除项目「{name}」，此操作将永久删除以下所有数据：',
-            deleteItems: {
-                processes: '所有工序及其执行记录',
-                materials: '所有材料记录',
-                photos: '所有现场照片',
-                progress: '所有每日进度记录',
-                members: '所有项目成员关系'
-            },
-            deleteFinalWarning: '⚠️ 此操作无法撤销！',
-            deleteSuccess: '项目删除成功',
-            deleteError: '项目删除失败',
-            updateSuccess: '项目更新成功',
-            updateError: '项目更新失败',
-            status: {
-                active: '进行中',
-                planning: '规划中',
-                completed: '已完成',
-                'on-hold': '暂停',
-                paused: '暂停',
-                cancelled: '已取消'
-            }
-        },
-        processes: {
-            title: '工序进度',
-            selectProject: '选择项目',
-            addWorker: '分配工人',
-            addProcess: '添加工序',
-            noProcesses: '暂无工序',
-            noProcessesDesc: '开始添加您的第一个工序',
-            addFirst: '添加第一个工序',
-            fromTemplate: '从模板库选择',
-            fromTemplateDesc: '选择标准工序模板，快速添加',
-            customProcess: '自定义工序',
-            customProcessDesc: '创建项目特有的自定义工序',
-            selectFromTemplate: '从模板库选择工序',
-            selectTemplateHelp: '选择需要添加的工序，已添加的工序将被禁用',
-            selectAtLeastOne: '请至少选择一个工序',
-            addSuccess: '工序添加成功',
-            addError: '工序添加失败',
-            processCode: '工序编号',
-            codeExample: '例如: CUSTOM-01',
-            codeHint: '唯一标识码，建议大写字母+数字',
-            processName: '工序名称',
-            unit: '计量单位',
-            fillRequired: '请填写必填项',
-            confirmDelete: '确认删除此工序？',
-            deleteSuccess: '工序删除成功',
-            deleteError: '工序删除失败',
-            status: {
-                not_started: '未开始',
-                in_progress: '进行中',
-                waiting_material: '等待材料',
-                weather_stop: '天气停工',
-                completed: '已完成'
-            },
-            measurements: '尺寸测量',
-            workers: '分配工人',
-            notes: '备注',
-            units: {
-                square_meter: '平米',
-                cubic_meter: '立方米',
-                meter: '米',
-                piece: '件',
-                point: '点位',
-                ton: '吨'
-            }
-        },
-        scheduling: {
-            manageDependencies: '管理依赖关系',
-            dependencyHelp: '设置该工序与其他工序的前后依赖关系',
-            predecessors: '前置工序',
-            predecessorsDesc: '必须在此工序开始前完成的工序',
-            successors: '后置工序',
-            successorsDesc: '依赖此工序的后续工序',
-            noPredecessors: '暂无前置依赖',
-            noSuccessors: '暂无后置依赖',
-            addPredecessor: '添加前置依赖',
-            addSuccessor: '添加后置依赖',
-            selectPredecessor: '选择前置工序',
-            selectSuccessor: '选择后置工序',
-            successorHelp: '选择需要依赖当前工序的工序',
-            pleaseSelect: '请选择',
-            dependencyType: '依赖类型',
-            finishToStart: '完成后开始（常用）',
-            startToStart: '同时开始',
-            finishToFinish: '同时完成',
-            startToFinish: '开始后完成',
-            fsIsCommon: 'FS（完成-开始）最常用，表示前置工序完成后才能开始',
-            lagDays: '滞后天数',
-            lagDaysHint: '正数表示延迟，负数表示提前，0表示紧接着',
-            days: '天',
-            dependencyAdded: '依赖关系添加成功',
-            successorAdded: '后置依赖添加成功',
-            addError: '添加失败',
-            confirmDeleteDependency: '确认删除此依赖关系？',
-            dependencyDeleted: '依赖关系删除成功',
-            deleteError: '删除失败',
-            noAvailableProcesses: '没有可用的工序',
-            scheduleProcess: '时间规划',
-            plannedStartDate: '计划开始日期',
-            plannedEndDate: '计划完成日期',
-            plannedDuration: '计划工期',
-            autocalculate: '留空自动计算',
-            durationHint: '根据开始和结束日期自动计算',
-            scheduleUpdated: '计划更新成功',
-            updateError: '更新失败',
-            dependencies: '依赖',
-            schedule: '计划'
-            loadError: '获取工序信息失败',
-            notFound: '工序不存在',
-            statusUpdated: '状态已更新',
-            pauseReason: '请选择暂停原因:\n1. 等待材料\n2. 天气原因\n3. 其他\n\n输入数字:',
-            confirmComplete: '确认此工序已全部完成？',
-            completeSuccess: '工序已完成！',
-            startSuccess: '工序已开始',
-            confirmAndStart: '确认并开始工序',
-        },
-                quantities: {
-            quantity: '工程量',
-            enterData: '请输入工程量数据',
-            autoCalculate: '系统将根据您输入的数据自动计算材料需求',
-            calculationResult: '计算结果',
-            notSupported: '该工序暂不支持工程量输入，或使用通用工程量字段',
-            enterQuantity: '请输入工程量',
-            unit: '单位',
-            unitPlaceholder: '例如：m³、m²、个等',
-            unitExample: '例如：m³、m²、个、kg等',
-            instruction: '说明',
-            instructionText: '填写工程量数据，系统将自动计算总量。',
-            autoStart: '保存后工序将自动开始。',
-            saveAndStart: '保存并开始',
-            updateSuccess: '工程量已更新',
-            waitingInput: '等待输入...',
-            validQuantityError: '请输入有效的工程量'
-        },
-materials: {
-            title: '材料管理',
-            selectProject: '选择项目',
-            code: '材料编号',
-            name: '材料名称',
-            materialName: '材料名称',
-            materialCode: '材料编号',
-            unit: '单位',
-            quantity: '数量',
-            calculated: '计算需求',
-            purchased: '已采购',
-            received: '已接收',
-            used: '已使用',
-            stock: '库存',
-            noMaterials: '暂无材料，点击右上角采购材料',
-            materialList: '材料列表',
-            addMaterial: '添加材料',
-            noMaterialsDesc: '开始添加项目所需的材料',
-            unnamed: '未命名',
-            addFromLibrary: '材料添加功能开发中，请从材料库中选择',
-            loadError: '加载材料列表失败',
-            purchaseMaterial: '采购材料',
-            selectFromLibrary: '从材料库选择',
-            manualInput: '手动输入',
-            purchaseQuantity: '采购数量',
-            receivedQuantity: '到货数量',
-            usedQuantity: '已用数量',
-            stockQuantity: '库存余额',
-            supplier: '供应商',
-            supplierName: '供应商名称',
-            expectedArrival: '预计到货',
-            actualArrival: '实际到货',
-            confirmArrival: '确认到货',
-            useMaterial: '使用材料',
-            reorder: '重新订购',
-            unitPrice: '单价',
-            ordered: '已订购',
-            arrived: '已到货',
-            inUse: '使用中',
-            depleted: '已用完',
-            lowStock: '库存不足',
-            actualReceivedQuantity: '实际到货数量',
-            anyDifferences: '如有差异请说明',
-            selectProcess: '选择工序',
-            quantityUsed: '使用数量',
-            usageDate: '使用日期',
-            currentStock: '当前库存',
-            maxAvailable: '最大可用',
-            material: '材料',
-            noActiveProcesses: '暂无进行中的工序',
-            pleaseSelectProcess: '请选择工序',
-            purchaseSuccess: '采购记录成功',
-            purchaseFailed: '采购失败',
-            receiveSuccess: '到货确认成功',
-            receiveFailed: '确认失败',
-            useSuccess: '使用记录成功',
-            useFailed: '记录失败',
-            confirmUse: '确认使用'
-        },
-        photos: {
-            title: '现场照片',
-            selectProject: '选择项目',
-            upload: '上传照片',
-            process: '关联工序',
-            time: '拍摄时间',
-            notes: '说明'
-        },
-        users: {
-            title: '用户管理',
-            addUser: '添加用户',
-            editUser: '编辑用户',
-            username: '用户名',
-            password: '密码',
-            newPassword: '新密码',
-            fullName: '全名',
-            role: '角色',
-            assignedProjects: '分配项目',
-            createdAt: '创建时间',
-            actions: '操作',
-            selectRole: '选择角色',
-            passwordHint: '至少6个字符',
-            passwordOptional: '留空则不修改密码',
-            usernameCannotChange: '用户名创建后不可修改',
-            noUsers: '暂无用户',
-            totalUsers: '总用户数',
-            managers: '管理者',
-            purchasers: '采购者',
-            executors: '执行者',
-            addSuccess: '用户添加成功',
-            addError: '用户添加失败',
-            updateSuccess: '用户更新成功',
-            updateError: '用户更新失败',
-            deleteSuccess: '用户删除成功',
-            deleteError: '用户删除失败',
-            confirmDelete: '确认删除用户 {name}？此操作无法撤销',
-            loadError: '加载用户列表失败',
-            assignProjects: '分配项目',
-            assignProjectsTo: '为 {name} 分配项目',
-            selectProjects: '选择项目',
-            assignProjectsSuccess: '项目分配成功',
-            assignProjectsError: '项目分配失败',
-            loadProjectsError: '加载项目列表失败'
-        },
-        roles: {
-            manager: '管理者',
-            purchaser: '采购者',
-            executor: '执行者'
-        },
-        tasks: {
-            assign: '分配任务',
-            assignTask: '分配任务',
-            unassign: '取消分配',
-            processCode: '工序代码',
-            processName: '工序名称',
-            currentAssignments: '当前分配',
-            availableExecutors: '可分配的执行者',
-            noAssignments: '暂无分配',
-            noExecutorsInProject: '此项目没有执行者，请先添加执行者成员',
-            allExecutorsAssigned: '所有执行者都已分配',
-            assignedBy: '分配人',
-            assignSuccess: '任务分配成功',
-            assignError: '任务分配失败',
-            unassignSuccess: '取消分配成功',
-            unassignError: '取消分配失败',
-            confirmUnassign: '确认取消分配？',
-            loadError: '加载任务分配失败',
-            selectProjectFirst: '请先选择项目'
-        },
-        daily: {
-            title: '今日任务',
-            date: '日期',
-            inProgress: '进行中',
-            waitingMaterial: '等待材料',
-            weatherStop: '天气停工',
-            completed: '今日完成',
-            notStarted: '未开始',
-            todayPlan: '今日计划',
-            todayCompleted: '今日完成',
-            updateProgress: '更新进度',
-            reportIssue: '上报问题',
-            quantityCompleted: '完成数量',
-            workStatus: '工作状态',
-            normal: '正常进行',
-            totalProgress: '总进度',
-            workers: '人员',
-            materialStock: '材料库存',
-            sufficient: '充足',
-            insufficient: '不足',
-            progressHistory: '历史进度',
-            viewSubtasks: '查看子任务',
-            collapseSubtasks: '收起子任务',
-            noSubtasks: '暂无子任务',
-            createFromTemplate: '从模板创建子任务',
-            subtaskList: '子任务列表',
-            addMoreSubtasks: '添加更多子任务',
-            estimated: '预计',
-            completed: '已完成',
-            recordProgress: '记录进度',
-            currentProgress: '当前完成度',
-            newProgress: '新的完成度 (%)',
-            progressHint: '请输入 0-100 之间的数字',
-            progressNotes: '进度说明',
-            progressNotesPlaceholder: '例如：已完成基础开挖，正在进行垫层施工...',
-            progressRangeError: '完成度必须在 0-100 之间',
-            progressUpdated: '进度已更新为 {percent}%',
-            progressUpdate: '工序进度更新',
-            addSubtask: '添加子任务',
-            subtaskName: '子任务名称',
-            noSubtasks: '暂无子任务',
-            subtaskDetail: '子任务详情'
-        },
-        subtasks: {
-            title: '子任务管理',
-            view: '查看子任务',
-            add: '添加子任务',
-            update: '更新进度',
-            complete: '标记完成',
-            name: '子任务名称',
-            description: '描述',
-            estimatedQuantity: '预计数量',
-            actualQuantity: '实际完成',
-            unit: '单位',
-            empty: '暂无子任务，点击上方按钮添加',
-            namePlaceholder: '例如：浇筑东侧基础',
-            descPlaceholder: '详细说明（可选）',
-            confirmComplete: '确认标记此子任务为完成状态？'
-        },
-        units: {
-            sqm: '平米',
-            cbm: '立方米',
-            item: '件',
-            point: '点位'
+// 双语显示配置 (中文 + 泰语)
+const translations = {
+    app: {
+        title: 'Mira Villa',
+        subtitle: '建筑项目管理系统 ระบบจัดการโครงการก่อสร้าง'
+    },
+    nav: {
+        projects: '项目管理 จัดการโครงการ',
+        processes: '工序进度 ความคืบหน้างาน',
+        materials: '材料管理 จัดการวัสดุ',
+        photos: '现场照片 รูปถ่ายหน้างาน',
+        dailyTasks: '今日任务 งานวันนี้',
+        users: '用户管理 ผู้ใช้งาน'
+    },
+    common: {
+        logout: '退出 ออกจากระบบ',
+        save: '保存 บันทึก',
+        cancel: '取消 ยกเลิก',
+        delete: '删除 ลบ',
+        edit: '编辑 แก้ไข',
+        confirm: '确认 ยืนยัน',
+        confirmDelete: '确认删除 ยืนยันลบ',
+        loading: '加载中... กำลังโหลด...',
+        success: '成功 สำเร็จ',
+        error: '错误 ผิดพลาด',
+        notes: '备注 หมายเหตุ',
+        noData: '暂无数据 ไม่มีข้อมูล',
+        add: '添加 เพิ่ม',
+        remove: '移除 ลบออก',
+        close: '关闭 ปิด',
+        submit: '提交 ส่ง',
+        back: '返回 กลับ',
+        next: '下一步 ถัดไป',
+        create: '创建 สร้าง'
+    },
+    dashboard: {
+        title: '项目概览 แดชบอร์ดโครงการ',
+        noProjects: '暂无项目 ยังไม่มีโครงการ',
+        noProjectsDesc: '开始创建第一个项目 เริ่มต้นสร้างโครงการแรกของคุณ',
+        myProjects: '我的项目 โครงการของฉัน'
+    },
+    projectDetail: {
+        overview: '项目概览 ภาพรวมโครงการ',
+        settings: '项目设置 ตั้งค่าโครงการ'
+    },
+    overview: {
+        totalProcesses: '总工序数 จำนวนงานทั้งหมด',
+        completedProcesses: '已完成 เสร็จแล้ว',
+        inProgress: '进行中 กำลังดำเนินการ',
+        teamMembers: '团队成员 สมาชิกทีม'
+    },
+    projects: {
+        title: '项目管理 จัดการโครงการ',
+        name: '项目名称 ชื่อโครงการ',
+        code: '项目编号 รหัสโครงการ',
+        description: '项目描述 คำอธิบาย',
+        location: '项目地址 ที่ตั้งโครงการ',
+        startDate: '开始日期 วันเริ่ม',
+        endDate: '结束日期 วันสิ้นสุด',
+        manager: '项目经理 ผู้จัดการโครงการ',
+        create: '创建项目 สร้างโครงการ',
+        edit: '编辑项目 แก้ไขโครงการ',
+        delete: '删除项目 ลบโครงการ',
+        confirmDelete: '确认删除项目？ ยืนยันลบโครงการ?',
+        createSuccess: '项目创建成功 สร้างโครงการสำเร็จ',
+        updateSuccess: '项目更新成功 อัพเดทโครงการสำเร็จ',
+        deleteSuccess: '项目删除成功 ลบโครงการสำเร็จ',
+        loadError: '加载项目失败 โหลดโครงการไม่สำเร็จ',
+        basicInfo: '基本信息 ข้อมูลพื้นฐาน',
+        selectProcesses: '选择工序 เลือกงาน',
+        processes: '工序 งาน',
+        addProcess: '添加工序 เพิ่มงาน',
+        noProcesses: '暂无工序 ยังไม่มีงาน',
+        noProcessesDesc: '开始添加第一个工序 เริ่มต้นเพิ่มงานแรก',
+        addFirst: '添加第一个工序 เพิ่มงานแรก'
+    },
+    processes: {
+        title: '工序进度 ความคืบหน้างาน',
+        addProcess: '添加工序 เพิ่มงาน',
+        noProcesses: '暂无工序 ยังไม่มีงาน',
+        noProcessesDesc: '开始添加工序 เริ่มเพิ่มงาน',
+        addFirst: '添加第一个工序 เพิ่มงานแรก',
+        processCode: '工序编号 รหัสงาน',
+        status: {
+            not_started: '未开始 ยังไม่เริ่ม',
+            in_progress: '进行中 กำลังดำเนินการ',
+            waiting_material: '等待材料 รอวัสดุ',
+            weather_stop: '天气停工 หยุดเพราะสภาพอากาศ',
+            completed: '已完成 เสร็จแล้ว',
+            paused: '已暂停 หยุดชั่วคราว'
         }
     },
-    th: {
-        app: {
-            title: 'Mira Villa',
-            subtitle: 'ระบบจัดการโครงการก่อสร้าง'
-        },
-        nav: {
-            projects: 'จัดการโครงการ',
-            processes: 'ความคืบหน้างาน',
-            materials: 'จัดการวัสดุ',
-            photos: 'รูปถ่ายหน้างาน',
-            dailyTasks: 'งานวันนี้',
-            users: 'ผู้ใช้งาน'
-        },
-        login: {
-            username: 'ชื่อผู้ใช้',
-            password: 'รหัสผ่าน',
-            submit: 'เข้าสู่ระบบ',
-            error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
-        },
-        common: {
-            logout: 'ออกจากระบบ',
-            save: 'บันทึก',
-            cancel: 'ยกเลิก',
-            delete: 'ลบ',
-            edit: 'แก้ไข',
-            confirm: 'ยืนยัน',
-            confirmDelete: 'ยืนยันลบ',
-            loading: 'กำลังโหลด...',
-            success: 'สำเร็จ',
-            error: 'ผิดพลาด',
-            notes: 'หมายเหตุ',
-            noData: 'ไม่มีข้อมูล',
-            chinese: 'จีน',
-            thai: 'ไทย',
-            add: 'เพิ่ม',
-            remove: 'ลบออก',
-            close: 'ปิด',
-            submit: 'ส่ง',
-            permissionDenied: 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้',
-            back: 'กลับ',
-            next: 'ถัดไป',
-            create: 'สร้าง'
-            loadError: 'โหลดไม่สำเร็จ',
-            updateError: 'อัพเดทไม่สำเร็จ',
-            saveError: 'บันทึกไม่สำเร็จ',
-            unknownError: 'ข้อผิดพลาดที่ไม่รู้จัก',
-            pleaseEnter: 'กรุณาใส่',
-            fillRequired: 'กรุณากรอกข้อมูลที่จำเป็นทั้งหมด',
-        },
-        dashboard: {
-            title: 'แดชบอร์ดโครงการ',
-            noProjects: 'ยังไม่มีโครงการ',
-            noProjectsDesc: 'เริ่มต้นสร้างโครงการแรกของคุณ',
-            myProjects: 'โครงการของฉัน'
-        },
-        projectDetail: {
-            overview: 'ภาพรวมโครงการ',
-            settings: 'ตั้งค่าโครงการ'
-        },
-        overview: {
-            totalProcesses: 'จำนวนงานทั้งหมด',
-            completedProcesses: 'เสร็จแล้ว',
-            inProgress: 'กำลังดำเนินการ',
-            teamMembers: 'สมาชิกทีม',
-            projectInfo: 'ข้อมูลโครงการ'
-        },
-        projects: {
-            title: 'จัดการโครงการ',
-            add: '+ สร้างโครงการใหม่',
-            name: 'ชื่อโครงการ',
-            location: 'ที่ตั้งโครงการ',
-            client: 'ชื่อลูกค้า',
-            clientPlaceholder: 'กรุณากรอกชื่อลูกค้า',
-            startDate: 'วันเริ่มงาน',
-            endDate: 'วันแล้วเสร็จตามแผน',
-            status: 'สถานะ',
-            progress: 'ความคืบหน้า',
-            selectProject: 'เลือกโครงการ',
-            members: 'สมาชิก',
-            membersManagement: 'จัดการสมาชิก',
-            currentMembers: 'สมาชิกปัจจุบัน',
-            addMembers: 'เพิ่มสมาชิก',
-            noMembers: 'ยังไม่มีสมาชิก',
-            allUsersAssigned: 'ผู้ใช้ทั้งหมดถูกมอบหมายแล้ว',
-            assignedAt: 'เวลามอบหมาย',
-            addMemberSuccess: 'เพิ่มสมาชิกสำเร็จ',
-            addMemberError: 'เพิ่มสมาชิกไม่สำเร็จ',
-            removeMemberSuccess: 'ลบสมาชิกสำเร็จ',
-            removeMemberError: 'ลบสมาชิกไม่สำเร็จ',
-            confirmRemoveMember: 'ยืนยันลบสมาชิก?',
-            loadMembersError: 'โหลดรายการสมาชิกไม่สำเร็จ',
-            createSuccess: 'สร้างโครงการสำเร็จ',
-            createError: 'สร้างโครงการไม่สำเร็จ',
-            createSuccessProcessWarning: 'สร้างโครงการสำเร็จ แต่เพิ่มงานบางส่วนไม่สำเร็จ',
-            createFirst: 'สร้างโครงการแรก',
-            loadError: 'โหลดโครงการไม่สำเร็จ',
-            basicInfo: 'ข้อมูลพื้นฐาน',
-            selectProcesses: 'เลือกงาน',
-            selectProcessesHelp: 'เลือกงานมาตรฐานที่ต้องการสำหรับโครงการของคุณ สามารถเพิ่มเติมภายหลังได้',
-            selectAll: 'เลือกทั้งหมด',
-            deselectAll: 'ยกเลิกทั้งหมด',
-            processes: 'งาน',
-            processesSelected: 'งานที่เลือก',
-            qualityPoints: 'จุดควบคุมคุณภาพ',
-            loadProcessError: 'โหลดรายการงานไม่สำเร็จ',
-            edit: 'แก้ไขโครงการ',
-            delete: 'ลบโครงการ',
-            confirmDelete: 'ยืนยันลบโครงการ?',
-            deleteWarning: 'คุณกำลังลบโครงการ「{name}」 การดำเนินการนี้จะลบข้อมูลทั้งหมดต่อไปนี้อย่างถาวร:',
-            deleteItems: {
-                processes: 'งานทั้งหมดและบันทึกการทำงาน',
-                materials: 'บันทึกวัสดุทั้งหมด',
-                photos: 'รูปภาพทั้งหมด',
-                progress: 'บันทึกความคืบหน้ารายวันทั้งหมด',
-                members: 'ความสัมพันธ์สมาชิกโครงการทั้งหมด'
-            },
-            deleteFinalWarning: '⚠️ ไม่สามารถยกเลิกการดำเนินการนี้ได้!',
-            deleteSuccess: 'ลบโครงการสำเร็จ',
-            deleteError: 'ลบโครงการไม่สำเร็จ',
-            updateSuccess: 'อัพเดทโครงการสำเร็จ',
-            updateError: 'อัพเดทโครงการไม่สำเร็จ',
-            status: {
-                active: 'กำลังดำเนินการ',
-                planning: 'กำลังวางแผน',
-                completed: 'เสร็จสิ้น',
-                'on-hold': 'หยุดชั่วคราว',
-                paused: 'หยุดชั่วคราว',
-                cancelled: 'ยกเลิกแล้ว'
-            }
-        },
-        processes: {
-            title: 'ความคืบหน้างาน',
-            selectProject: 'เลือกโครงการ',
-            addWorker: 'มอบหมายคนงาน',
-            addProcess: 'เพิ่มงาน',
-            noProcesses: 'ยังไม่มีงาน',
-            noProcessesDesc: 'เริ่มต้นเพิ่มงานแรกของคุณ',
-            addFirst: 'เพิ่มงานแรก',
-            fromTemplate: 'เลือกจากเทมเพลต',
-            fromTemplateDesc: 'เลือกงานมาตรฐาน เพิ่มได้รวดเร็ว',
-            customProcess: 'สร้างงานเอง',
-            customProcessDesc: 'สร้างงานเฉพาะของโครงการ',
-            selectFromTemplate: 'เลือกงานจากเทมเพลต',
-            selectTemplateHelp: 'เลือกงานที่ต้องการเพิ่ม งานที่เพิ่มแล้วจะถูกปิดใช้งาน',
-            selectAtLeastOne: 'กรุณาเลือกอย่างน้อย 1 งาน',
-            addSuccess: 'เพิ่มงานสำเร็จ',
-            addError: 'เพิ่มงานไม่สำเร็จ',
-            processCode: 'รหัสงาน',
-            codeExample: 'เช่น: CUSTOM-01',
-            codeHint: 'รหัสเฉพาะ แนะนำใช้ตัวพิมพ์ใหญ่+ตัวเลข',
-            processName: 'ชื่องาน',
-            unit: 'หน่วยวัด',
-            fillRequired: 'กรุณากรอกข้อมูลที่จำเป็น',
-            confirmDelete: 'ยืนยันลบงานนี้?',
-            deleteSuccess: 'ลบงานสำเร็จ',
-            deleteError: 'ลบงานไม่สำเร็จ',
-            status: {
-                not_started: 'ยังไม่เริ่ม',
-                in_progress: 'กำลังทำงาน',
-                waiting_material: 'รอวัสดุ',
-                weather_stop: 'หยุดเพราะอากาศ',
-                completed: 'เสร็จสิ้น'
-            },
-            measurements: 'ขนาด',
-            workers: 'คนงาน',
-            notes: 'หมายเหตุ',
-            units: {
-                square_meter: 'ตร.ม.',
-                cubic_meter: 'ลบ.ม.',
-                meter: 'เมตร',
-                piece: 'ชิ้น',
-                point: 'จุด',
-                ton: 'ตัน'
-            }
-        },
-        scheduling: {
-            manageDependencies: 'จัดการความสัมพันธ์',
-            dependencyHelp: 'กำหนดความสัมพันธ์ก่อน-หลังกับงานอื่น',
-            predecessors: 'งานก่อนหน้า',
-            predecessorsDesc: 'งานที่ต้องเสร็จก่อนเริ่มงานนี้',
-            successors: 'งานถัดไป',
-            successorsDesc: 'งานที่ต้องรอให้งานนี้เสร็จ',
-            noPredecessors: 'ยังไม่มีงานก่อนหน้า',
-            noSuccessors: 'ยังไม่มีงานถัดไป',
-            addPredecessor: 'เพิ่มงานก่อนหน้า',
-            addSuccessor: 'เพิ่มงานถัดไป',
-            selectPredecessor: 'เลือกงานก่อนหน้า',
-            selectSuccessor: 'เลือกงานถัดไป',
-            successorHelp: 'เลือกงานที่ต้องรอให้งานนี้เสร็จ',
-            pleaseSelect: 'กรุณาเลือก',
-            dependencyType: 'ประเภทความสัมพันธ์',
-            finishToStart: 'เสร็จแล้วเริ่ม (นิยม)',
-            startToStart: 'เริ่มพร้อมกัน',
-            finishToFinish: 'เสร็จพร้อมกัน',
-            startToFinish: 'เริ่มแล้วเสร็จ',
-            fsIsCommon: 'FS (เสร็จ-เริ่ม) ใช้บ่อยที่สุด หมายถึง งานก่อนหน้าต้องเสร็จก่อน',
-            lagDays: 'ช่วงห่าง (วัน)',
-            lagDaysHint: 'บวกคือล่าช้า ลบคือเร็วขึ้น 0คือติดกัน',
-            days: 'วัน',
-            dependencyAdded: 'เพิ่มความสัมพันธ์สำเร็จ',
-            successorAdded: 'เพิ่มงานถัดไปสำเร็จ',
-            addError: 'เพิ่มไม่สำเร็จ',
-            confirmDeleteDependency: 'ยืนยันลบความสัมพันธ์นี้?',
-            dependencyDeleted: 'ลบความสัมพันธ์สำเร็จ',
-            deleteError: 'ลบไม่สำเร็จ',
-            noAvailableProcesses: 'ไม่มีงานที่สามารถเลือกได้',
-            scheduleProcess: 'วางแผนเวลา',
-            plannedStartDate: 'วันเริ่มตามแผน',
-            plannedEndDate: 'วันเสร็จตามแผน',
-            plannedDuration: 'ระยะเวลาตามแผน',
-            autocalculate: 'ปล่อยว่างคำนวณอัตโนมัติ',
-            durationHint: 'คำนวณจากวันเริ่มและวันเสร็จ',
-            scheduleUpdated: 'อัปเดตแผนสำเร็จ',
-            updateError: 'อัปเดตไม่สำเร็จ',
-            dependencies: 'ความสัมพันธ์',
-            schedule: 'แผน'
-        },
-                quantities: {
-            quantity: 'ปริมาณงาน',
-            enterData: 'กรุณาใส่ข้อมูลปริมาณงาน',
-            autoCalculate: 'ระบบจะคำนวณความต้องการวัสดุอัตโนมัติ',
-            calculationResult: 'ผลการคำนวณ',
-            notSupported: 'งานนี้ยังไม่รองรับการป้อนปริมาณงาน หรือใช้ฟิลด์ทั่วไป',
-            enterQuantity: 'กรุณาใส่ปริมาณงาน',
-            unit: 'หน่วย',
-            unitPlaceholder: 'เช่น: m³, m², ชิ้น ฯลฯ',
-            unitExample: 'เช่น: m³, m², ชิ้น, kg ฯลฯ',
-            instruction: 'คำอธิบาย',
-            instructionText: 'กรอกข้อมูลปริมาณงาน ระบบจะคำนวณยอดรวมอัตโนมัติ',
-            autoStart: 'งานจะเริ่มอัตโนมัติหลังบันทึก',
-            saveAndStart: 'บันทึกและเริ่ม',
-            updateSuccess: 'อัพเดทปริมาณงานแล้ว',
-            waitingInput: 'รอข้อมูล...',
-            validQuantityError: 'กรุณาใส่ปริมาณงานที่ถูกต้อง'
-        },
-materials: {
-            title: 'จัดการวัสดุ',
-            selectProject: 'เลือกโครงการ',
-            code: 'รหัสวัสดุ',
-            name: 'ชื่อวัสดุ',
-            materialName: 'ชื่อวัสดุ',
-            materialCode: 'รหัสวัสดุ',
-            unit: 'หน่วย',
-            quantity: 'จำนวน',
-            calculated: 'คำนวณแล้ว',
-            purchased: 'สั่งซื้อแล้ว',
-            received: 'รับแล้ว',
-            used: 'ใช้แล้ว',
-            stock: 'คงเหลือ',
-            noMaterials: 'ยังไม่มีวัสดุ คลิกปุ่มมุมบนขวาเพื่อสั่งซื้อ',
-            materialList: 'รายการวัสดุ',
-            addMaterial: 'เพิ่มวัสดุ',
-            noMaterialsDesc: 'เริ่มเพิ่มวัสดุที่ต้องการสำหรับโครงการ',
-            unnamed: 'ไม่มีชื่อ',
-            addFromLibrary: 'ฟีเจอร์เพิ่มวัสดุกำลังพัฒนา กรุณาเลือกจากคลังวัสดุ',
-            loadError: 'โหลดรายการวัสดุไม่สำเร็จ',
-            purchaseMaterial: 'สั่งซื้อวัสดุ',
-            selectFromLibrary: 'เลือกจากคลังวัสดุ',
-            manualInput: 'กรอกข้อมูลเอง',
-            purchaseQuantity: 'จำนวนสั่งซื้อ',
-            receivedQuantity: 'จำนวนที่รับ',
-            usedQuantity: 'จำนวนที่ใช้',
-            stockQuantity: 'ยอดคงเหลือ',
-            supplier: 'ผู้จำหน่าย',
-            supplierName: 'ชื่อผู้จำหน่าย',
-            expectedArrival: 'คาดว่าจะส่ง',
-            actualArrival: 'วันที่ส่งจริง',
-            confirmArrival: 'ยืนยันรับของ',
-            useMaterial: 'ใช้วัสดุ',
-            reorder: 'สั่งซื้อเพิ่ม',
-            unitPrice: 'ราคาต่อหน่วย',
-            ordered: 'สั่งซื้อแล้ว',
-            arrived: 'ส่งถึงแล้ว',
-            inUse: 'กำลังใช้งาน',
-            depleted: 'หมดแล้ว',
-            lowStock: 'เหลือน้อย',
-            actualReceivedQuantity: 'จำนวนที่รับจริง',
-            anyDifferences: 'ระบุถ้ามีความแตกต่าง',
-            selectProcess: 'เลือกงาน',
-            quantityUsed: 'จำนวนที่ใช้',
-            usageDate: 'วันที่ใช้',
-            currentStock: 'คงเหลือปัจจุบัน',
-            maxAvailable: 'สูงสุดที่มี',
-            material: 'วัสดุ',
-            noActiveProcesses: 'ยังไม่มีงานที่กำลังทำ',
-            pleaseSelectProcess: 'กรุณาเลือกงาน',
-            purchaseSuccess: 'บันทึกการสั่งซื้อสำเร็จ',
-            purchaseFailed: 'การสั่งซื้อล้มเหลว',
-            receiveSuccess: 'ยืนยันรับของสำเร็จ',
-            receiveFailed: 'การยืนยันล้มเหลว',
-            useSuccess: 'บันทึกการใช้วัสดุสำเร็จ',
-            useFailed: 'การบันทึกล้มเหลว',
-            confirmUse: 'ยืนยันการใช้'
-        },
-        photos: {
-            title: 'รูปถ่ายหน้างาน',
-            selectProject: 'เลือกโครงการ',
-            upload: 'อัพโหลดรูป',
-            process: 'เกี่ยวกับงาน',
-            time: 'เวลาถ่าย',
-            notes: 'รายละเอียด'
-        },
-        users: {
-            title: 'จัดการผู้ใช้',
-            addUser: 'เพิ่มผู้ใช้',
-            editUser: 'แก้ไขผู้ใช้',
-            username: 'ชื่อผู้ใช้',
-            password: 'รหัสผ่าน',
-            newPassword: 'รหัสผ่านใหม่',
-            fullName: 'ชื่อเต็ม',
-            role: 'บทบาท',
-            assignedProjects: 'มอบหมายโครงการ',
-            createdAt: 'วันที่สร้าง',
-            actions: 'ดำเนินการ',
-            selectRole: 'เลือกบทบาท',
-            passwordHint: 'อย่างน้อย 6 ตัวอักษร',
-            passwordOptional: 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน',
-            usernameCannotChange: 'ชื่อผู้ใช้ไม่สามารถเปลี่ยนได้หลังสร้าง',
-            noUsers: 'ไม่มีผู้ใช้',
-            totalUsers: 'ผู้ใช้ทั้งหมด',
-            managers: 'ผู้จัดการ',
-            purchasers: 'ผู้จัดซื้อ',
-            executors: 'พนักงาน',
-            addSuccess: 'เพิ่มผู้ใช้สำเร็จ',
-            addError: 'เพิ่มผู้ใช้ไม่สำเร็จ',
-            updateSuccess: 'อัพเดทผู้ใช้สำเร็จ',
-            updateError: 'อัพเดทผู้ใช้ไม่สำเร็จ',
-            deleteSuccess: 'ลบผู้ใช้สำเร็จ',
-            deleteError: 'ลบผู้ใช้ไม่สำเร็จ',
-            confirmDelete: 'ยืนยันลบผู้ใช้ {name}? ไม่สามารถกู้คืนได้',
-            loadError: 'โหลดรายการผู้ใช้ไม่สำเร็จ',
-            assignProjects: 'มอบหมายโครงการ',
-            assignProjectsTo: 'มอบหมายโครงการให้ {name}',
-            selectProjects: 'เลือกโครงการ',
-            assignProjectsSuccess: 'มอบหมายโครงการสำเร็จ',
-            assignProjectsError: 'มอบหมายโครงการไม่สำเร็จ',
-            loadProjectsError: 'โหลดรายการโครงการไม่สำเร็จ'
-        },
-        roles: {
-            manager: 'ผู้จัดการ',
-            purchaser: 'ผู้จัดซื้อ',
-            executor: 'พนักงาน'
-        },
-        tasks: {
-            assign: 'มอบหมายงาน',
-            assignTask: 'มอบหมายงาน',
-            unassign: 'ยกเลิกการมอบหมาย',
-            processCode: 'รหัสงาน',
-            processName: 'ชื่องาน',
-            currentAssignments: 'การมอบหมายปัจจุบัน',
-            availableExecutors: 'พนักงานที่สามารถมอบหมาย',
-            noAssignments: 'ยังไม่มีการมอบหมาย',
-            noExecutorsInProject: 'โครงการนี้ไม่มีพนักงาน กรุณาเพิ่มสมาชิกพนักงานก่อน',
-            allExecutorsAssigned: 'มอบหมายให้พนักงานทั้งหมดแล้ว',
-            assignedBy: 'มอบหมายโดย',
-            assignSuccess: 'มอบหมายงานสำเร็จ',
-            assignError: 'มอบหมายงานไม่สำเร็จ',
-            unassignSuccess: 'ยกเลิกการมอบหมายสำเร็จ',
-            unassignError: 'ยกเลิกการมอบหมายไม่สำเร็จ',
-            confirmUnassign: 'ยืนยันยกเลิกการมอบหมาย?',
-            loadError: 'โหลดการมอบหมายงานไม่สำเร็จ',
-            selectProjectFirst: 'กรุณาเลือกโครงการก่อน'
-        },
-        daily: {
-            title: 'งานวันนี้',
-            date: 'วันที่',
-            inProgress: 'กำลังทำงาน',
-            waitingMaterial: 'รอวัสดุ',
-            weatherStop: 'หยุดเพราะอากาศ',
-            completed: 'เสร็จวันนี้',
-            notStarted: 'ยังไม่เริ่ม',
-            todayPlan: 'เป้าหมายวันนี้',
-            todayCompleted: 'ทำเสร็จวันนี้',
-            updateProgress: 'อัพเดทความคืบหน้า',
-            reportIssue: 'รายงานปัญหา',
-            quantityCompleted: 'จำนวนที่ทำเสร็จ',
-            workStatus: 'สถานะงาน',
-            normal: 'ปกติ',
-            totalProgress: 'ความคืบหน้ารวม',
-            workers: 'คนงาน',
-            materialStock: 'คงเหลือวัสดุ',
-            sufficient: 'เพียงพอ',
-            insufficient: 'ไม่พอ',
-            progressHistory: 'ประวัติความคืบหน้า',
-            viewSubtasks: 'ดูงานย่อย',
-            collapseSubtasks: 'ซ่อนงานย่อย',
-            noSubtasks: 'ยังไม่มีงานย่อย',
-            createFromTemplate: 'สร้างจากเทมเพลต',
-            subtaskList: 'รายการงานย่อย',
-            addMoreSubtasks: 'เพิ่มงานย่อย',
-            estimated: 'ประมาณการ',
-            completed: 'เสร็จแล้ว',
-            recordProgress: 'บันทึกความคืบหน้า',
-            currentProgress: 'ความคืบหน้าปัจจุบัน',
-            newProgress: 'ความคืบหน้าใหม่ (%)',
-            progressHint: 'กรุณาใส่ตัวเลข 0-100',
-            progressNotes: 'หมายเหตุความคืบหน้า',
-            progressNotesPlaceholder: 'เช่น: เสร็จขุดฐานราก กำลังทำชั้นรองพื้น...',
-            progressRangeError: 'ความคืบหน้าต้องอยู่ระหว่าง 0-100',
-            progressUpdated: 'อัพเดทความคืบหน้าเป็น {percent}%',
-            progressUpdate: 'อัพเดทความคืบหน้างาน',
-            addSubtask: 'เพิ่มงานย่อย',
-            subtaskName: 'ชื่องานย่อย',
-            noSubtasks: 'ยังไม่มีงานย่อย',
-            subtaskDetail: 'รายละเอียดงานย่อย'
-        },
-        subtasks: {
-            title: 'จัดการงานย่อย',
-            view: 'ดูงานย่อย',
-            add: 'เพิ่มงานย่อย',
-            update: 'อัพเดทความคืบหน้า',
-            complete: 'ทำเสร็จแล้ว',
-            name: 'ชื่องานย่อย',
-            description: 'รายละเอียด',
-            estimatedQuantity: 'จำนวนโดยประมาณ',
-            actualQuantity: 'จำนวนที่ทำจริง',
-            unit: 'หน่วย',
-            empty: 'ยังไม่มีงานย่อย คลิกปุ่มด้านบนเพื่อเพิ่ม',
-            namePlaceholder: 'ตัวอย่าง: เทคอนกรีตฐานรากด้านตะวันออก',
-            descPlaceholder: 'รายละเอียดเพิ่มเติม (ไม่บังคับ)',
-            confirmComplete: 'ยืนยันว่างานย่อยนี้เสร็จแล้ว?'
-        },
-        units: {
-            sqm: 'ตร.ม.',
-            cbm: 'ลบ.ม.',
-            item: 'ชิ้น',
-            point: 'จุด'
-        }
+    scheduling: {
+        schedule: '计划 แผนงาน',
+        dependencies: '依赖 งานที่เกี่ยวข้อง',
+        days: '天 วัน',
+        plannedStartDate: '计划开始 วันเริ่มตามแผน',
+        plannedEndDate: '计划完成 วันสิ้นสุดตามแผน',
+        plannedDuration: '计划工期 ระยะเวลาตามแผน'
+    },
+    materials: {
+        title: '材料管理 จัดการวัสดุ',
+        materialList: '材料列表 รายการวัสดุ',
+        addMaterial: '添加材料 เพิ่มวัสดุ',
+        noMaterials: '暂无材料 ไม่มีวัสดุ',
+        purchased: '采购 สั่งซื้อ',
+        received: '到货 เข้าคลัง',
+        used: '已用 ใช้แล้ว',
+        stock: '库存 คงเหลือ'
+    },
+    daily: {
+        title: '今日任务 งานวันนี้',
+        updateProgress: '更新进度 อัพเดทความคืบหน้า',
+        viewSubtasks: '查看子任务 ดูงานย่อย',
+        currentProgress: '当前完成度 ความคืบหน้าปัจจุบัน',
+        newProgress: '新的完成度 ความคืบหน้าใหม่ (%)',
+        progressNotes: '进度说明 หมายเหตุความคืบหน้า'
+    },
+    users: {
+        title: '用户管理 จัดการผู้ใช้',
+        username: '用户名 ชื่อผู้ใช้',
+        password: '密码 รหัสผ่าน',
+        role: '角色 บทบาท',
+        addUser: '添加用户 เพิ่มผู้ใช้'
     }
 };
 
-// 当前语言 - 默认泰语
-let currentLang = localStorage.getItem('language') || 'th';
-
-// 翻译函数
-function t(key, params = null, lang = currentLang) {
+// 翻译函数 - 直接返回双语文本
+function t(key) {
     const keys = key.split('.');
-    let value = i18n[lang];
+    let value = translations;
+    
     for (const k of keys) {
-        value = value?.[k];
-    }
-    
-    // 如果没有找到翻译，返回键名
-    if (!value) return key;
-    
-    // 如果有参数，替换模板中的变量
-    if (params && typeof value === 'string') {
-        return value.replace(/\{(\w+)\}/g, (match, param) => {
-            return params[param] !== undefined ? params[param] : match;
-        });
-    }
-    
-    return value;
-}
-
-// 为 i18n 对象添加方法
-i18n.t = t;
-i18n.currentLang = () => currentLang;
-i18n.getLocalizedValue = function(value, field = null) {
-    if (!value) return '';
-    if (typeof value === 'string') {
-        try {
-            value = JSON.parse(value);
-        } catch (e) {
-            return value;
-        }
-    }
-    if (field) return value[field] || value.zh || value.th || '';
-    return value[currentLang] || value.zh || value.th || '';
-};
-
-// 更新页面所有翻译
-function updateTranslations(lang = currentLang) {
-    currentLang = lang;
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const translation = t(key, lang);
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.placeholder = translation;
+        if (value && typeof value === 'object' && k in value) {
+            value = value[k];
         } else {
-            el.textContent = translation;
+            console.warn('Translation missing:', key);
+            return key;
         }
-    });
+    }
+    
+    return value || key;
 }
 
-// 获取JSONB双语字段
-function getI18nField(obj, field) {
-    if (!obj || !obj[field]) return '';
-    const value = obj[field];
-    if (typeof value === 'string') return value;
-    return value[currentLang] || value.zh || value.th || '';
+// 获取双语字段（用于数据库返回的 JSON 字段）
+function getI18nField(obj, fieldName) {
+    if (!obj) return '';
+    
+    const field = obj[fieldName];
+    
+    // 如果是 JSON 对象，返回 "中文 ไทย" 格式
+    if (field && typeof field === 'object') {
+        const zh = field.zh || '';
+        const th = field.th || '';
+        return zh && th ? `${zh} ${th}` : (zh || th);
+    }
+    
+    // 否则直接返回
+    return field || '';
 }
 
-// 获取单位翻译
+// 获取单位文本（双语）
 function getUnitText(unit) {
     if (!unit) return '';
-    const key = `processes.units.${unit}`;
-    return t(key) !== key ? t(key) : unit;
+    if (typeof unit === 'object') {
+        const zh = unit.zh || '';
+        const th = unit.th || '';
+        return zh && th ? `${zh} ${th}` : (zh || th);
+    }
+    return unit;
 }
+
+console.log('✓ 双语 i18n 系统已加载');

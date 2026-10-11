@@ -193,3 +193,35 @@
 .btn-complete:hover {
     background: #059669;
 }
+
+/* 工序计划日期和工程量显示 */
+.process-schedule-info,
+.process-quantity-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    padding: 0.5rem 0;
+    color: #4b5563;
+}
+
+.schedule-label,
+.quantity-label {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.schedule-dates {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.schedule-duration {
+    color: #6b7280;
+    font-style: italic;
+}
+
+.quantity-value {
+    color: #059669;
+    font-weight: 600;
+}

@@ -71,6 +71,31 @@ if (typeof app !== 'undefined') {
                 `;
             }
             
+            // 计划日期显示
+            let scheduledInfo = '';
+            if (process.planned_start_date || process.planned_end_date) {
+                const startDate = process.planned_start_date ? new Date(process.planned_start_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定';
+                const endDate = process.planned_end_date ? new Date(process.planned_end_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定';
+                scheduledInfo = `
+                    <div class="process-schedule-info">
+                        <span class="schedule-label">📅 计划:</span>
+                        <span class="schedule-dates">${startDate} → ${endDate}</span>
+                        ${process.planned_duration ? `<span class="schedule-duration">(${process.planned_duration}天)</span>` : ''}
+                    </div>
+                `;
+            }
+            
+            // 工程量显示
+            let quantityInfo = '';
+            if (process.planned_quantity && process.quantity_unit) {
+                quantityInfo = `
+                    <div class="process-quantity-info">
+                        <span class="quantity-label">📊 工程量:</span>
+                        <span class="quantity-value">${process.planned_quantity} ${process.quantity_unit}</span>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="process-item status-${statusClass}" id="process-${process.id}">
                     <div class="process-header">
@@ -80,6 +105,8 @@ if (typeof app !== 'undefined') {
                         <span class="process-status">${statusText}</span>
                         <span class="progress-text" style="font-weight: 600; color: ${progressColor};">${percentage}%</span>
                     </div>
+                    ${scheduledInfo}
+                    ${quantityInfo}
                     <div class="process-progress">
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${percentage}%; background: ${progressColor}"></div>

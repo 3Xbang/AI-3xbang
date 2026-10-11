@@ -188,7 +188,7 @@ if (typeof app !== 'undefined') {
         
         try {
             this.showLoading();
-            const result = await api.updateProcess(processExecutionId, {
+            const result = await api.processes.update(processExecutionId, {
                 status: 'in_progress',
                 actual_start_date: new Date().toISOString().split('T')[0]
             });
@@ -216,7 +216,7 @@ if (typeof app !== 'undefined') {
         
         try {
             this.showLoading();
-            const result = await api.updateProcess(processExecutionId, { status });
+            const result = await api.processes.update(processExecutionId, { status });
             
             if (result.success) {
                 this.showToast('状态已更新');
@@ -236,7 +236,7 @@ if (typeof app !== 'undefined') {
         
         try {
             this.showLoading();
-            const result = await api.updateProcess(processExecutionId, {
+            const result = await api.processes.update(processExecutionId, {
                 status: 'completed',
                 actual_end_date: new Date().toISOString().split('T')[0],
                 completion_percentage: 100

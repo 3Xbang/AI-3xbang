@@ -18,7 +18,7 @@ const taskAssignment = {
         this.currentProjectId = projectSelector ? projectSelector.value : null;
         
         if (!this.currentProjectId) {
-            app.showError(i18n.t('tasks.selectProjectFirst'));
+            app.showError('请先选择项目 โปรดเลือกโครงการก่อน');
             return;
         }
         
@@ -34,7 +34,7 @@ const taskAssignment = {
             this.renderModal();
         } catch (error) {
             console.error('加载任务分配失败:', error);
-            app.showError(i18n.t('tasks.loadError'));
+            app.showError('加载失败 โหลดล้มเหลว');
         } finally {
             app.hideLoading();
         }
@@ -81,24 +81,24 @@ const taskAssignment = {
             <div class="modal" id="task-assignment-modal">
                 <div class="modal-content modal-large">
                     <div class="modal-header">
-                        <h3>📋 ${i18n.t('tasks.assignTask')}</h3>
+                        <h3>📋 分配任务 มอบหมายงาน</h3>
                         <button class="close-btn" onclick="taskAssignment.closeModal()">&times;</button>
                     </div>
                     <div class="modal-body">
                         <div class="task-info-card">
                             <div class="task-info-item">
-                                <span class="task-info-label">${i18n.t('tasks.processCode')}:</span>
+                                <span class="task-info-label">工序代码 รหัสกระบวนการ:</span>
                                 <span class="task-info-value">${this.escapeHtml(this.currentProcessCode)}</span>
                             </div>
                             <div class="task-info-item">
-                                <span class="task-info-label">${i18n.t('tasks.processName')}:</span>
+                                <span class="task-info-label">工序名称 ชื่อกระบวนการ:</span>
                                 <span class="task-info-value">${this.escapeHtml(this.currentProcessName)}</span>
                             </div>
                         </div>
                         
                         <div class="assignments-section">
                             <div class="section-header">
-                                <h4>${i18n.t('tasks.currentAssignments')} (${this.currentAssignments.length})</h4>
+                                <h4>当前分配 การมอบหมายปัจจุบัน (${this.currentAssignments.length})</h4>
                             </div>
                             <div class="assignments-list">
                                 ${currentAssignmentsList}
@@ -108,7 +108,7 @@ const taskAssignment = {
                         ${availableExecutors.length > 0 ? `
                             <div class="assignments-section">
                                 <div class="section-header">
-                                    <h4>${i18n.t('tasks.availableExecutors')}</h4>
+                                    <h4>可用执行者 ผู้ปฏิบัติงานที่พร้อม</h4>
                                 </div>
                                 <div class="available-executors-list">
                                     ${this.renderAvailableExecutors(availableExecutors)}
@@ -116,17 +116,17 @@ const taskAssignment = {
                             </div>
                         ` : this.executors.length === 0 ? `
                             <div class="assignments-section">
-                                <p class="warning-message">${i18n.t('tasks.noExecutorsInProject')}</p>
+                                <p class="warning-message">项目中没有执行者 ไม่มีผู้ปฏิบัติงานในโครงการ</p>
                             </div>
                         ` : `
                             <div class="assignments-section">
-                                <p class="info-message">${i18n.t('tasks.allExecutorsAssigned')}</p>
+                                <p class="info-message">所有执行者已分配 มอบหมายผู้ปฏิบัติงานทั้งหมดแล้ว</p>
                             </div>
                         `}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="taskAssignment.closeModal()">
-                            ${i18n.t('common.close')}
+                            关闭 ปิด
                         </button>
                     </div>
                 </div>
@@ -140,7 +140,7 @@ const taskAssignment = {
     // 渲染当前任务分配列表
     renderCurrentAssignments() {
         if (this.currentAssignments.length === 0) {
-            return `<p class="empty-message">${i18n.t('tasks.noAssignments')}</p>`;
+            return `<p class="empty-message">暂无分配 ยังไม่มีการมอบหมาย</p>`;
         }
         
         return this.currentAssignments.map(assignment => {
@@ -154,13 +154,13 @@ const taskAssignment = {
                         <div class="executor-details">
                             <div class="executor-name">${this.escapeHtml(assignment.full_name || assignment.username)}</div>
                             <div class="executor-meta">
-                                <span>${i18n.t('tasks.assignedBy')}: ${this.escapeHtml(assignment.assigned_by_name || '-')}</span>
+                                <span>分配人 ผู้มอบหมาย: ${this.escapeHtml(assignment.assigned_by_name || '-')}</span>
                                 <span>${assignedDate} ${assignedTime}</span>
                             </div>
                         </div>
                     </div>
                     <button class="btn btn-small btn-danger" onclick="taskAssignment.unassignTask(${assignment.user_id})">
-                        🗑️ ${i18n.t('tasks.unassign')}
+                        🗑️ 取消分配 ยกเลิกมอบหมาย
                     </button>
                 </div>
             `;
@@ -177,12 +177,12 @@ const taskAssignment = {
                         <div class="executor-details">
                             <div class="executor-name">${this.escapeHtml(executor.full_name || executor.username)}</div>
                             <div class="executor-meta">
-                                <span class="role-badge">${i18n.t('roles.executor')}</span>
+                                <span class="role-badge">执行者 ผู้ปฏิบัติงาน</span>
                             </div>
                         </div>
                     </div>
                     <button class="btn btn-small btn-primary" onclick="taskAssignment.assignTask(${executor.user_id})">
-                        ➕ ${i18n.t('tasks.assign')}
+                        ➕ 分配 มอบหมาย
                     </button>
                 </div>
             `;
@@ -206,16 +206,16 @@ const taskAssignment = {
             });
             
             if (response.success) {
-                app.showSuccess(i18n.t('tasks.assignSuccess'));
+                app.showSuccess('分配成功 มอบหมายสำเร็จ');
                 // 重新加载任务分配
                 await this.loadCurrentAssignments();
                 this.renderModal();
             } else {
-                app.showError(response.message || i18n.t('tasks.assignError'));
+                app.showError(response.message || '分配失败 มอบหมายล้มเหลว');
             }
         } catch (error) {
             console.error('分配任务失败:', error);
-            app.showError(i18n.t('tasks.assignError'));
+            app.showError('分配失败 มอบหมายล้มเหลว');
         } finally {
             app.hideLoading();
         }
@@ -223,7 +223,7 @@ const taskAssignment = {
     
     // 取消分配任务
     async unassignTask(userId) {
-        if (!confirm(i18n.t('tasks.confirmUnassign'))) {
+        if (!confirm('确认取消分配吗？ ยืนยันยกเลิกการมอบหมาย?')) {
             return;
         }
         
@@ -233,16 +233,16 @@ const taskAssignment = {
             const response = await api.delete(`/tasks/assign/${this.currentProcessId}/${userId}`);
             
             if (response.success) {
-                app.showSuccess(i18n.t('tasks.unassignSuccess'));
+                app.showSuccess('取消分配成功 ยกเลิกการมอบหมายสำเร็จ');
                 // 重新加载任务分配
                 await this.loadCurrentAssignments();
                 this.renderModal();
             } else {
-                app.showError(response.message || i18n.t('tasks.unassignError'));
+                app.showError(response.message || '取消分配失败 ยกเลิกการมอบหมายล้มเหลว');
             }
         } catch (error) {
             console.error('取消分配任务失败:', error);
-            app.showError(i18n.t('tasks.unassignError'));
+            app.showError('取消分配失败 ยกเลิกการมอบหมายล้มเหลว');
         } finally {
             app.hideLoading();
         }

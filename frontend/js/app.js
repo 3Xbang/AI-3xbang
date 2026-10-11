@@ -349,7 +349,7 @@ const app = {
                         ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
                     </div>
                     <div class="task-actions">
-                        <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">${t('subtasks.view')}</button>
+                        <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">查看子任务 ดูงานย่อย</button>
                         <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id}, '${task.quantity_unit || ''}')">${t('daily.updateProgress')}</button>
                     </div>
                 </div>
@@ -476,10 +476,10 @@ const app = {
                         ${process.actual_end_date ? `<div><strong>完成:</strong> ${process.actual_end_date}</div>` : ''}
                     </div>
                     <div class="process-actions">
-                        <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">${t('subtasks.view')}</button>
+                        <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">查看子任务 ดูงานย่อย</button>
                         ${canAssignTask ? `
                             <button class="btn-sm btn-primary" onclick="taskAssignment.showAssignModal(${process.id}, '${process.process_code}', '${getI18nField(process, 'process_name')}')">
-                                📋 ${t('tasks.assign')}
+                                📋 分配任务 มอบหมายงาน
                             </button>
                         ` : ''}
                     </div>

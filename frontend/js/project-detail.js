@@ -67,30 +67,30 @@ const ProjectDetail = {
         const notReady = this.readiness && !this.readiness.ready;
 
         container.innerHTML = `
-            <div class="project-detail-header">
-                <div class="header-left">
+            <div class="project-detail-header hero">
+                <div class="hero-top">
                     <button class="btn-back" onclick="ProjectDetail.backToDashboard()">
                         <span>←</span> 返回 กลับ
                     </button>
-                    <div class="project-title">
-                        <h2>${getI18nField(this.project, 'name')}</h2>
-                        <p class="project-location">${getI18nField(this.project, 'location')}</p>
-                    </div>
+                    <button class="sb-btn hero-bell" onclick="SiteNotify.open(${this.projectId})" title="通知 การแจ้งเตือน">🔔<span id="sb-bell-count" class="sb-badge" style="display:none"></span></button>
                 </div>
-                <div class="header-right">
-                    <button class="sb-btn" onclick="SiteNotify.open(${this.projectId})" title="通知 การแจ้งเตือน">🔔<span id="sb-bell-count" class="sb-badge" style="display:none"></span></button>
-                    <div class="project-progress-mini">
-                        <span>进度 ความคืบหน้า: </span>
-                        <strong>${Math.round(this.project.progress || 0)}%</strong>
+                <div class="hero-main">
+                    <div class="hero-title">
+                        <h2>${getI18nField(this.project, 'name')}</h2>
+                        <p class="project-location">📍 ${getI18nField(this.project, 'location')}</p>
+                    </div>
+                    <div class="hero-progress">
+                        <div class="hp-label">总进度 ความคืบหน้ารวม</div>
+                        <div class="hp-row"><div class="hp-bar"><i style="width:${Math.min(100, Math.round(this.project.progress || 0))}%"></i></div><b>${Math.round(this.project.progress || 0)}%</b></div>
                     </div>
                 </div>
             </div>
 
-            <div class="project-nav">
+            <div class="project-nav tabs-v2">
                 ${this.tabs().map(t => `
                     <button class="nav-item ${this.currentView === t.v ? 'active' : ''}" data-view="${t.v}" onclick="ProjectDetail.showSubView('${t.v}')">
                         <span class="nav-icon">${t.icon}</span>
-                        <span class="nav-label">${t.zh} ${t.th}${t.warn ? `<span class="nav-warn" style="display:${notReady ? 'inline' : 'none'};color:#dc2626"> ●</span>` : ''}</span>
+                        <span class="nav-label"><b>${t.zh}${t.warn ? `<span class="nav-warn" style="display:${notReady ? 'inline' : 'none'}"> ●</span>` : ''}</b><small>${t.th}</small></span>
                     </button>`).join('')}
             </div>
 

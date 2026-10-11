@@ -401,10 +401,10 @@
             const readyN = d.ready.length, waitN = d.blocked.length, hasTeam = d.team.length > 0;
             const here = d.team.length - d.absent.length;
             let html = `<div class="td-summary">` +
-                `<div class="td-stat"><b>${doing.length}</b><span>${bi('正在做', 'กำลังทำ')}</span></div>` +
-                `<div class="td-stat ${readyN ? 'hot' : ''}"><b>${readyN}</b><span>${bi('现在能开工', 'เริ่มได้เลย')}</span></div>` +
-                `<div class="td-stat"><b>${waitN}</b><span>${bi('在等前面的工序', 'รองานก่อนหน้า')}</span></div>` +
-                `<div class="td-stat"><b>${hasTeam ? here + '/' + d.team.length : '—'}</b><span>${bi('今天到场', 'มาวันนี้')}</span></div></div>` +
+                `<div class="td-stat s-doing"><i>🔨</i><div><b>${doing.length}</b><span>${bi('正在做', 'กำลังทำ')}</span></div></div>` +
+                `<div class="td-stat s-ready ${readyN ? 'hot' : ''}"><i>✅</i><div><b>${readyN}</b><span>${bi('现在能开工', 'เริ่มได้เลย')}</span></div></div>` +
+                `<div class="td-stat s-wait"><i>⏳</i><div><b>${waitN}</b><span>${bi('在等前面的工序', 'รองานก่อนหน้า')}</span></div></div>` +
+                `<div class="td-stat s-here"><i>👷</i><div><b>${hasTeam ? here + '/' + d.team.length : '—'}</b><span>${bi('今天到场', 'มาวันนี้')}</span></div></div></div>` +
                 `<div class="td-tip">系统只给建议，怎么安排由工头决定。<small class="td-th">ระบบแนะนำเท่านั้น หัวหน้าช่างตัดสินใจ</small></div>`;
             if (!hasTeam) {
                 html = `<div class="td-banner"><b>项目准备未完成 · 请先录入施工团队</b><br>` +

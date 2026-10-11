@@ -72,7 +72,7 @@ if (typeof app !== 'undefined') {
 
         container.innerHTML = header + processes.map(process => {
             const statusClass = process.status || 'not_started';
-            const statusText = t(`processes.status.${statusClass}`);
+            const statusText = getStatusText(statusClass);
             const percentage = Math.round(process.completion_percentage || 0);
             const progressColor = percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#f59e0b';
             

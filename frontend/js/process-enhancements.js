@@ -970,13 +970,14 @@ console.log('✓ 工序进度页面增强功能已加载');
             `;
         }).join('');
         
-        // ${t('quantities.calculationResult')}显示
+        // ${t('quantities.calculationResult')}显示（使用数据库中的单位）
         const resultHtml = fields.formula ? `
             <div class="form-group">
                 <label style="font-weight: bold; color: #059669;">${t('quantities.calculationResult')}</label>
                 <div id="quantity-result" style="font-size: 1.2em; color: #059669; padding: 10px; background: #f0fdf4; border-radius: 0.5rem; text-align: center;">
                     ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '等待输入 รอการป้อน'}
                 </div>
+                ${process.quantity_unit ? `<small class="form-hint" style="text-align: center; display: block; color: #059669;">单位 หน่วย: ${process.quantity_unit}</small>` : ''}
             </div>
         ` : '';
         
@@ -1000,7 +1001,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             </form>
         `);
         
-        // 实时计算
+        // 实时计算（使用数据库中的单位）
         if (fields.formula) {
             fields.forEach(field => {
                 const input = document.getElementById(`qty-${field.key}`);
@@ -1009,7 +1010,9 @@ console.log('✓ 工序进度页面增强功能已加载');
                         const result = app.calculateQuantity(fields, processCode);
                         const resultDiv = document.getElementById('quantity-result');
                         if (resultDiv && result) {
-                            resultDiv.textContent = `${result.value} ${result.unit}`;
+                            // 使用process中的quantity_unit，如果没有则使用计算结果的单位
+                            const displayUnit = process.quantity_unit || result.unit;
+                            resultDiv.textContent = `${result.value} ${displayUnit}`;
                         }
                     });
                 }
@@ -1051,42 +1054,47 @@ console.log('✓ 工序进度页面增强功能已加载');
         try {
             this.showLoading();
             
-            // 计算总量和单位
-            let plannedQuantity = 0;
-            let quantityUnit = '';
+            // 获取当前process数据，以获取数据库中已设置的单位
+            const processResponse = await api.processes.getById(processId);
+            const currentProcess = processResponse.process || {};
             
-            // 根据字段类型计算
+            // 计算总量（但单位从数据库获取，不覆盖）
+            let plannedQuantity = 0;
+            let quantityUnit = currentProcess.quantity_unit || ''; // 优先使用数据库中的单位
+            
+            // 根据字段类型计算数量
             if (measurements.length && measurements.width && measurements.depth) {
                 // 体积 = 长 × 宽 × 深
                 plannedQuantity = measurements.length * measurements.width * measurements.depth;
-                quantityUnit = 'm³';
+                // 只在数据库单位为空时才设置单位
+                if (!quantityUnit) quantityUnit = 'm³';
             } else if (measurements.area && measurements.thickness) {
                 // 体积 = 面积 × 厚度（厚度单位是cm，需要转换）
                 plannedQuantity = measurements.area * (measurements.thickness / 100);
-                quantityUnit = 'm³';
+                if (!quantityUnit) quantityUnit = 'm³';
             } else if (measurements.volume) {
                 plannedQuantity = measurements.volume;
-                quantityUnit = 'm³';
+                if (!quantityUnit) quantityUnit = 'm³';
             } else if (measurements.area) {
                 plannedQuantity = measurements.area;
-                quantityUnit = 'm²';
+                if (!quantityUnit) quantityUnit = 'm²';
             } else if (measurements.count) {
                 plannedQuantity = measurements.count;
-                quantityUnit = fields.find(f => f.key === 'count')?.unit || '个';
+                if (!quantityUnit) quantityUnit = fields.find(f => f.key === 'count')?.unit || '个';
             } else if (measurements.length) {
                 plannedQuantity = measurements.length;
-                quantityUnit = 'm';
+                if (!quantityUnit) quantityUnit = 'm';
             } else {
                 // 默认取第一个字段的值
                 const firstField = fields[0];
                 plannedQuantity = measurements[firstField.key] || 0;
-                quantityUnit = firstField.unit || '';
+                if (!quantityUnit) quantityUnit = firstField.unit || '';
             }
             
             const updateData = {
                 measurements: JSON.stringify(measurements),
-                planned_quantity: plannedQuantity,
-                quantity_unit: quantityUnit
+                planned_quantity: plannedQuantity
+                // 注意：不再包含 quantity_unit，保持数据库中的值不变
             };
             
             // 如果是未开始状态，自动开始
@@ -1160,8 +1168,9 @@ console.log('✓ 工序进度页面增强功能已加载');
                 </div>
                 
                 <div class="form-group">
-                    <label>单位</label>
-                    <input type="text" id="qty-unit" value="${existingMeasurements.unit || process.quantity_unit || ''}" placeholder="${t('quantities.unitExample')}">
+                    <label>单位 หน่วย</label>
+                    <input type="text" id="qty-unit" value="${process.quantity_unit || existingMeasurements.unit || ''}" ${process.quantity_unit ? 'readonly style="background-color: #f3f4f6; cursor: not-allowed;"' : ''} placeholder="${process.quantity_unit ? '' : t('quantities.unitExample')}">
+                    ${process.quantity_unit ? '<small class="form-hint" style="color: #059669;">✓ 已设置标准单位 (不可修改)</small>' : '<small class="form-hint">可选：如 m²、m³、m、个等</small>'}
                 </div>
                 
                 <div class="form-actions">
@@ -1190,10 +1199,14 @@ console.log('✓ 工序进度页面增强功能已加载');
                 this.showLoading();
                 
                 const updateData = {
-                    measurements: JSON.stringify({ quantity, unit }),
-                    planned_quantity: quantity,
-                    quantity_unit: unit
+                    measurements: JSON.stringify({ quantity, unit: process.quantity_unit || unit }),
+                    planned_quantity: quantity
                 };
+                
+                // 只在数据库没有单位时才设置单位
+                if (!process.quantity_unit && unit) {
+                    updateData.quantity_unit = unit;
+                }
                 
                 // 如果是未开始状态，自动开始
                 if (process.status === 'not_started') {

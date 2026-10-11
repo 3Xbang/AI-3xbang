@@ -22,8 +22,7 @@ const MaterialManager = {
             this.loadMaterials();
         });
 
-        // 筛选状态
-        document.getElementById('filter-material-status')?.addEventListener('change', (e) => {
+        // 筛选状�?        document.getElementById('filter-material-status')?.addEventListener('change', (e) => {
             this.filterMaterials(e.target.value);
         });
     },
@@ -31,20 +30,20 @@ const MaterialManager = {
     // 加载材料列表
     async loadMaterials() {
         try {
-            showLoading();
-            const response = await API.materials.getList(this.currentProjectId);
+            app.showLoading();
+            const response = await api.materials.getList(this.currentProjectId);
             
             if (response.success) {
                 this.materials = response.data;
                 this.renderMaterialsList();
             } else {
-                showError(response.message || '加载材料列表失败');
+                app.showToast(response.message || '加载材料列表失败', 'error');
             }
         } catch (error) {
             console.error('Load materials error:', error);
-            showError('加载材料列表失败');
+            app.showToast('加载材料列表失败', 'error');
         } finally {
-            hideLoading();
+            app.hideLoading();
         }
     },
 
@@ -57,9 +56,9 @@ const MaterialManager = {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📦</div>
-                    <p>${i18n.t('noMaterials')}</p>
+                    <p>${t('noMaterials')}</p>
                     <button class="btn btn-primary" onclick="MaterialManager.showPurchaseForm()">
-                        ${i18n.t('purchaseMaterial')}
+                        ${t('purchaseMaterial')}
                     </button>
                 </div>
             `;
@@ -84,8 +83,7 @@ const MaterialManager = {
         const usedQty = parseFloat(material.used_quantity || 0);
         const stockQty = material.stock || (receivedQty - usedQty);
 
-        // 计算库存百分比
-        const stockPercentage = receivedQty > 0 ? (stockQty / receivedQty * 100) : 0;
+        // 计算库存百分�?        const stockPercentage = receivedQty > 0 ? (stockQty / receivedQty * 100) : 0;
         
         // 状态颜色和文本
         const statusConfig = this.getStatusConfig(material.status, stockPercentage);
@@ -94,30 +92,30 @@ const MaterialManager = {
             <div class="material-card" data-material-id="${material.id}">
                 <div class="material-header">
                     <div class="material-name">
-                        <h3>${i18n.getLocalizedValue(name)}</h3>
+                        <h3>${getI18nField(name)}</h3>
                         <span class="material-code">${material.material_code || '-'}</span>
                     </div>
                     <div class="material-status status-${statusConfig.class}">
-                        ${statusConfig.icon} ${i18n.t(statusConfig.text)}
+                        ${statusConfig.icon} ${t(statusConfig.text)}
                     </div>
                 </div>
 
                 <div class="material-stats">
                     <div class="stat-item">
-                        <span class="stat-label">${i18n.t('purchaseQuantity')}</span>
-                        <span class="stat-value">${purchaseQty.toFixed(2)} ${i18n.getLocalizedValue(unit)}</span>
+                        <span class="stat-label">${t('purchaseQuantity')}</span>
+                        <span class="stat-value">${purchaseQty.toFixed(2)} ${getI18nField(unit)}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">${i18n.t('receivedQuantity')}</span>
-                        <span class="stat-value">${receivedQty.toFixed(2)} ${i18n.getLocalizedValue(unit)}</span>
+                        <span class="stat-label">${t('receivedQuantity')}</span>
+                        <span class="stat-value">${receivedQty.toFixed(2)} ${getI18nField(unit)}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">${i18n.t('usedQuantity')}</span>
-                        <span class="stat-value">${usedQty.toFixed(2)} ${i18n.getLocalizedValue(unit)}</span>
+                        <span class="stat-label">${t('usedQuantity')}</span>
+                        <span class="stat-value">${usedQty.toFixed(2)} ${getI18nField(unit)}</span>
                     </div>
                     <div class="stat-item stat-highlight">
-                        <span class="stat-label">${i18n.t('stockQuantity')}</span>
-                        <span class="stat-value stock-value">${stockQty.toFixed(2)} ${i18n.getLocalizedValue(unit)}</span>
+                        <span class="stat-label">${t('stockQuantity')}</span>
+                        <span class="stat-value stock-value">${stockQty.toFixed(2)} ${getI18nField(unit)}</span>
                     </div>
                 </div>
 
@@ -128,24 +126,24 @@ const MaterialManager = {
                     <span class="stock-percentage">${stockPercentage.toFixed(0)}%</span>
                 </div>
 
-                ${material.supplier ? `<div class="material-info"><strong>${i18n.t('supplier')}:</strong> ${material.supplier}</div>` : ''}
-                ${material.expected_arrival_date ? `<div class="material-info"><strong>${i18n.t('expectedArrival')}:</strong> ${formatDate(material.expected_arrival_date)}</div>` : ''}
-                ${material.actual_arrival_date ? `<div class="material-info"><strong>${i18n.t('actualArrival')}:</strong> ${formatDate(material.actual_arrival_date)}</div>` : ''}
+                ${material.supplier ? `<div class="material-info"><strong>${t('supplier')}:</strong> ${material.supplier}</div>` : ''}
+                ${material.expected_arrival_date ? `<div class="material-info"><strong>${t('expectedArrival')}:</strong> ${formatDate(material.expected_arrival_date)}</div>` : ''}
+                ${material.actual_arrival_date ? `<div class="material-info"><strong>${t('actualArrival')}:</strong> ${formatDate(material.actual_arrival_date)}</div>` : ''}
 
                 <div class="material-actions">
                     ${material.status === 'ordered' ? `
                         <button class="btn btn-sm btn-success" onclick="MaterialManager.showReceiveForm(${material.id})">
-                            ✓ ${i18n.t('confirmArrival')}
+                            �?${t('confirmArrival')}
                         </button>
                     ` : ''}
                     ${material.status === 'arrived' || material.status === 'in_use' ? `
                         <button class="btn btn-sm btn-primary" onclick="MaterialManager.showUseForm(${material.id})">
-                            📤 ${i18n.t('useMaterial')}
+                            📤 ${t('useMaterial')}
                         </button>
                     ` : ''}
                     ${material.status === 'depleted' ? `
                         <button class="btn btn-sm btn-warning" onclick="MaterialManager.showPurchaseForm(${material.id})">
-                            🔄 ${i18n.t('reorder')}
+                            🔄 ${t('reorder')}
                         </button>
                     ` : ''}
                 </div>
@@ -153,19 +151,17 @@ const MaterialManager = {
         `;
     },
 
-    // 获取状态配置
-    getStatusConfig(status, stockPercentage) {
+    // 获取状态配�?    getStatusConfig(status, stockPercentage) {
         const configs = {
-            ordered: { class: 'ordered', icon: '⏳', text: 'ordered', color: '#3498db' },
-            arrived: { class: 'arrived', icon: '✅', text: 'arrived', color: '#2ecc71' },
+            ordered: { class: 'ordered', icon: '�?, text: 'ordered', color: '#3498db' },
+            arrived: { class: 'arrived', icon: '�?, text: 'arrived', color: '#2ecc71' },
             in_use: { class: 'in-use', icon: '🔄', text: 'inUse', color: '#f39c12' },
             depleted: { class: 'depleted', icon: '🚫', text: 'depleted', color: '#e74c3c' }
         };
 
         const config = configs[status] || configs.ordered;
 
-        // 低库存警告
-        if ((status === 'arrived' || status === 'in_use') && stockPercentage < 20) {
+        // 低库存警�?        if ((status === 'arrived' || status === 'in_use') && stockPercentage < 20) {
             config.class = 'low-stock';
             config.icon = '⚠️';
             config.text = 'lowStock';
@@ -184,60 +180,60 @@ const MaterialManager = {
             <div class="modal-overlay" id="purchase-modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>${isReorder ? i18n.t('reorderMaterial') : i18n.t('purchaseMaterial')}</h2>
+                        <h2>${isReorder ? t('reorderMaterial') : t('purchaseMaterial')}</h2>
                         <button class="modal-close" onclick="MaterialManager.closeModal('purchase-modal')">&times;</button>
                     </div>
                     <form id="purchase-form" class="modal-form">
                         <div class="form-group">
-                            <label>${i18n.t('materialName')} *</label>
-                            <input type="text" id="material_name_zh" placeholder="${i18n.t('chinese')}" required 
-                                value="${material ? i18n.getLocalizedValue(material.material_name, 'zh') : ''}">
-                            <input type="text" id="material_name_th" placeholder="${i18n.t('thai')}" 
-                                value="${material ? i18n.getLocalizedValue(material.material_name, 'th') : ''}">
+                            <label>${t('materialName')} *</label>
+                            <input type="text" id="material_name_zh" placeholder="${t('chinese')}" required 
+                                value="${material ? getI18nField(material.material_name, 'zh') : ''}">
+                            <input type="text" id="material_name_th" placeholder="${t('thai')}" 
+                                value="${material ? getI18nField(material.material_name, 'th') : ''}">
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('materialCode')}</label>
+                            <label>${t('materialCode')}</label>
                             <input type="text" id="material_code" placeholder="MAT-001" 
                                 value="${material?.material_code || ''}">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>${i18n.t('purchaseQuantity')} *</label>
+                                <label>${t('purchaseQuantity')} *</label>
                                 <input type="number" id="purchase_quantity" step="0.01" min="0" required>
                             </div>
                             <div class="form-group">
-                                <label>${i18n.t('unit')} *</label>
-                                <input type="text" id="unit_zh" placeholder="${i18n.t('chinese')}" required 
-                                    value="${material ? i18n.getLocalizedValue(material.unit, 'zh') : ''}">
-                                <input type="text" id="unit_th" placeholder="${i18n.t('thai')}" 
-                                    value="${material ? i18n.getLocalizedValue(material.unit, 'th') : ''}">
+                                <label>${t('unit')} *</label>
+                                <input type="text" id="unit_zh" placeholder="${t('chinese')}" required 
+                                    value="${material ? getI18nField(material.unit, 'zh') : ''}">
+                                <input type="text" id="unit_th" placeholder="${t('thai')}" 
+                                    value="${material ? getI18nField(material.unit, 'th') : ''}">
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>${i18n.t('unitPrice')}</label>
+                                <label>${t('unitPrice')}</label>
                                 <input type="number" id="unit_price" step="0.01" min="0" placeholder="0.00">
                             </div>
                             <div class="form-group">
-                                <label>${i18n.t('supplier')}</label>
-                                <input type="text" id="supplier" placeholder="${i18n.t('supplierName')}">
+                                <label>${t('supplier')}</label>
+                                <input type="text" id="supplier" placeholder="${t('supplierName')}">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('expectedArrival')}</label>
+                            <label>${t('expectedArrival')}</label>
                             <input type="date" id="expected_arrival_date">
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="MaterialManager.closeModal('purchase-modal')">
-                                ${i18n.t('cancel')}
+                                ${t('cancel')}
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                ${i18n.t('confirm')}
+                                ${t('confirm')}
                             </button>
                         </div>
                     </form>
@@ -276,15 +272,15 @@ const MaterialManager = {
             const response = await API.materials.purchase(data);
             
             if (response.success) {
-                showSuccess(i18n.t('purchaseSuccess'));
+                showSuccess(t('purchaseSuccess'));
                 this.closeModal('purchase-modal');
                 this.loadMaterials();
             } else {
-                showError(response.message || i18n.t('purchaseFailed'));
+                showError(response.message || t('purchaseFailed'));
             }
         } catch (error) {
             console.error('Purchase material error:', error);
-            showError(i18n.t('purchaseFailed'));
+            showError(t('purchaseFailed'));
         } finally {
             hideLoading();
         }
@@ -295,45 +291,45 @@ const MaterialManager = {
         const material = this.materials.find(m => m.id === materialId);
         if (!material) return;
 
-        const name = i18n.getLocalizedValue(material.material_name);
-        const unit = i18n.getLocalizedValue(material.unit);
+        const name = getI18nField(material.material_name);
+        const unit = getI18nField(material.unit);
 
         const formHtml = `
             <div class="modal-overlay" id="receive-modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>${i18n.t('confirmArrival')}</h2>
+                        <h2>${t('confirmArrival')}</h2>
                         <button class="modal-close" onclick="MaterialManager.closeModal('receive-modal')">&times;</button>
                     </div>
                     <form id="receive-form" class="modal-form">
                         <div class="info-box">
-                            <strong>${i18n.t('material')}:</strong> ${name}<br>
-                            <strong>${i18n.t('purchaseQuantity')}:</strong> ${material.purchase_quantity} ${unit}
+                            <strong>${t('material')}:</strong> ${name}<br>
+                            <strong>${t('purchaseQuantity')}:</strong> ${material.purchase_quantity} ${unit}
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('actualReceivedQuantity')} *</label>
+                            <label>${t('actualReceivedQuantity')} *</label>
                             <input type="number" id="received_quantity" step="0.01" min="0" 
                                 value="${material.purchase_quantity}" required>
-                            <small class="form-hint">${i18n.t('unit')}: ${unit}</small>
+                            <small class="form-hint">${t('unit')}: ${unit}</small>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('actualArrival')} *</label>
+                            <label>${t('actualArrival')} *</label>
                             <input type="date" id="actual_arrival_date" value="${new Date().toISOString().split('T')[0]}" required>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('notes')}</label>
-                            <textarea id="receive_notes" rows="3" placeholder="${i18n.t('anyDifferences')}"></textarea>
+                            <label>${t('notes')}</label>
+                            <textarea id="receive_notes" rows="3" placeholder="${t('anyDifferences')}"></textarea>
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="MaterialManager.closeModal('receive-modal')">
-                                ${i18n.t('cancel')}
+                                ${t('cancel')}
                             </button>
                             <button type="submit" class="btn btn-success">
-                                ${i18n.t('confirmArrival')}
+                                ${t('confirmArrival')}
                             </button>
                         </div>
                     </form>
@@ -361,15 +357,15 @@ const MaterialManager = {
             const response = await API.materials.receive(materialId, data);
             
             if (response.success) {
-                showSuccess(i18n.t('receiveSuccess'));
+                showSuccess(t('receiveSuccess'));
                 this.closeModal('receive-modal');
                 this.loadMaterials();
             } else {
-                showError(response.message || i18n.t('receiveFailed'));
+                showError(response.message || t('receiveFailed'));
             }
         } catch (error) {
             console.error('Receive material error:', error);
-            showError(i18n.t('receiveFailed'));
+            showError(t('receiveFailed'));
         } finally {
             hideLoading();
         }
@@ -380,25 +376,24 @@ const MaterialManager = {
         const material = this.materials.find(m => m.id === materialId);
         if (!material) return;
 
-        const name = i18n.getLocalizedValue(material.material_name);
-        const unit = i18n.getLocalizedValue(material.unit);
+        const name = getI18nField(material.material_name);
+        const unit = getI18nField(material.unit);
         const stock = material.stock || 0;
 
-        // 加载项目的工序列表
-        let processesHtml = '<option value="">加载中...</option>';
+        // 加载项目的工序列�?        let processesHtml = '<option value="">加载�?..</option>';
         try {
             const response = await API.processes.getList(this.currentProjectId);
             if (response.success && response.data.length > 0) {
-                processesHtml = '<option value="">' + i18n.t('selectProcess') + '</option>' +
+                processesHtml = '<option value="">' + t('selectProcess') + '</option>' +
                     response.data
                         .filter(p => p.status === 'in_progress' || p.status === 'not_started')
                         .map(p => {
-                            const processName = i18n.getLocalizedValue(p.process_name);
+                            const processName = getI18nField(p.process_name);
                             return `<option value="${p.id}">${processName}</option>`;
                         })
                         .join('');
             } else {
-                processesHtml = '<option value="">' + i18n.t('noActiveProcesses') + '</option>';
+                processesHtml = '<option value="">' + t('noActiveProcesses') + '</option>';
             }
         } catch (error) {
             console.error('Load processes error:', error);
@@ -408,39 +403,39 @@ const MaterialManager = {
             <div class="modal-overlay" id="use-modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>${i18n.t('useMaterial')}</h2>
+                        <h2>${t('useMaterial')}</h2>
                         <button class="modal-close" onclick="MaterialManager.closeModal('use-modal')">&times;</button>
                     </div>
                     <form id="use-form" class="modal-form">
                         <div class="info-box">
-                            <strong>${i18n.t('material')}:</strong> ${name}<br>
-                            <strong>${i18n.t('currentStock')}:</strong> <span class="highlight">${stock.toFixed(2)} ${unit}</span>
+                            <strong>${t('material')}:</strong> ${name}<br>
+                            <strong>${t('currentStock')}:</strong> <span class="highlight">${stock.toFixed(2)} ${unit}</span>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('selectProcess')} *</label>
+                            <label>${t('selectProcess')} *</label>
                             <select id="process_execution_id" required>
                                 ${processesHtml}
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('quantityUsed')} *</label>
+                            <label>${t('quantityUsed')} *</label>
                             <input type="number" id="quantity_used" step="0.01" min="0.01" max="${stock}" required>
-                            <small class="form-hint">${i18n.t('unit')}: ${unit}, ${i18n.t('maxAvailable')}: ${stock.toFixed(2)}</small>
+                            <small class="form-hint">${t('unit')}: ${unit}, ${t('maxAvailable')}: ${stock.toFixed(2)}</small>
                         </div>
 
                         <div class="form-group">
-                            <label>${i18n.t('usageDate')} *</label>
+                            <label>${t('usageDate')} *</label>
                             <input type="date" id="usage_date" value="${new Date().toISOString().split('T')[0]}" required>
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="MaterialManager.closeModal('use-modal')">
-                                ${i18n.t('cancel')}
+                                ${t('cancel')}
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                ${i18n.t('confirmUse')}
+                                ${t('confirmUse')}
                             </button>
                         </div>
                     </form>
@@ -464,7 +459,7 @@ const MaterialManager = {
         };
 
         if (!data.process_execution_id) {
-            showError(i18n.t('pleaseSelectProcess'));
+            showError(t('pleaseSelectProcess'));
             return;
         }
 
@@ -473,22 +468,21 @@ const MaterialManager = {
             const response = await API.materials.use(materialId, data);
             
             if (response.success) {
-                showSuccess(i18n.t('useSuccess'));
+                showSuccess(t('useSuccess'));
                 this.closeModal('use-modal');
                 this.loadMaterials();
             } else {
-                showError(response.message || i18n.t('useFailed'));
+                showError(response.message || t('useFailed'));
             }
         } catch (error) {
             console.error('Use material error:', error);
-            showError(i18n.t('useFailed'));
+            showError(t('useFailed'));
         } finally {
             hideLoading();
         }
     },
 
-    // 筛选材料
-    filterMaterials(status) {
+    // 筛选材�?    filterMaterials(status) {
         const cards = document.querySelectorAll('.material-card');
         cards.forEach(card => {
             if (!status || card.querySelector('.material-status').classList.contains(`status-${status}`)) {
@@ -516,8 +510,7 @@ function formatDate(dateString) {
 }
 
 function showLoading() {
-    // 实现加载指示器
-    console.log('Loading...');
+    // 实现加载指示�?    console.log('Loading...');
 }
 
 function hideLoading() {
@@ -531,3 +524,4 @@ function showSuccess(message) {
 function showError(message) {
     alert(message);
 }
+

@@ -128,9 +128,38 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
       [project.id, req.user.id, req.user.id]
     );
     
-    // 注意：工序由前端通过批量添加API单独添加，不在这里自动创建
+    // 3. 自动从工序模板库创建标准工序（按施工顺序）
+    const templatesResult = await client.query(`
+      SELECT id, code, name_zh, name_th, default_unit, display_order
+      FROM process_templates
+      WHERE is_active = true
+      ORDER BY display_order
+    `);
     
-    // 3. 记录活动日志
+    for (const template of templatesResult.rows) {
+      // 插入工序节点
+      const nodeResult = await client.query(
+        `INSERT INTO process_nodes 
+         (project_id, process_code, process_name, sequence_number) 
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [
+          project.id, 
+          template.code, 
+          JSON.stringify({ zh: template.name_zh, th: template.name_th }),
+          template.display_order
+        ]
+      );
+      
+      // 为每个节点创建执行记录
+      await client.query(
+        `INSERT INTO process_execution 
+         (process_node_id, status, quantity_unit) 
+         VALUES ($1, 'not_started', $2)`,
+        [nodeResult.rows[0].id, template.default_unit]
+      );
+    }
+    
+    // 4. 记录活动日志
     await logActivity(client, req.user.id, 'create_project', 'projects', project.id, 
       { message: JSON.stringify(name) });
     
@@ -139,7 +168,7 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
     res.json({ 
       success: true, 
       data: project,
-      message: '项目创建成功'
+      message: `项目创建成功，已自动生成${templatesResult.rows.length}个标准工序`
     });
   } catch (error) {
     await client.query('ROLLBACK');

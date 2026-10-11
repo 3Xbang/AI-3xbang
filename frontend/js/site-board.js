@@ -829,9 +829,9 @@
                 `<td>${x.std.skilled} 大工${x.std.helper ? ' + ' + x.std.helper + ' 普工' : ''}</td><td>${x.busyCrewDays}</td>` +
                 `<td>${this.md(x.firstDate)} → ${this.md(x.lastDate)}</td></tr>`).join('');
             return `<div class="est-panel">
-                <div class="est-title">📐 预计工期与人员配置 <small>按当前团队和工程量自动排出，仅供参考</small></div>
+                <div class="est-title">📐 预计工期与人员配置 <small>从今天起，按剩余工作、当前团队和工程量排出，仅供参考</small></div>
                 <div class="est-stats">
-                    <div class="est-stat"><b>${e.finishDay}</b><span>预计总工期（工作日）</span></div>
+                    <div class="est-stat"><b>${e.remainingDays}</b><span>还需工作日（已完成 ${e.doneCount}/${e.totalCount} 道）</span></div>
                     <div class="est-stat"><b>${e.finishDate}</b><span>预计完工日</span></div>
                     <div class="est-stat"><b>${cmp}</b><span>对比计划完工 ${e.plannedEnd || '未设置'}</span></div>
                     <div class="est-stat"><b>${e.peakHeadcount}</b><span>用工高峰（人/天）</span></div>

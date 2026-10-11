@@ -250,7 +250,7 @@ const ProjectDetail = {
             SiteEstimate.bindGo(box);
             e.tasks.forEach(t => {
                 const card = document.getElementById('process-' + t.execId);
-                if (!card) return;
+                if (!card || t.status === 'completed') return;
                 const anchor = card.querySelector('.process-card-progress');
                 const html = SiteEstimate.line(t);
                 if (anchor && html) anchor.insertAdjacentHTML('afterend', html);

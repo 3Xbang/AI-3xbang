@@ -318,7 +318,7 @@ async function buildEstimate(client, projectId) {
   const members = await loadMembers(client, projectId);
   const crews = crewsFromTeam({ members });
   const maxCrews = 2;
-  const res = schedule(L.plan, { quantities: L.quantities, crews, lenient: true, defaultDays: 2, maxCrewsPerTask: maxCrews });
+  const res = schedule(L.plan, { quantities: L.quantities, crews, lenient: true, defaultDays: 2, maxCrewsPerTask: maxCrews, state: L.state, now: L.state.today });
   const byKey = new Map(res.tasks.map(o => [o.key, o]));
   const startISO = L.startISO;
   const dateOf = d => (d ? workingDayToDate(startISO, d) : null);
@@ -330,7 +330,9 @@ async function buildEstimate(client, projectId) {
     const o = byKey.get(t.key);
     const out = {
       key: t.key, execId: L.execByKey.get(t.key), code: t.code, floor: t.floor, name: t.zh,
-      kind: q.kind, startDay: o.start, finishDay: o.finish, startDate: dateOf(o.start), finishDate: dateOf(o.finish),
+      kind: q.kind, status: (L.state.tasks[t.key] || {}).status || 'not_started',
+      startDay: ((L.state.tasks[t.key] || {}).status ? null : o.start), finishDay: o.finish,
+      startDate: ((L.state.tasks[t.key] || {}).status ? null : dateOf(o.start)), finishDate: dateOf(o.finish),
       assumedQty: !!o.assumedQty, placeholder: !!q.placeholder
     };
     if (q.kind === 'work') {
@@ -369,7 +371,9 @@ async function buildEstimate(client, projectId) {
   })).filter(x => x.busyCrewDays > 0).sort((a, b) => b.busyCrewDays - a.busyCrewDays);
 
   return {
-    planned: true, startDate: startISO, finishDay: res.finishDay, finishDate, plannedEnd: proj ? proj.e : null,
+    planned: true, startDate: startISO, today: L.state.today, remainingDays: Math.max(0, res.finishDay - L.state.today + 1),
+    doneCount: Object.values(L.state.tasks).filter(x => x.status === 'completed').length, totalCount: L.plan.tasks.length,
+    finishDay: res.finishDay, finishDate, plannedEnd: proj ? proj.e : null,
     lateDays: proj && proj.e && finishDate ? Math.round((new Date(finishDate) - new Date(proj.e)) / 86400000) : null,
     peakHeadcount: res.peakHeadcount, avgHeadcount: Math.round(res.avgHeadcount),
     assumed: {

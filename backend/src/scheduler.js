@@ -73,8 +73,22 @@ function schedule(plan, opts) {
     return p.finish != null && day >= p.finish + 1 + d.lag;
   });
 
+  // 已有实际进度时（opts.state + opts.now）：已完成的直接记为完成，进行中的只排剩余部分，从第 now 天开始往后排
   const daily = [];
   let done = 0, day = 0;
+  if (opts.state && opts.now > 1) {
+    day = opts.now - 1;
+    T.forEach(o => {
+      const st = opts.state.tasks && opts.state.tasks[o.key];
+      if (!st || st.status === 'not_started') return;
+      if (st.status === 'completed') {
+        o.finish = st.finishedDay || day; o.start = o.finish; o.remaining = 0; o.prog = new Array(opts.now).fill(1); o.prog[0] = 0; done++;
+      } else {
+        const p = Math.min(0.999, Math.max(0, st.progress || 0));
+        o.start = day; o.remaining = o.total * (1 - p); o.prog = new Array(opts.now).fill(p); o.prog[0] = 0;
+      }
+    });
+  }
   while (done < T.size) {
     day++;
     if (day > maxDays) throw new Error('排程超过天数上限，可能存在死锁');

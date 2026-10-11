@@ -17,17 +17,18 @@ const MaterialManager = {
                 this.materials = response.data || [];
                 this.render();
             } else {
-                app.showToast(response.message || t('common.loadError'), 'error');
+                app.showToast(response.message || t.loadError, 'error');
             }
         } catch (error) {
             console.error('Load materials error:', error);
-            app.showToast(t('materials.loadError'), 'error');
+            app.showToast(t.loadMaterialsError, 'error');
         } finally {
             app.hideLoading();
         }
     },
 
     render() {
+        const t = getMaterialTexts();
         const container = document.getElementById('materials-container');
         if (!container) {
             console.error('Materials container not found');
@@ -38,10 +39,10 @@ const MaterialManager = {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📦</div>
-                    <h3>${t('materials.noMaterials')}</h3>
-                    <p>${t('materials.noMaterialsDesc')}</p>
+                    <h3>${t.noMaterials}</h3>
+                    <p>${t.noMaterialsDesc}</p>
                     <button class="btn btn-primary" onclick="MaterialManager.showAddForm()">
-                        + ${t('materials.addMaterial')}
+                        + ${t.addMaterial}
                     </button>
                 </div>
             `;
@@ -63,6 +64,7 @@ const MaterialManager = {
     },
 
     renderMaterialCard(material) {
+        const t = getMaterialTexts();
         // Parse JSON fields
         let materialName = material.material_name;
         let unit = material.unit;
@@ -79,7 +81,7 @@ const MaterialManager = {
         }
         
         const currentLang = localStorage.getItem('language') || 'zh';
-        const displayName = (materialName && materialName[currentLang]) || (materialName && materialName.zh) || material.material_code || t('materials.unnamed');
+        const displayName = (materialName && materialName[currentLang]) || (materialName && materialName.zh) || material.material_code || t.unnamed;
         const displayUnit = (unit && unit[currentLang]) || (unit && unit.zh) || '';
 
         const purchaseQty = parseFloat(material.purchase_quantity || 0);
@@ -95,19 +97,19 @@ const MaterialManager = {
                 </div>
                 <div class="material-card-body">
                     <div class="material-stat">
-                        <span class="label">${t('materials.purchased')}:</span>
+                        <span class="label">${t.purchased}:</span>
                         <span class="value">${purchaseQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">${t('materials.received')}:</span>
+                        <span class="label">${t.received}:</span>
                         <span class="value">${receivedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">${t('materials.used')}:</span>
+                        <span class="label">${t.used}:</span>
                         <span class="value">${usedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat highlight">
-                        <span class="label">${t('materials.stock')}:</span>
+                        <span class="label">${t.stock}:</span>
                         <span class="value">${stock} ${displayUnit}</span>
                     </div>
                 </div>
@@ -116,7 +118,8 @@ const MaterialManager = {
     },
 
     showAddForm() {
-        app.showToast(t('materials.addFromLibrary'), 'info');
+        const t = getMaterialTexts();
+        app.showToast(t.addFromLibrary, 'info');
     }
 };
 

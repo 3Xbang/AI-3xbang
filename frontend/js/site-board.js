@@ -360,7 +360,9 @@
                 const r = await call('GET', `/projects/${this.projectId}/site-board` + (this.date ? `?date=${this.date}` : ''));
                 this.data = r.data;
                 this.legacyRows = null;
+                this.estMap = {};
                 if (r.data.planned) {
+                    try { const e = await SiteEstimate.get(this.projectId, true); (e.tasks || []).forEach(x => { this.estMap[x.execId] = x; }); } catch (_) { /* 预计天数失败不影响看板 */ }
                     this.date = r.data.date;
                     this.assign = JSON.parse(JSON.stringify(r.data.assignments || {}));
                 } else {
@@ -498,6 +500,7 @@
             return `<div class="td-card doing ${paused ? 'paused' : ''}"><div class="td-top"><div class="td-grow"><b class="td-name">${nm(x)}</b> ${this.floorTag(x)} ${STATUS_TAG[x.workStatus] || ''}` +
                 `${x.quantityMissing ? '<span class="td-tag warn">工程量未录入</span>' : ''}</div><div class="td-pct">${pct}%</div></div>` +
                 `<div class="td-bar"><i style="width:${pct}%"></i></div>` +
+                (planned ? SiteEstimate.line(this.estMap && this.estMap[x.execId]) : '') +
                 (planned ? `<div class="td-people">${hasPeople ? this.peopleChips(x.execId, true) : '<span class="td-sub">还没派人</span>'}</div>` : '') +
                 `<div class="td-actions">` +
                 (paused ? `<button class="sb-btn primary" data-resume="${x.execId}">恢复施工 ทำต่อ</button>`
@@ -516,6 +519,7 @@
             const why = sug ? sug.reasons.filter(r => !/^已经开工/.test(r)).slice(0, 1).map(esc).join('') : (x.unlocks > 0 ? `做完后可以解锁 ${x.unlocks} 个任务` : '');
             return `<div class="td-card ready"><div class="td-top"><div class="td-grow"><b class="td-name">${nm(x)}</b> ${this.floorTag(x)}` +
                 `${x.quantityMissing ? '<span class="td-tag warn">工程量未录入</span>' : ''}</div></div>` +
+                (planned ? SiteEstimate.line(this.estMap && this.estMap[x.execId]) : '') +
                 (sug ? `<div class="td-suggest">💡 建议派：${sug.members.map(m => `<span class="td-chip ${m.level === 'skilled' ? 'skilled' : ''}">${esc(m.name)}</span>`).join('')}<span class="td-sub">（${sug.crews} 组）</span></div>` : '') +
                 (why ? `<div class="td-sub">${why}</div>` : '') +
                 `<div class="td-actions">` +
@@ -792,6 +796,57 @@
         }
     };
 
+    // ================= 预计工期与人员配置（进度计划、今日现场、总览共用） =================
+    const SiteEstimate = {
+        cache: {},
+        async get(projectId, force) {
+            if (!force && this.cache[projectId] && Date.now() - this.cache[projectId].at < 15000) return this.cache[projectId].data;
+            const r = await call('GET', `/projects/${projectId}/estimate`);
+            this.cache[projectId] = { at: Date.now(), data: r.data };
+            return r.data;
+        },
+        md: iso => (iso ? iso.slice(5).replace('-', '/') : ''),
+        // 一道工序的配置、天数、起止日期，一行显示
+        line(t) {
+            if (!t) return '';
+            const dates = t.startDate ? ` · 📅 ${this.md(t.startDate)} → ${this.md(t.finishDate)}` : '';
+            if (t.kind !== 'work') return `<div class="est-line">⏱ 固定约 <b>${t.estDays} 天</b>（不占班组）${dates}</div>`;
+            const crew = `👷 ${esc(t.tradeName)} <b>${t.crewsUsed} 班</b>（每班 ${t.crewStd.skilled} 大工${t.crewStd.helper ? ' + ' + t.crewStd.helper + ' 普工' : ''}，共 ${t.people.skilled + t.people.helper} 人）`;
+            const days = t.estDays ? ` · ⏱ 预计 <b>${t.estDays} 天</b>` : ' · ⏱ 缺工程量，先按 2 天估算';
+            const warn = t.shortage ? `<div class="est-warn">⚠ ${esc(t.shortageText)}，下面按 1 个标准班组估算</div>` : '';
+            return `<div class="est-line">${crew}${days}${dates}</div>${warn}`;
+        },
+        panel(e, withTeamBtn) {
+            if (!e || !e.planned) return '<div class="td-empty">还没有生成工序，先到「项目准备」生成。</div>';
+            const late = e.lateDays;
+            const cmp = late == null ? '—' : late > 0 ? `<span class="est-bad">晚 ${late} 天</span>` : late < 0 ? `<span class="est-good">提前 ${-late} 天</span>` : '<span class="est-good">正好</span>';
+            const notes = [];
+            if (e.assumed.noTeam) notes.push(`还没有录入施工团队，每个工种都按 1 个标准班组估算。${withTeamBtn ? '<a href="#" data-est-go="prepare">去录入团队</a>' : ''}`);
+            else if (e.assumed.missingCrewTrades.length) notes.push(`团队里还没有这些工种的大工：${esc(e.assumed.missingCrewTrades.join('、'))}，先按 1 个标准班组估算。`);
+            if (e.assumed.missingQty) notes.push(`有 ${e.assumed.missingQty} 道工序还没有工程量，先按 2 天估算（导入清单或现场录入后会更准）。`);
+            const rows = e.byTrade.map(x =>
+                `<tr><td><b>${esc(x.name)}</b></td><td>${x.assumed ? '<span class="est-bad">没有，按 1 班估算</span>' : x.crews + ' 班'}</td>` +
+                `<td>${x.std.skilled} 大工${x.std.helper ? ' + ' + x.std.helper + ' 普工' : ''}</td><td>${x.busyCrewDays}</td>` +
+                `<td>${this.md(x.firstDate)} → ${this.md(x.lastDate)}</td></tr>`).join('');
+            return `<div class="est-panel">
+                <div class="est-title">📐 预计工期与人员配置 <small>按当前团队和工程量自动排出，仅供参考</small></div>
+                <div class="est-stats">
+                    <div class="est-stat"><b>${e.finishDay}</b><span>预计总工期（工作日）</span></div>
+                    <div class="est-stat"><b>${e.finishDate}</b><span>预计完工日</span></div>
+                    <div class="est-stat"><b>${cmp}</b><span>对比计划完工 ${e.plannedEnd || '未设置'}</span></div>
+                    <div class="est-stat"><b>${e.peakHeadcount}</b><span>用工高峰（人/天）</span></div>
+                </div>
+                ${notes.map(n => `<div class="est-note">ℹ ${n}</div>`).join('')}
+                <details class="est-det"><summary>各工种班组配置与用工量（${e.byTrade.length} 个工种）</summary>
+                    <div style="overflow-x:auto"><table class="sb-table"><thead><tr><th>工种</th><th>团队可组</th><th>每班配置</th><th>总用工（班组·天）</th><th>作业期间</th></tr></thead><tbody>${rows}</tbody></table></div>
+                </details></div>`;
+        },
+        bindGo(root) {
+            root.querySelectorAll('[data-est-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ProjectDetail.showSubView(a.dataset.estGo); }));
+        }
+    };
+
+    window.SiteEstimate = SiteEstimate;
     window.SiteBoq = SiteBoq;
     window.SiteBoard = SiteBoard;
     window.SiteProfile = SiteProfile;

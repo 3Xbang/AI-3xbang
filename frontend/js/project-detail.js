@@ -149,6 +149,8 @@ const ProjectDetail = {
                     <div class="overview-card"><div class="card-icon">👷</div><div class="card-content"><h3>施工人员 คนงาน</h3><p class="card-value" id="overview-members">-</p></div></div>
                 </div>
 
+                <div id="overview-estimate"></div>
+
                 <div class="detail-section">
                     <h3>需要关注 สิ่งที่ต้องดู</h3>
                     <div id="overview-alerts"><div class="td-empty">读取中…</div></div>
@@ -190,6 +192,11 @@ const ProjectDetail = {
             setText('overview-inprogress', procs.filter(p => p.status === 'in_progress').length);
             setText('overview-members', teamRes && teamRes.success ? teamRes.data.members.length : '-');
 
+            SiteEstimate.get(pid, true).then(est => {
+                const eb = document.getElementById('overview-estimate');
+                if (eb && est && est.planned) { eb.innerHTML = SiteEstimate.panel(est, true); SiteEstimate.bindGo(eb); }
+            }).catch(() => { /* 预计天数失败不影响总览 */ });
+
             const box = document.getElementById('overview-alerts');
             if (!box) return;
             const nameOf = p => getI18nField({ process_name: p.process_name }, 'process_name');
@@ -224,8 +231,32 @@ const ProjectDetail = {
                 (a.floor_no || 0) - (b.floor_no || 0) || (a.sequence_number || 0) - (b.sequence_number || 0));
             app.renderProcesses(list);
             this.groupByFloor(list);
+            this.showEstimate();
         } catch (error) {
             console.error('Load processes error:', error);
+        }
+    },
+
+    // 在进度计划页顶部放“预计工期与人员配置”，并在每张工序卡片上加配置和预计天数
+    async showEstimate() {
+        try {
+            const e = await SiteEstimate.get(this.projectId, true);
+            const list = document.getElementById('processes-list');
+            if (!list || !e || !e.planned) return;
+            const box = document.createElement('div');
+            box.innerHTML = SiteEstimate.panel(e, true);
+            const header = list.querySelector('.processes-header');
+            if (header) header.after(box); else list.prepend(box);
+            SiteEstimate.bindGo(box);
+            e.tasks.forEach(t => {
+                const card = document.getElementById('process-' + t.execId);
+                if (!card) return;
+                const anchor = card.querySelector('.process-card-progress');
+                const html = SiteEstimate.line(t);
+                if (anchor && html) anchor.insertAdjacentHTML('afterend', html);
+            });
+        } catch (err) {
+            console.error('Load estimate error:', err);
         }
     },
 

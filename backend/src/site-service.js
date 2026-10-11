@@ -343,7 +343,7 @@ async function buildEstimate(client, projectId) {
       const qty = L.quantities[t.key];
       const workload = qty > 0 ? qty / q.output : null;     // 班组·天
       Object.assign(out, {
-        trade: q.trade, crewStd: { skilled: q.crew.skilled, helper: q.crew.helper },
+        trade: q.trade, tradeName: (TRADES[q.trade] || {}).zh || q.trade, crewStd: { skilled: q.crew.skilled, helper: q.crew.helper },
         crewsUsed: use, people: { skilled: use * q.crew.skilled, helper: use * q.crew.helper },
         crewsAvailable: avail, shortage: avail < 1,
         shortageText: avail >= 1 ? null : (q.crew.skilled && sk < q.crew.skilled
@@ -363,7 +363,9 @@ async function buildEstimate(client, projectId) {
   const finishDate = dateOf(res.finishDay);
   const byTrade = Object.keys(res.util).map(tr => ({
     trade: tr, name: (TRADES[tr] || {}).zh || tr, crews: res.util[tr].crews, assumed: res.assumedCrews.includes(tr),
-    busyCrewDays: Math.round(res.util[tr].busyCrewDays * 10) / 10, firstDay: res.util[tr].firstDay, lastDay: res.util[tr].lastDay
+    busyCrewDays: Math.round(res.util[tr].busyCrewDays * 10) / 10, firstDay: res.util[tr].firstDay, lastDay: res.util[tr].lastDay,
+    firstDate: dateOf(res.util[tr].firstDay), lastDate: dateOf(res.util[tr].lastDay),
+    std: tasks.filter(x => x.trade === tr).reduce((s, x) => ({ skilled: Math.max(s.skilled, x.crewStd.skilled), helper: Math.max(s.helper, x.crewStd.helper) }), { skilled: 0, helper: 0 })
   })).filter(x => x.busyCrewDays > 0).sort((a, b) => b.busyCrewDays - a.busyCrewDays);
 
   return {

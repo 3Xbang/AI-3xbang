@@ -149,3 +149,12 @@
 @media (max-width: 720px) {
   .td-sum .td-th { flex-basis: 100%; margin-left: 32px; }
 }
+
+/* 可折叠区块：加上展开箭头，计数不再折行 */
+.td-sum { display: block; list-style: none; cursor: pointer; font-size: 17px; font-weight: 600; color: #0f172a; padding: 6px 0; }
+.td-sum::-webkit-details-marker { display: none; }
+.td-sum::before { content: '▸'; color: #2563eb; margin-right: 8px; display: inline-block; width: 12px; }
+details[open] > .td-sum::before { content: '▾'; }
+.td-sum .td-count { margin-left: 6px; }
+.td-sum .td-th { margin-left: 6px; }
+@media (max-width: 720px) { .td-sum .td-th { flex-basis: auto; margin-left: 6px; } }

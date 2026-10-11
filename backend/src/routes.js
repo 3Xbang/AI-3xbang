@@ -149,7 +149,7 @@ router.post('/projects', authenticate, requirePermission('create_project'), asyn
     
     // 4. 记录活动日志
     await logActivity(client, req.user.id, 'create_project', 'projects', project.id, 
-      `创建项目: ${name}`);
+      { message: JSON.stringify(name) });
     
     await client.query('COMMIT');
     
@@ -186,7 +186,7 @@ router.put('/projects/:id', authenticate, requirePermission('manage_projects'), 
       return res.status(404).json({ success: false, message: '项目不存在' });
     }
     
-    await logActivity(pool, req.user.id, 'update_project', 'projects', id, `更新项目: ${name}`);
+    await logActivity(pool, req.user.id, 'update_project', 'projects', id, { message: `更新项目: ${name}` });
     
     res.json({ 
       success: true, 

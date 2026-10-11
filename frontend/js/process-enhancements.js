@@ -2,7 +2,7 @@
 // Process Progress Page Enhancements
 
 if (typeof app !== 'undefined') {
-    // 保存原始的renderProcesses函数
+    // ${t('common.save')}原始的renderProcesses函数
     app._originalRenderProcesses = app.renderProcesses;
     
     // 存储当前加载的工序列表（用于快速访问）
@@ -10,7 +10,7 @@ if (typeof app !== 'undefined') {
     
     // 替换renderProcesses函数以使用新设计
     app.renderProcesses = function(processes) {
-        // 保存工序列表供其他函数使用
+        // ${t('common.save')}工序列表供其他函数使用
         app._currentProcesses = processes || [];
         
         const container = document.getElementById('processes-list');
@@ -56,15 +56,15 @@ if (typeof app !== 'undefined') {
             // 状态对应的操作按钮
             let actionButtons = '';
             if (statusClass === 'not_started') {
-                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">开始工序</button>`;
+                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">${t('processes.startProcess')}</button>`;
             } else if (statusClass === 'in_progress') {
                 actionButtons = `
-                    <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">更新进度</button>
-                    <button class="btn-pause" onclick="app.pauseProcess(${process.id})">暂停</button>
-                    <button class="btn-complete" onclick="app.completeProcess(${process.id})">完成</button>
+                    <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">${t('daily.updateProgress')}</button>
+                    <button class="btn-pause" onclick="app.pauseProcess(${process.id})">${t('processes.pause')}</button>
+                    <button class="btn-complete" onclick="app.completeProcess(${process.id})">${t('processes.complete')}</button>
                 `;
             } else if (statusClass === 'completed') {
-                actionButtons = `<span style="color: #10b981; font-weight: 600;">✓ 已完成</span>`;
+                actionButtons = `<span style="color: #10b981; font-weight: 600;">✓ ${t('processes.completed')}</span>`;
             }
             
             // 删除按钮（只有未开始和管理员权限才能删除）
@@ -85,9 +85,9 @@ if (typeof app !== 'undefined') {
                 const endDate = process.planned_end_date ? new Date(process.planned_end_date).toLocaleDateString('zh-CN', {month:'short', day:'numeric'}) : '未设定';
                 scheduledInfo = `
                     <div class="process-schedule-info">
-                        <span class="schedule-label">📅 计划:</span>
+                        <span class="schedule-label">📅 ${t('scheduling.schedule')}:</span>
                         <span class="schedule-dates">${startDate} → ${endDate}</span>
-                        ${process.planned_duration ? `<span class="schedule-duration">(${process.planned_duration}天)</span>` : ''}
+                        ${process.planned_duration ? `<span class="schedule-duration">(${process.planned_duration}${t('scheduling.days')})</span>` : ''}
                     </div>
                 `;
             }
@@ -97,7 +97,7 @@ if (typeof app !== 'undefined') {
             if (process.planned_quantity && process.quantity_unit) {
                 quantityInfo = `
                     <div class="process-quantity-info">
-                        <span class="quantity-label">📊 工程量:</span>
+                        <span class="quantity-label">📊 ${t('quantities.quantity')}:</span>
                         <span class="quantity-value">${process.planned_quantity} ${process.quantity_unit}</span>
                     </div>
                 `;
@@ -122,10 +122,10 @@ if (typeof app !== 'undefined') {
                     <div class="process-actions">
                         ${actionButtons}
                         <button class="btn-quantity" onclick="app.showQuantityInputById(${process.id})" data-process-id="${process.id}">
-                            📊 工程量
+                            📊 ${t('quantities.quantity')}
                         </button>
                         <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
-                            <span id="subtask-toggle-text-${process.id}">查看子任务 ▼</span>
+                            <span id="subtask-toggle-text-${process.id}">${t('daily.viewSubtasks')} ▼</span>
                         </button>
                         ${PermissionManager.canManageProjects() ? `
                             <button class="btn-schedule" onclick="ProcessScheduling.showDependencyManager(${process.id}, '${getI18nField(process, 'process_name').replace(/'/g, "\\'")}')">
@@ -137,7 +137,7 @@ if (typeof app !== 'undefined') {
                         ` : ''}
                     </div>
                     <div class="process-subtasks-area" id="subtasks-area-${process.id}">
-                        <div class="loading-subtasks">加载中...</div>
+                        <div class="loading-subtasks">${t('common.loading')}</div>
                     </div>
                 </div>
             `;
@@ -152,11 +152,11 @@ if (typeof app !== 'undefined') {
         if (area.classList.contains('expanded')) {
             // 收起
             area.classList.remove('expanded');
-            toggleText.textContent = '查看子任务 ▼';
+            toggleText.textContent = t('daily.viewSubtasks') + ' ▼';
         } else {
             // 展开并加载子任务
             area.classList.add('expanded');
-            toggleText.textContent = '收起子任务 ▲';
+            toggleText.textContent = t('daily.collapseSubtasks') + ' ▲';
             
             try {
                 const result = await api.getSubtasks(processExecutionId);
@@ -166,26 +166,26 @@ if (typeof app !== 'undefined') {
                     // 没有子任务，显示创建模板选项
                     area.innerHTML = `
                         <div style="text-align: center; padding: 1rem; color: #6b7280;">
-                            <p>暂无子任务</p>
+                            <p>${t('daily.noSubtasks')}</p>
                             <button class="btn-start" onclick="app.showSubtaskTemplates(${processExecutionId})" style="margin-top: 0.5rem;">
-                                从模板创建子任务
+                                ${t('daily.createFromTemplate')}
                             </button>
                         </div>
                     `;
                 } else {
                     // 显示子任务列表
                     area.innerHTML = `
-                        <h5 style="margin-bottom: 0.75rem; color: #374151;">📋 子任务列表</h5>
+                        <h5 style="margin-bottom: 0.75rem; color: #374151;">📋 ${t('daily.subtaskList')}</h5>
                         <div class="subtask-list-inline">
                             ${subtasks.map(subtask => this.renderSubtaskInline(subtask, processExecutionId)).join('')}
                         </div>
                         <button class="btn-toggle-subtasks" onclick="app.showSubtaskTemplates(${processExecutionId})" style="margin-top: 0.75rem;">
-                            + 添加更多子任务
+                            + ${t('daily.addMoreSubtasks')}
                         </button>
                     `;
                 }
             } catch (error) {
-                area.innerHTML = `<p style="color: #ef4444;">加载失败</p>`;
+                area.innerHTML = `<p style="color: #ef4444;">${t('common.loadError')}</p>`;
             }
         }
     };
@@ -202,14 +202,14 @@ if (typeof app !== 'undefined') {
                     <div class="subtask-name-inline">${getI18nField(subtask, 'subtask_name' || 'name')}</div>
                     <div class="subtask-progress-inline">
                         <span>${percentage}%</span>
-                        <span>预计: ${subtask.planned_quantity || subtask.estimated_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
-                        <span>已完成: ${subtask.actual_quantity || subtask.completed_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
+                        <span>${t('daily.estimated')}: ${subtask.planned_quantity || subtask.estimated_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
+                        <span>${t('daily.completed')}: ${subtask.actual_quantity || subtask.completed_quantity || 0} ${getUnitText(subtask.quantity_unit || subtask.unit || '')}</span>
                     </div>
                 </div>
                 <div class="subtask-actions-inline">
                     ${!isCompleted ? `
                         <button class="btn-xs btn-primary" onclick="app.recordSubtaskProgress(${subtask.id}, ${processExecutionId})">
-                            记录进度
+                            ${t('daily.recordProgress')}
                         </button>
                     ` : `
                         <span style="color: #10b981; font-weight: 600;">✓</span>
@@ -227,12 +227,12 @@ if (typeof app !== 'undefined') {
             // 获取工序信息
             const processesResult = await api.processes.getList(ProjectDetail.projectId);
             if (!processesResult.success) {
-                throw new Error('获取工序信息失败');
+                throw new Error(t('processes.loadError'));
             }
             
             const process = processesResult.data.find(p => p.id === processExecutionId);
             if (!process) {
-                throw new Error('工序不存在');
+                throw new Error(t('processes.notFound'));
             }
             
             app.hideLoading();
@@ -243,7 +243,7 @@ if (typeof app !== 'undefined') {
         } catch (error) {
             app.hideLoading();
             console.error('Start process error:', error);
-            app.showToast(error.message || '操作失败', 'error');
+            app.showToast(error.message || t('common.error'), 'error');
         }
     };
     
@@ -262,10 +262,10 @@ if (typeof app !== 'undefined') {
             return;
         }
         
-        const modal = app.createModal(`开始工序：${processName}`, `
+        const modal = app.createModal(`${t('processes.startProcess')}: ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-section">
-                    <h4 style="margin-bottom: 20px;">📊 请输入工程量数据</h4>
+                    <h4 style="margin-bottom: 20px;">📊 ${t('quantities.enterData')}</h4>
                     <p class="help-text" style="margin-bottom: 20px; color: #666;">
                         系统将根据您输入的数据自动计算材料需求
                     </p>
@@ -285,7 +285,7 @@ if (typeof app !== 'undefined') {
                             step="0.01" 
                             min="0"
                             ${field.required ? 'required' : ''}
-                            placeholder="请输入${field.label}"
+                            placeholder="${t('common.pleaseEnter')} ${field.label}"
                             style="width: 100%;"
                         >
                         ${field.hint ? `<small class="form-hint">${field.hint}</small>` : ''}
@@ -293,16 +293,16 @@ if (typeof app !== 'undefined') {
                 `).join('')}
                 
                 <div class="form-group" id="calculated-result" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                    <div style="font-weight: 600; color: #0066cc; margin-bottom: 10px;">📈 计算结果</div>
+                    <div style="font-weight: 600; color: #0066cc; margin-bottom: 10px;">📈 ${t('quantities.calculationResult')}</div>
                     <div id="result-content"></div>
                 </div>
                 
                 <div class="form-actions" style="margin-top: 30px;">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        取消
+                        ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        确认并开始工序
+                        ${t('processes.confirmAndStart')}
                     </button>
                 </div>
             </form>
@@ -584,7 +584,7 @@ if (typeof app !== 'undefined') {
             return;
         }
         
-        // 计算结果
+        // ${t('quantities.calculationResult')}
         let result = '';
         let calculatedValue = 0;
         let unit = '';
@@ -651,7 +651,7 @@ if (typeof app !== 'undefined') {
             
             if (result.success) {
                 app.closeModal();
-                this.showToast('工序已开始');
+                this.showToast(t('processes.startSuccess'));
                 // 重新加载工序列表
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
@@ -659,7 +659,7 @@ if (typeof app !== 'undefined') {
             }
         } catch (error) {
             console.error('Start process error:', error);
-            this.showToast('操作失败', 'error');
+            this.showToast(t('common.error'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -667,7 +667,7 @@ if (typeof app !== 'undefined') {
     
     // 暂停工序
     app.pauseProcess = async function(processExecutionId) {
-        const reason = prompt('请选择暂停原因:\n1. 等待材料\n2. 天气原因\n3. 其他\n\n输入数字:');
+        const reason = prompt(t('processes.pauseReason'));
         
         let status = 'in_progress';
         if (reason === '1') status = 'waiting_material';
@@ -679,7 +679,7 @@ if (typeof app !== 'undefined') {
             const result = await api.processes.update(processExecutionId, { status });
             
             if (result.success) {
-                this.showToast('状态已更新');
+                this.showToast(t('processes.statusUpdated'));
                 // 重新加载工序列表
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
@@ -687,7 +687,7 @@ if (typeof app !== 'undefined') {
             }
         } catch (error) {
             console.error('Pause process error:', error);
-            this.showToast('操作失败', 'error');
+            this.showToast(t('common.error'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -695,7 +695,7 @@ if (typeof app !== 'undefined') {
     
     // 完成工序
     app.completeProcess = async function(processExecutionId) {
-        if (!confirm('确认此工序已全部完成？')) return;
+        if (!confirm(t('processes.confirmComplete'))) return;
         
         try {
             this.showLoading();
@@ -706,7 +706,7 @@ if (typeof app !== 'undefined') {
             });
             
             if (result.success) {
-                this.showToast('工序已完成！');
+                this.showToast(t('processes.completeSuccess'));
                 // 重新加载工序列表
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
@@ -714,7 +714,7 @@ if (typeof app !== 'undefined') {
             }
         } catch (error) {
             console.error('Complete process error:', error);
-            this.showToast('操作失败', 'error');
+            this.showToast(t('common.error'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -729,34 +729,34 @@ if (typeof app !== 'undefined') {
 
 console.log('✓ 工序进度页面增强功能已加载');
 
-    // 显示更新进度对话框
+    // 显示${t('daily.updateProgress')}对话框
     app.showUpdateProgress = async function(processExecutionId, currentPercentage) {
-        const modal = app.createModal('更新工序进度', `
+        const modal = app.createModal(t('daily.updateProgress'), `
             <form id="update-progress-form" class="form-vertical">
                 <div class="form-group">
-                    <label>当前完成度: ${currentPercentage}%</label>
+                    <label>${t('daily.currentProgress')}: ${currentPercentage}%</label>
                     <div class="progress-bar" style="margin: 10px 0;">
                         <div class="progress-fill" style="width: ${currentPercentage}%; background: #3b82f6;"></div>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label>新的完成度 (%) *</label>
+                    <label>${t('daily.newProgress')} *</label>
                     <input type="number" id="new-percentage" min="0" max="100" value="${currentPercentage}" required>
-                    <small class="form-hint">请输入 0-100 之间的数字</small>
+                    <small class="form-hint">${t('daily.progressHint')}</small>
                 </div>
                 
                 <div class="form-group">
-                    <label>进度说明</label>
-                    <textarea id="progress-note" rows="3" placeholder="例如：已完成基础开挖，正在进行垫层施工..."></textarea>
+                    <label>${t('daily.progressNotes')}</label>
+                    <textarea id="progress-note" rows="3" placeholder="${t('daily.progressNotesPlaceholder')}"></textarea>
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        取消
+                        ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        更新进度
+                        ${t('daily.updateProgress')}
                     </button>
                 </div>
             </form>
@@ -780,7 +780,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         const progressNote = document.getElementById('progress-note').value;
         
         if (newPercentage < 0 || newPercentage > 100) {
-            this.showToast('完成度必须在 0-100 之间', 'error');
+            this.showToast(t('daily.progressRangeError'), 'error');
             return;
         }
         
@@ -801,12 +801,12 @@ console.log('✓ 工序进度页面增强功能已加载');
             
             if (result.success) {
                 app.closeModal();
-                this.showToast(newPercentage >= 100 ? '工序已完成！' : `进度已更新为 ${newPercentage}%`);
+                this.showToast(newPercentage >= 100 ? t('processes.completeSuccess') : t('daily.progressUpdated').replace('{percent}', newPercentage));
                 
-                // 如果有进度说明，记录活动日志
+                // 如果有${t('daily.progressNotes')}，记录活动日志
                 if (progressNote) {
                     await api.logActivity(ProjectDetail.projectId, 'update', {
-                        message: `工序进度更新: ${newPercentage}% - ${progressNote}`
+                        message: `${t('daily.progressUpdate')}: ${newPercentage}% - ${progressNote}`
                     });
                 }
                 
@@ -817,7 +817,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             }
         } catch (error) {
             console.error('Update progress error:', error);
-            this.showToast('更新失败', 'error');
+            this.showToast(t('common.updateError'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -835,12 +835,12 @@ console.log('✓ 工序进度页面增强功能已加载');
         
         // 如果没有找到字段定义，使用通用字段
         if (!fields || fields.length === 0) {
-            this.showToast('该工序暂不支持工程量输入，或使用通用工程量字段', 'warning');
+            this.showToast(t('quantities.notSupported'), 'warning');
             
             // 使用通用字段：数量
             const genericFields = [
-                { key: 'quantity', label: '工程量', unit: '', required: true, placeholder: '请输入工程量' },
-                { key: 'unit', label: '单位', unit: '', required: false, placeholder: '例如：m³、m²、个等' }
+                { key: 'quantity', label: t('quantities.quantity'), unit: '', required: true, placeholder: t('quantities.enterQuantity') },
+                { key: 'unit', label: t('quantities.unit'), unit: '', required: false, placeholder: t('quantities.unitPlaceholder') }
             ];
             
             await this.showGenericQuantityInput(process, genericFields);
@@ -873,25 +873,25 @@ console.log('✓ 工序进度页面增强功能已加载');
                         step="0.01" 
                         ${field.required ? 'required' : ''}
                         placeholder="${field.placeholder || ''}">
-                    ${field.unit ? `<small class="form-hint">单位: ${field.unit}</small>` : ''}
+                    ${field.unit ? `<small class="form-hint">${t('quantities.unit')}: ${field.unit}</small>` : ''}
                 </div>
             `;
         }).join('');
         
-        // 计算结果显示
+        // ${t('quantities.calculationResult')}显示
         const resultHtml = fields.formula ? `
             <div class="form-group">
-                <label style="font-weight: bold; color: #059669;">计算结果</label>
+                <label style="font-weight: bold; color: #059669;">${t('quantities.calculationResult')}</label>
                 <div id="quantity-result" style="font-size: 1.2em; color: #059669; padding: 10px; background: #f0fdf4; border-radius: 0.5rem; text-align: center;">
-                    ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '等待输入...'}
+                    ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '${t('quantities.waitingInput')}'}
                 </div>
             </div>
         ` : '';
         
-        const modal = app.createModal(`工程量 - ${processName}`, `
+        const modal = app.createModal(`${t('quantities.quantity')} - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
-                    <strong>说明:</strong> 填写工程量数据，系统将自动计算总量。${process.status === 'not_started' ? '保存后工序将自动开始。' : ''}
+                    <strong>${t('quantities.instruction')}:</strong> ${t('quantities.instructionText')}${process.status === 'not_started' ? '${t('quantities.autoStart')}' : ''}
                 </div>
                 
                 ${fieldsHtml}
@@ -899,10 +899,10 @@ console.log('✓ 工序进度页面增强功能已加载');
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        取消
+                        ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${process.status === 'not_started' ? '保存并开始' : '保存'}
+                        ${process.status === 'not_started' ? '${t('quantities.saveAndStart')}' : '${t('common.save')}'}
                     </button>
                 </div>
             </form>
@@ -931,7 +931,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         });
     };
     
-    // 保存工程量数据
+    // ${t('common.save')}工程量数据
     app.saveQuantityData = async function(processId, fields, shouldStart) {
         const measurements = {};
         let isValid = true;
@@ -952,7 +952,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         });
         
         if (!isValid) {
-            this.showToast('请填写所有必填字段', 'error');
+            this.showToast(t('common.fillRequired'), 'error');
             return;
         }
         
@@ -1007,18 +1007,18 @@ console.log('✓ 工序进度页面增强功能已加载');
             
             if (apiResult.success) {
                 app.closeModal();
-                this.showToast(shouldStart ? '工序已开始' : '工程量已更新');
+                this.showToast(shouldStart ? t('processes.startSuccess') : t('quantities.updateSuccess'));
                 
                 // 重新加载工序列表
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
                 }
             } else {
-                this.showToast(apiResult.message || '保存失败', 'error');
+                this.showToast(apiResult.message || '${t('common.save')}失败', 'error');
             }
         } catch (error) {
             console.error('Save quantity error:', error);
-            this.showToast('保存失败: ' + (error.message || '未知错误'), 'error');
+            this.showToast('${t('common.save')}失败: ' + (error.message || '未知错误'), 'error');
         } finally {
             this.hideLoading();
         }
@@ -1031,7 +1031,7 @@ console.log('✓ 工序进度页面增强功能已加载');
         
         if (!process) {
             console.error('Process not found:', processId);
-            this.showToast('工序不存在', 'error');
+            this.showToast(t('processes.notFound'), 'error');
             return;
         }
         
@@ -1056,10 +1056,10 @@ console.log('✓ 工序进度页面增强功能已加载');
             }
         }
         
-        const modal = app.createModal(`工程量 - ${processName}`, `
+        const modal = app.createModal(`${t('quantities.quantity')} - ${processName}`, `
             <form id="quantity-form" class="form-vertical">
                 <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
-                    <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? '保存后工序将自动开始。' : ''}
+                    <strong>说明:</strong> 填写工程量数据。${process.status === 'not_started' ? '${t('quantities.autoStart')}' : ''}
                 </div>
                 
                 <div class="form-group">
@@ -1069,15 +1069,15 @@ console.log('✓ 工序进度页面增强功能已加载');
                 
                 <div class="form-group">
                     <label>单位</label>
-                    <input type="text" id="qty-unit" value="${existingMeasurements.unit || process.quantity_unit || ''}" placeholder="例如：m³、m²、个、kg等">
+                    <input type="text" id="qty-unit" value="${existingMeasurements.unit || process.quantity_unit || ''}" placeholder="${t('quantities.unitExample')}">
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        取消
+                        ${t('common.cancel')}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${process.status === 'not_started' ? '保存并开始' : '保存'}
+                        ${process.status === 'not_started' ? '${t('quantities.saveAndStart')}' : '${t('common.save')}'}
                     </button>
                 </div>
             </form>
@@ -1090,7 +1090,7 @@ console.log('✓ 工序进度页面增强功能已加载');
             const unit = document.getElementById('qty-unit').value || '';
             
             if (!quantity || quantity <= 0) {
-                this.showToast('请输入有效的工程量', 'error');
+                this.showToast(t('quantities.validQuantityError'), 'error');
                 return;
             }
             
@@ -1113,7 +1113,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                 
                 if (result.success) {
                     app.closeModal();
-                    this.showToast(process.status === 'not_started' ? '工序已开始' : '工程量已更新');
+                    this.showToast(process.status === 'not_started' ? t('processes.startSuccess') : t('quantities.updateSuccess'));
                     
                     if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                         await ProjectDetail.loadProcesses();
@@ -1121,7 +1121,7 @@ console.log('✓ 工序进度页面增强功能已加载');
                 }
             } catch (error) {
                 console.error('Save generic quantity error:', error);
-                this.showToast('保存失败', 'error');
+                this.showToast('${t('common.save')}失败', 'error');
             } finally {
                 this.hideLoading();
             }

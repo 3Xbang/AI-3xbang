@@ -1,4 +1,4 @@
-// 简化版材料管理
+// Material Manager (Simplified)
 const MaterialManager = {
     currentProjectId: null,
     materials: [],
@@ -17,11 +17,11 @@ const MaterialManager = {
                 this.materials = response.data || [];
                 this.render();
             } else {
-                app.showToast(response.message || '加载失败', 'error');
+                app.showToast(response.message || t('common.loadError'), 'error');
             }
         } catch (error) {
             console.error('Load materials error:', error);
-            app.showToast('加载材料列表失败', 'error');
+            app.showToast(t('materials.loadError'), 'error');
         } finally {
             app.hideLoading();
         }
@@ -38,10 +38,10 @@ const MaterialManager = {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📦</div>
-                    <h3>还没有材料记录</h3>
-                    <p>开始添加项目所需的材料</p>
+                    <h3>${t('materials.noMaterials')}</h3>
+                    <p>${t('materials.noMaterialsDesc')}</p>
                     <button class="btn btn-primary" onclick="MaterialManager.showAddForm()">
-                        + 添加材料
+                        + ${t('materials.addMaterial')}
                     </button>
                 </div>
             `;
@@ -63,7 +63,7 @@ const MaterialManager = {
     },
 
     renderMaterialCard(material) {
-        // 解析JSON字段
+        // Parse JSON fields
         let materialName = material.material_name;
         let unit = material.unit;
         
@@ -79,7 +79,7 @@ const MaterialManager = {
         }
         
         const currentLang = localStorage.getItem('language') || 'zh';
-        const displayName = (materialName && materialName[currentLang]) || (materialName && materialName.zh) || material.material_code || '未命名';
+        const displayName = (materialName && materialName[currentLang]) || (materialName && materialName.zh) || material.material_code || t('materials.unnamed');
         const displayUnit = (unit && unit[currentLang]) || (unit && unit.zh) || '';
 
         const purchaseQty = parseFloat(material.purchase_quantity || 0);
@@ -95,19 +95,19 @@ const MaterialManager = {
                 </div>
                 <div class="material-card-body">
                     <div class="material-stat">
-                        <span class="label">采购:</span>
+                        <span class="label">${t('materials.purchased')}:</span>
                         <span class="value">${purchaseQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">到货:</span>
+                        <span class="label">${t('materials.received')}:</span>
                         <span class="value">${receivedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat">
-                        <span class="label">已用:</span>
+                        <span class="label">${t('materials.used')}:</span>
                         <span class="value">${usedQty} ${displayUnit}</span>
                     </div>
                     <div class="material-stat highlight">
-                        <span class="label">库存:</span>
+                        <span class="label">${t('materials.stock')}:</span>
                         <span class="value">${stock} ${displayUnit}</span>
                     </div>
                 </div>
@@ -116,11 +116,11 @@ const MaterialManager = {
     },
 
     showAddForm() {
-        app.showToast('材料添加功能开发中，请从材料库中选择', 'info');
+        app.showToast(t('materials.addFromLibrary'), 'info');
     }
 };
 
-// 暴露到全局
+// Expose to global
 window.MaterialManager = MaterialManager;
 
-console.log('✓ 简化版材料管理已加载');
+console.log('✓ Material Manager Loaded');

@@ -66,6 +66,10 @@ const ProcessScheduling = {
                         ` : `
                             <p class="empty-text">${t('scheduling.noSuccessors')}</p>
                         `}
+                        
+                        <button class="btn btn-sm btn-secondary" onclick="ProcessScheduling.showAddSuccessor(${processExecutionId})">
+                            + ${t('scheduling.addSuccessor')}
+                        </button>
                     </div>
                 </div>
                 
@@ -102,11 +106,9 @@ const ProcessScheduling = {
                     <span class="dependency-type-badge">${typeText}</span>
                     ${lagText ? `<span class="lag-badge">${lagText}</span>` : ''}
                 </div>
-                ${type === 'predecessor' ? `
-                    <button class="btn-icon-delete" onclick="ProcessScheduling.deleteDependency(${dep.id})">
-                        ✕
-                    </button>
-                ` : ''}
+                <button class="btn-icon-delete" onclick="ProcessScheduling.deleteDependency(${dep.id})">
+                    ✕
+                </button>
             </div>
         `;
     },
@@ -179,6 +181,64 @@ const ProcessScheduling = {
         });
     },
 
+    // 显示添加后置依赖
+    async showAddSuccessor(processExecutionId) {
+        const availableProcesses = this.processes.filter(p => p.id !== processExecutionId);
+        
+        if (availableProcesses.length === 0) {
+            app.showToast(t('scheduling.noAvailableProcesses'), 'warning');
+            return;
+        }
+        
+        const modal = app.createModal(t('scheduling.addSuccessor'), `
+            <form id="add-successor-form" class="form-vertical">
+                <div class="form-group">
+                    <label>${t('scheduling.selectSuccessor')} *</label>
+                    <select id="successor-select" required>
+                        <option value="">${t('scheduling.pleaseSelect')}</option>
+                        ${availableProcesses.map(p => `
+                            <option value="${p.id}">
+                                [${p.process_code}] ${getI18nField(p, 'process_name')}
+                            </option>
+                        `).join('')}
+                    </select>
+                    <small class="form-hint">${t('scheduling.successorHelp')}</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>${t('scheduling.dependencyType')} *</label>
+                    <select id="dependency-type" required>
+                        <option value="finish_to_start">FS - ${t('scheduling.finishToStart')}</option>
+                        <option value="start_to_start">SS - ${t('scheduling.startToStart')}</option>
+                        <option value="finish_to_finish">FF - ${t('scheduling.finishToFinish')}</option>
+                        <option value="start_to_finish">SF - ${t('scheduling.startToFinish')}</option>
+                    </select>
+                    <small class="form-hint">${t('scheduling.fsIsCommon')}</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>${t('scheduling.lagDays')}</label>
+                    <input type="number" id="lag-days" value="0" min="-30" max="90">
+                    <small class="form-hint">${t('scheduling.lagDaysHint')}</small>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="ProcessScheduling.showDependencyManager(${processExecutionId}, '')">
+                        ${t('common.back')}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ${t('common.add')}
+                    </button>
+                </div>
+            </form>
+        `);
+        
+        document.getElementById('add-successor-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleAddSuccessor(processExecutionId);
+        });
+    },
+
     // 处理添加依赖
     async handleAddDependency(processExecutionId) {
         const dependsOnProcessId = document.getElementById('predecessor-select').value;
@@ -208,6 +268,43 @@ const ProcessScheduling = {
             }
         } catch (error) {
             console.error('Add dependency error:', error);
+            app.showToast(error.message || t('common.error'), 'error');
+        } finally {
+            app.hideLoading();
+        }
+    },
+
+    // 处理添加后置依赖（反向添加）
+    async handleAddSuccessor(processExecutionId) {
+        const successorProcessId = document.getElementById('successor-select').value;
+        const dependencyType = document.getElementById('dependency-type').value;
+        const lagDays = parseInt(document.getElementById('lag-days').value);
+        
+        if (!successorProcessId) {
+            app.showToast(t('scheduling.pleaseSelect'), 'warning');
+            return;
+        }
+        
+        try {
+            app.showLoading();
+            // 后置依赖：让选中的工序依赖当前工序
+            // 即：successorProcess 依赖 currentProcess
+            const result = await api.processDependencies.add(parseInt(successorProcessId), {
+                dependsOnProcessId: processExecutionId,
+                dependencyType,
+                lagDays
+            });
+            
+            if (result.success) {
+                app.showToast(t('scheduling.successorAdded'));
+                // 重新加载依赖管理器
+                const process = this.processes.find(p => p.id === processExecutionId);
+                await this.showDependencyManager(processExecutionId, getI18nField(process, 'process_name'));
+            } else {
+                app.showToast(result.message || t('scheduling.addError'), 'error');
+            }
+        } catch (error) {
+            console.error('Add successor error:', error);
             app.showToast(error.message || t('common.error'), 'error');
         } finally {
             app.hideLoading();

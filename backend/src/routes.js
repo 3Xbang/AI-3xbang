@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
 const bcrypt = require('bcrypt');
@@ -1050,11 +1050,11 @@ router.post('/daily-progress', authenticate, async (req, res) => {
     // 更新工序执行表的累计数据
     await pool.query(`
       UPDATE process_execution 
-      SET total_completed = $1, 
-          completion_percentage = $2,
+      SET total_completed = $1::numeric, 
+          completion_percentage = $2::numeric,
           status = CASE 
-            WHEN $2 >= 100 THEN 'completed'
-            WHEN $2 > 0 THEN 'in_progress'
+            WHEN $2::numeric >= 100 THEN 'completed'
+            WHEN $2::numeric > 0 AND status = 'not_started' THEN 'in_progress'
             ELSE status
           END,
           updated_at = CURRENT_TIMESTAMP

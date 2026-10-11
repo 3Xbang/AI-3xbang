@@ -395,20 +395,53 @@ router.put('/processes/:id', authenticate, async (req, res) => {
       return res.status(403).json({ success: false, message: '无权访问此项目' });
     }
     
-    const { status, actual_start_date, actual_end_date, notes } = req.body;
+    const { 
+      status, 
+      actual_start_date, 
+      actual_end_date, 
+      notes, 
+      completion_percentage,
+      measurements,
+      planned_quantity,
+      quantity_unit,
+      planned_start_date,
+      planned_end_date,
+      planned_duration
+    } = req.body;
+    
     const result = await client.query(`
       UPDATE process_execution 
       SET status = COALESCE($1, status),
           actual_start_date = COALESCE($2, actual_start_date),
           actual_end_date = COALESCE($3, actual_end_date),
           notes = COALESCE($4, notes),
+          completion_percentage = COALESCE($5, completion_percentage),
+          measurements = COALESCE($6, measurements),
+          planned_quantity = COALESCE($7, planned_quantity),
+          quantity_unit = COALESCE($8, quantity_unit),
+          planned_start_date = COALESCE($9, planned_start_date),
+          planned_end_date = COALESCE($10, planned_end_date),
+          planned_duration = COALESCE($11, planned_duration),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
+      WHERE id = $12
       RETURNING *
-    `, [status, actual_start_date, actual_end_date, notes, req.params.id]);
+    `, [
+      status, 
+      actual_start_date, 
+      actual_end_date, 
+      notes, 
+      completion_percentage,
+      measurements,
+      planned_quantity,
+      quantity_unit,
+      planned_start_date,
+      planned_end_date,
+      planned_duration,
+      req.params.id
+    ]);
     
     await logActivity(client, req.user.id, 'update_process', 'process_execution', req.params.id,
-      { message: `更新工序状态: ${status || '未变更'}` });
+      { message: `更新工序: ${status ? '状态=' + status : ''}${planned_quantity ? ' 工程量=' + planned_quantity : ''}` });
     
     await client.query('COMMIT');
     res.json({ success: true, data: result.rows[0] });

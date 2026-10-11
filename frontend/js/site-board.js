@@ -490,7 +490,7 @@
 
         rowWaiting(x) {
             const why = x.reasons.slice(0, 2).map(r => esc(r.zh)).join('；') + (x.reasons.length > 2 ? ` 等 ${x.reasons.length} 项` : '');
-            return `<div class="td-row wait"><div class="td-grow"><b>${nm(x)}</b> ${this.floorTag(x)}<div class="td-sub">${why}</div></div>` +
+            return `<div class="td-row wait"><div class="td-grow"><b>${nm(x)}</b> ${this.floorTag(x)}<div class="td-sub">${why}</div>${SiteEstimate.mini(this.estMap && this.estMap[x.execId])}</div>` +
                 `<a href="#" class="td-link" data-force="${x.execId}">提前开始…</a>` + `</div>`;
         },
 
@@ -806,15 +806,32 @@
             return r.data;
         },
         md: iso => (iso ? iso.slice(5).replace('-', '/') : ''),
-        // 一道工序的配置、天数、起止日期，一行显示
+        // 一道工序：工程量 / 多少人干 / 多长时间，三格显示
         line(t) {
             if (!t) return '';
-            const dates = t.startDate ? ` · 📅 ${this.md(t.startDate)} → ${this.md(t.finishDate)}` : '';
-            if (t.kind !== 'work') return `<div class="est-line">⏱ 固定约 <b>${t.estDays} 天</b>（不占班组）${dates}</div>`;
-            const crew = `👷 ${esc(t.tradeName)} <b>${t.crewsUsed} 班</b>（每班 ${t.crewStd.skilled} 大工${t.crewStd.helper ? ' + ' + t.crewStd.helper + ' 普工' : ''}，共 ${t.people.skilled + t.people.helper} 人）`;
-            const days = t.estDays ? ` · ⏱ 预计 <b>${t.estDays} 天</b>` : ' · ⏱ 缺工程量，先按 2 天估算';
-            const warn = t.shortage ? `<div class="est-warn">⚠ ${esc(t.shortageText)}，下面按 1 个标准班组估算</div>` : '';
-            return `<div class="est-line">${crew}${days}${dates}</div>${warn}`;
+            const dates = t.startDate ? `${this.md(t.startDate)} → ${this.md(t.finishDate)}` : (t.finishDate ? `预计 ${this.md(t.finishDate)} 完成` : '');
+            let qty, people, time;
+            if (t.kind !== 'work') {
+                qty = '<b class="est-dim">—</b><small>按固定天数</small>';
+                people = '<b class="est-dim">不占班组</b>';
+                time = `<b>约 ${t.estDays} 天</b>${dates ? `<small>${dates}</small>` : ''}`;
+            } else {
+                qty = t.qty != null ? `<b>${Math.round(t.qty * 100) / 100} ${esc(t.unit)}</b><small>标准产量 ${t.output} ${esc(t.unit)}/班/天</small>`
+                    : '<b class="est-bad">未录入</b><small>录入后才能算准</small>';
+                people = `<b>${t.crewsUsed} 班 · ${t.people.skilled} 大工 + ${t.people.helper} 普工</b><small>${esc(t.tradeName)}，每班 ${t.crewStd.skilled}+${t.crewStd.helper} 人</small>`;
+                time = t.estDays ? `<b>约 ${t.estDays} 天</b>${dates ? `<small>${dates}</small>` : ''}`
+                    : `<b class="est-warn-t">约 2 天（估算）</b>${dates ? `<small>${dates}</small>` : ''}`;
+            }
+            const warn = t.shortage ? `<div class="est-warn">⚠ ${esc(t.shortageText)}，按 1 个标准班组估算</div>` : '';
+            return `<div class="est-grid"><div class="est-cell"><span>📦 工程量</span>${qty}</div>` +
+                `<div class="est-cell"><span>👷 多少人干</span>${people}</div>` +
+                `<div class="est-cell"><span>⏱ 多长时间</span>${time}</div></div>${warn}`;
+        },
+        // 等待中的工序：一行简要
+        mini(t) {
+            if (!t) return '';
+            if (t.kind !== 'work') return `<div class="est-mini">⏱ 固定约 ${t.estDays} 天</div>`;
+            return `<div class="est-mini">📦 ${t.qty != null ? Math.round(t.qty * 100) / 100 + ' ' + esc(t.unit) : '<span class="est-bad">工程量未录入</span>'} · 👷 ${esc(t.tradeName)} ${t.crewsUsed} 班（${t.people.skilled}+${t.people.helper} 人） · ⏱ ${t.estDays ? '约 ' + t.estDays + ' 天' : '约 2 天（估算）'}</div>`;
         },
         panel(e, withTeamBtn) {
             if (!e || !e.planned) return '<div class="td-empty">还没有生成工序，先到「项目准备」生成。</div>';

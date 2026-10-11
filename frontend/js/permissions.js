@@ -148,22 +148,15 @@ const PermissionManager = {
         console.log(`Permission Manager initialized for role: ${role}`);
     },
 
-    // 获取角色显示名称
+    // 获取角色显示名称（双语）
     getRoleDisplayName(role) {
         const roleNames = {
-            zh: {
-                manager: '管理者',
-                purchaser: '采购者',
-                executor: '执行者'
-            },
-            th: {
-                manager: 'ผู้จัดการ',
-                purchaser: 'ผู้จัดซื้อ',
-                executor: 'ผู้ปฏิบัติงาน'
-            }
+            manager: '管理者 ผู้จัดการ',
+            purchaser: '采购者 ผู้จัดซื้อ',
+            executor: '执行者 ผู้ปฏิบัติงาน'
         };
 
-        return roleNames[currentLang]?.[role] || role;
+        return roleNames[role] || role;
     },
 
     // 检查并执行需要权限的操作

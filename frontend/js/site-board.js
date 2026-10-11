@@ -18,7 +18,9 @@
         carpenter: { zh: '木工', th: 'ช่างไม้' }, concrete: { zh: '混凝土工', th: 'ช่างคอนกรีต' }, mason: { zh: '瓦工/抹灰', th: 'ช่างปูน' },
         tiler: { zh: '贴砖工', th: 'ช่างปูกระเบื้อง' }, waterproof: { zh: '防水工', th: 'ช่างกันซึม' }, plumber: { zh: '水工', th: 'ช่างประปา' },
         electrician: { zh: '电工', th: 'ช่างไฟฟ้า' }, painter: { zh: '油漆工', th: 'ช่างทาสี' }, installer: { zh: '安装工', th: 'ช่างติดตั้ง' },
-        general: { zh: '普工/杂工', th: 'คนงานทั่วไป' }, roof: { zh: '屋面工', th: 'ช่างหลังคา' }
+        general: { zh: '普工/杂工', th: 'คนงานทั่วไป' }, roof: { zh: '屋面工', th: 'ช่างหลังคา' },
+        ceiling: { zh: '吊顶工', th: 'ช่างฝ้าเพดาน' }, aluminum: { zh: '铝门窗/玻璃工', th: 'ช่างอลูมิเนียมและกระจก' }, aircon: { zh: '空调工', th: 'ช่างแอร์' },
+        welder: { zh: '焊工/铁工', th: 'ช่างเชื่อม' }, pool: { zh: '泳池工', th: 'ช่างสระว่ายน้ำ' }, landscape: { zh: '园林工', th: 'ช่างจัดสวน' }
     };
     const tradeName = k => (k === '*' ? '什么都能帮 ช่วยได้ทุกงาน' : TRADES[k] ? `${TRADES[k].zh} ${TRADES[k].th}` : k);
 
@@ -107,15 +109,27 @@
     // ================= 团队名册 =================
     // 泰国现场不分细工种，只分这 7 大类（对应后端 COARSE）
     const COARSE = [
-        { k: 'structure', zh: '结构工', th: 'ช่างโครงสร้าง', d: '钢筋、模板、浇筑' },
-        { k: 'mason', zh: '泥水工', th: 'ช่างปูน', d: '砌墙、抹灰、贴砖、防水' },
-        { k: 'mep', zh: '水电工', th: 'ช่างน้ำ-ไฟ', d: '水管、电线' },
-        { k: 'painter', zh: '油漆工', th: 'ช่างทาสี', d: '腻子、刷漆' },
-        { k: 'finish', zh: '安装工', th: 'ช่างติดตั้ง', d: '吊顶、门窗、洁具、灯具' },
-        { k: 'roof', zh: '屋面/钢结构', th: 'ช่างหลังคา', d: '屋架、铁皮屋面' },
-        { k: 'machine', zh: '机械操作', th: 'คนขับเครื่องจักร', d: '挖机、吊车' }
-    ];
-    const coarseName = k => { const c = COARSE.find(x => x.k === k); return c ? `${c.zh} ${c.th}` : k; };
+        { k: 'rebar', d: '钢筋绑扎' },
+        { k: 'carpenter', d: '模板、橱柜、木地板' },
+        { k: 'scaffold', d: '脚手架' },
+        { k: 'concrete', d: '混凝土浇筑' },
+        { k: 'mason', d: '砌墙、抹灰、找平' },
+        { k: 'tiler', d: '墙砖、地砖、石材' },
+        { k: 'waterproof', d: '防水' },
+        { k: 'plumber', d: '给排水、洁具' },
+        { k: 'electrician', d: '强弱电、灯具开关' },
+        { k: 'painter', d: '腻子、刷漆' },
+        { k: 'ceiling', d: '龙骨、石膏板吊顶' },
+        { k: 'installer', d: '室内门、楼梯栏杆' },
+        { k: 'aluminum', d: '铝合金门窗、玻璃' },
+        { k: 'aircon', d: '空调安装' },
+        { k: 'welder', d: '屋架、钢结构、栏杆' },
+        { k: 'roof', d: '铁皮、瓦屋面' },
+        { k: 'mach', d: '挖机、吊车' },
+        { k: 'pool', d: '泳池' },
+        { k: 'landscape', d: '园林景观' }
+    ].map(x => Object.assign({ zh: TRADES[x.k].zh, th: TRADES[x.k].th }, x));
+    const coarseName = k => (TRADES[k] ? `${TRADES[k].zh} ${TRADES[k].th}` : k);
 
     const SiteTeam = {
         async open(projectId) {
@@ -144,16 +158,16 @@
         form(projectId, c, done) {
             const sc = (c && c.skill_counts) || {};
             const rows = COARSE.map(x =>
-                `<div class="sb-skill-row"><div class="sb-skill-name"><b>${esc(x.zh)}</b> <span class="sb-sub">${esc(x.th)} · ${esc(x.d)}</span></div>` +
-                `<div class="sb-skill-num"><input type="number" min="0" max="100" data-skill="${x.k}" value="${sc[x.k] || 0}"> 人会</div></div>`).join('');
+                `<div class="sb-skill-row"><div class="sb-skill-name"><b>${esc(x.zh)}</b> <span class="sb-sub">${esc(x.th)}</span><div class="sb-sub">${esc(x.d)}</div></div>` +
+                `<div class="sb-skill-num"><input type="number" min="0" max="100" data-skill="${x.k}" value="${sc[x.k] || 0}"> 人</div></div>`).join('');
             const d = overlay(c ? '编辑班组 แก้ไขทีม' : '添加班组 เพิ่มทีม',
                 `<div class="sb-field" style="margin-bottom:12px"><label>班组名称 ชื่อทีม *</label><input type="text" id="cr-name" placeholder="例如：A 班组、泥水班" value="${esc(c ? c.name : '')}"></div>` +
                 `<div class="sb-grid" style="margin-bottom:12px">` +
                 `<div class="sb-field"><label>大工共几个人 ช่างฝีมือ (คน)</label><input type="number" id="cr-skilled" min="0" max="100" value="${c ? c.skilled_count : 1}"></div>` +
                 `<div class="sb-field"><label>普工共几个人 ผู้ช่วย (คน)</label><input type="number" id="cr-helper" min="0" max="300" value="${c ? c.helper_count : 2}"></div></div>` +
                 `<div class="sb-field"><label>这些大工里，几个人会干什么？ ช่างฝีมือทำงานอะไรได้กี่คน</label>` +
-                `<div class="sb-sub" style="margin:2px 0 8px">不会的填 0。一个人可以会好几样，所以各项加起来可以比大工总数多。</div>${rows}</div>`,
-                '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok>保存 บันทึก</button>', true);
+                `<div class="sb-sub" style="margin:2px 0 8px">不会的填 0。一个人可以会好几样，所以各项加起来可以比大工总数多。</div><div class="sb-skill-grid">${rows}</div></div>`,
+                '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok>保存 บันทึก</button>');
             d.q('[data-cancel]').onclick = d.close;
             d.q('[data-ok]').onclick = async () => {
                 const skill_counts = {};

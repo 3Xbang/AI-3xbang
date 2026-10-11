@@ -133,17 +133,8 @@ router.delete('/team/:workerId', authenticate, requirePermission('manage_project
 }));
 
 // ---------- 施工班组：只填班组名、大工/普工人数、“几个大工会什么”；系统自动生成对应的“人”用于出勤和派工 ----------
-// 泰国现场不分细工种，只用 7 个大类；每个大类对应系统内部的若干细工种。
-const COARSE = {
-  structure: ['rebar', 'carpenter', 'concrete', 'scaffold'],   // 结构工：钢筋、模板、浇筑、脚手架
-  mason: ['mason', 'tiler', 'waterproof'],                     // 泥水工：砌墙、抹灰、贴砖、防水
-  mep: ['plumber', 'electrician'],                             // 水电工
-  painter: ['painter'],                                        // 油漆工
-  finish: ['installer'],                                       // 安装工：吊顶、门窗、橱柜、洁具、灯具
-  roof: ['roof'],                                              // 屋面/钢结构
-  machine: ['mach']                                            // 机械操作
-};
-const COARSE_KEYS = Object.keys(COARSE);
+// 班组里可选的工种 = 系统工种清单（site-service 的 TRADES），不含普工/杂工（普工另填人数）。
+const COARSE_KEYS = TRADE_KEYS.filter(k => k !== 'general');
 
 function cleanCrew(b) {
   const name = String(b.name || '').trim();
@@ -171,7 +162,7 @@ function skillsPerPerson(total, counts) {
   let p = 0;
   COARSE_KEYS.forEach(k => {
     const n = counts[k] || 0;
-    for (let i = 0; i < n; i++) COARSE[k].forEach(fine => people[(p + i) % total].add(fine));
+    for (let i = 0; i < n; i++) people[(p + i) % total].add(k);
     p = (p + n) % Math.max(total, 1);
   });
   return people.map(s => Array.from(s));

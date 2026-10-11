@@ -1,4 +1,4 @@
-// 预览排程并检查结果。运行：node scripts/preview-schedule.js（在 backend 目录）
+﻿// 预览排程并检查结果。运行：node scripts/preview-schedule.js（在 backend 目录）
 // 注意：这里的楼层面积、工程量、班组数量都是演示用的示例，不是 Mira Villa 的真实数据，
 // 目的是验证排程算法本身：先后关系有没有被遵守、班组有没有被重复安排、交叉施工是否出现。
 const assert = require('assert');
@@ -33,7 +33,7 @@ function demoQuantities(plan, floorArea) {
 
 const BASE_CREWS = {
   mach: 1, scaffold: 1, rebar: 2, carpenter: 3, concrete: 1, mason: 3, tiler: 2, waterproof: 1,
-  plumber: 2, electrician: 2, painter: 3, installer: 2, general: 2, roof: 1
+  plumber: 2, electrician: 2, painter: 3, installer: 2, general: 2, roof: 1, ceiling: 1, aluminum: 1, aircon: 1, welder: 1
 };
 const CREW_SIZE = {};   // 每个工种一个班组多少人（取该工种定额里的最大值，仅用于展示）
 Object.values(QUOTA).forEach(q => { if (q.kind === 'work') CREW_SIZE[q.trade] = Math.max(CREW_SIZE[q.trade] || 0, q.crew.skilled + q.crew.helper); });

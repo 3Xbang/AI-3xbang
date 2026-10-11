@@ -1,4 +1,4 @@
-// 现场建议器：根据「实际完成度」判断现在哪些任务可以做、哪些不能做（以及为什么），
+﻿// 现场建议器：根据「实际完成度」判断现在哪些任务可以做、哪些不能做（以及为什么），
 // 并根据项目团队名册（谁在、会什么）给工头建议怎么派人。最终由现场工头决定，系统只给建议。
 //
 // state（实际进度，不是计划）：
@@ -303,7 +303,7 @@ function advise(plan, state, opts) {
   const floors = new Set(plan.tasks.filter(t => t.floor != null).map(t => t.floor));
   const area = o.floorArea || (plan.profile && plan.profile.total_area ? plan.profile.total_area / Math.max(1, floors.size) : null);
   const limit = !area ? 4 : area < 100 ? 3 : area <= 250 ? 4 : 5;
-  const DUST = new Set(['mason', 'tiler', 'carpenter']);   // 会产生粉尘、水或切割的工种
+  const DUST = new Set(['mason', 'tiler', 'carpenter', 'ceiling']);   // 会产生粉尘、水或切割的工种
   const perFloor = {};
   const addFloor = (key, trade) => { const f = T.get(key).floor; if (f == null || !trade) return; (perFloor[f] = perFloor[f] || new Set()).add(trade); };
   inProgress.forEach(x => addFloor(x.key, x.trade));

@@ -25,7 +25,13 @@ const TRADES = {
   painter: { zh: '油漆工', th: 'ช่างทาสี' },
   installer: { zh: '安装工', th: 'ช่างติดตั้ง' },
   general: { zh: '普工/杂工', th: 'คนงานทั่วไป' },
-  roof: { zh: '屋面工', th: 'ช่างหลังคา' }
+  roof: { zh: '屋面工', th: 'ช่างหลังคา' },
+  ceiling: { zh: '吊顶工', th: 'ช่างฝ้าเพดาน' },
+  aluminum: { zh: '铝门窗/玻璃工', th: 'ช่างอลูมิเนียมและกระจก' },
+  aircon: { zh: '空调工', th: 'ช่างแอร์' },
+  welder: { zh: '焊工/铁工', th: 'ช่างเชื่อม' },
+  pool: { zh: '泳池工', th: 'ช่างสระว่ายน้ำ' },
+  landscape: { zh: '园林工', th: 'ช่างจัดสวน' }
 };
 
 const DEP_FROM_DB = { finish_to_start: 'FS', start_to_start: 'SS' };

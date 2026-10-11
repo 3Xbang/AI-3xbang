@@ -1,4 +1,4 @@
-// 现场建议器的检查。运行：node scripts/test-advisor.js（在 backend 目录）
+﻿// 现场建议器的检查。运行：node scripts/test-advisor.js（在 backend 目录）
 // 一、逐日一致性：先用排程模拟出完整施工过程，再在每天开始时取「实际完成度」交给建议器，
 //     检查它的判断和模拟里实际发生的事一致（两套独立写的依赖判断互相印证）。
 // 二、强制开始、团队名册（多能工与借调）、拥挤与粉尘冲突提醒。
@@ -8,7 +8,7 @@ const { generatePlan } = require('../src/process-master');
 const { schedule } = require('../src/scheduler');
 const { advise, canStart, forceStart, rosterFromCrews, crewsFromTeam } = require('../src/advisor');
 
-const CREWS = { mach: 1, scaffold: 1, rebar: 2, carpenter: 3, concrete: 1, mason: 3, tiler: 2, waterproof: 1, plumber: 2, electrician: 2, painter: 3, installer: 2, general: 2, roof: 1 };
+const CREWS = { mach: 1, scaffold: 1, rebar: 2, carpenter: 3, concrete: 1, mason: 3, tiler: 2, waterproof: 1, plumber: 2, electrician: 2, painter: 3, installer: 2, general: 2, roof: 1, ceiling: 1, aluminum: 1, aircon: 1, welder: 1 };
 let n = 0;
 const t = (name, fn) => { fn(); n++; console.log('通过：' + name); };
 

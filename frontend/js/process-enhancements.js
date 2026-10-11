@@ -53,6 +53,7 @@ if (typeof app !== 'undefined') {
                 actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">开始工序</button>`;
             } else if (statusClass === 'in_progress') {
                 actionButtons = `
+                    <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">更新进度</button>
                     <button class="btn-pause" onclick="app.pauseProcess(${process.id})">暂停</button>
                     <button class="btn-complete" onclick="app.completeProcess(${process.id})">完成</button>
                 `;
@@ -114,6 +115,9 @@ if (typeof app !== 'undefined') {
                     </div>
                     <div class="process-actions">
                         ${actionButtons}
+                        <button class="btn-quantity" onclick="app.showQuantityInput(${JSON.stringify(process).replace(/"/g, '&quot;')})">
+                            📊 工程量
+                        </button>
                         <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
                             <span id="subtask-toggle-text-${process.id}">查看子任务 ▼</span>
                         </button>
@@ -611,3 +615,253 @@ if (typeof app !== 'undefined') {
 }
 
 console.log('✓ 工序进度页面增强功能已加载');
+
+    // 显示更新进度对话框
+    app.showUpdateProgress = async function(processExecutionId, currentPercentage) {
+        const modal = app.createModal('更新工序进度', `
+            <form id="update-progress-form" class="form-vertical">
+                <div class="form-group">
+                    <label>当前完成度: ${currentPercentage}%</label>
+                    <div class="progress-bar" style="margin: 10px 0;">
+                        <div class="progress-fill" style="width: ${currentPercentage}%; background: #3b82f6;"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>新的完成度 (%) *</label>
+                    <input type="number" id="new-percentage" min="0" max="100" value="${currentPercentage}" required>
+                    <small class="form-hint">请输入 0-100 之间的数字</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>进度说明</label>
+                    <textarea id="progress-note" rows="3" placeholder="例如：已完成基础开挖，正在进行垫层施工..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
+                        取消
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        更新进度
+                    </button>
+                </div>
+            </form>
+        `);
+        
+        document.getElementById('update-progress-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.updateProcessProgress(processExecutionId);
+        });
+        
+        // 实时预览
+        document.getElementById('new-percentage').addEventListener('input', (e) => {
+            const value = Math.min(100, Math.max(0, e.target.value));
+            document.querySelector('#update-progress-form .progress-fill').style.width = value + '%';
+        });
+    };
+    
+    // 更新工序进度
+    app.updateProcessProgress = async function(processExecutionId) {
+        const newPercentage = parseInt(document.getElementById('new-percentage').value);
+        const progressNote = document.getElementById('progress-note').value;
+        
+        if (newPercentage < 0 || newPercentage > 100) {
+            this.showToast('完成度必须在 0-100 之间', 'error');
+            return;
+        }
+        
+        try {
+            app.showLoading();
+            
+            const updateData = {
+                completion_percentage: newPercentage
+            };
+            
+            // 如果达到100%，自动标记为完成
+            if (newPercentage >= 100) {
+                updateData.status = 'completed';
+                updateData.actual_end_date = new Date().toISOString().split('T')[0];
+            }
+            
+            const result = await api.processes.update(processExecutionId, updateData);
+            
+            if (result.success) {
+                app.closeModal();
+                this.showToast(newPercentage >= 100 ? '工序已完成！' : `进度已更新为 ${newPercentage}%`);
+                
+                // 如果有进度说明，记录活动日志
+                if (progressNote) {
+                    await api.logActivity(ProjectDetail.projectId, 'update', {
+                        message: `工序进度更新: ${newPercentage}% - ${progressNote}`
+                    });
+                }
+                
+                // 重新加载工序列表
+                if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                    await ProjectDetail.loadProcesses();
+                }
+            }
+        } catch (error) {
+            console.error('Update progress error:', error);
+            this.showToast('更新失败', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    };
+    
+    // 修改 showQuantityInput 使其可以独立使用（不自动开始工序）
+    const originalShowQuantityInput = app.showQuantityInput;
+    app.showQuantityInput = async function(process) {
+        const processCode = process.process_code || process.code;
+        const processName = getI18nField(process, 'process_name');
+        const processId = process.id;
+        
+        // 获取工序类型对应的字段
+        const fields = app.getQuantityFields(processCode);
+        
+        // 解析现有的 measurements 数据
+        let existingMeasurements = {};
+        if (process.measurements) {
+            try {
+                existingMeasurements = typeof process.measurements === 'string' 
+                    ? JSON.parse(process.measurements) 
+                    : process.measurements;
+            } catch (e) {
+                console.error('Parse measurements error:', e);
+            }
+        }
+        
+        // 构建表单字段HTML
+        const fieldsHtml = fields.map(field => {
+            const value = existingMeasurements[field.key] || '';
+            return `
+                <div class="form-group">
+                    <label>${field.label}${field.required ? ' *' : ''}</label>
+                    <input 
+                        type="number" 
+                        id="qty-${field.key}" 
+                        value="${value}"
+                        min="0" 
+                        step="0.01" 
+                        ${field.required ? 'required' : ''}
+                        placeholder="${field.placeholder || ''}">
+                    ${field.unit ? `<small class="form-hint">单位: ${field.unit}</small>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+        // 计算结果显示
+        const resultHtml = fields.formula ? `
+            <div class="form-group">
+                <label style="font-weight: bold; color: #059669;">计算结果</label>
+                <div id="quantity-result" style="font-size: 1.2em; color: #059669; padding: 10px; background: #f0fdf4; border-radius: 0.5rem; text-align: center;">
+                    ${process.planned_quantity ? process.planned_quantity + ' ' + (process.quantity_unit || '') : '等待输入...'}
+                </div>
+            </div>
+        ` : '';
+        
+        const modal = app.createModal(`工程量 - ${processName}`, `
+            <form id="quantity-form" class="form-vertical">
+                <div class="form-hint" style="margin-bottom: 1rem; padding: 10px; background: #eff6ff; border-radius: 0.5rem;">
+                    <strong>说明:</strong> 填写工程量数据，系统将自动计算总量。${process.status === 'not_started' ? '保存后工序将自动开始。' : ''}
+                </div>
+                
+                ${fieldsHtml}
+                ${resultHtml}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
+                        取消
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ${process.status === 'not_started' ? '保存并开始' : '保存'}
+                    </button>
+                </div>
+            </form>
+        `);
+        
+        // 实时计算
+        if (fields.formula) {
+            fields.forEach(field => {
+                const input = document.getElementById(`qty-${field.key}`);
+                if (input) {
+                    input.addEventListener('input', () => {
+                        const result = app.calculateQuantity(fields, processCode);
+                        const resultDiv = document.getElementById('quantity-result');
+                        if (resultDiv && result) {
+                            resultDiv.textContent = `${result.value} ${result.unit}`;
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 表单提交
+        document.getElementById('quantity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.saveQuantityData(processId, fields, process.status === 'not_started');
+        });
+    };
+    
+    // 保存工程量数据
+    app.saveQuantityData = async function(processId, fields, shouldStart) {
+        const measurements = {};
+        let isValid = true;
+        
+        // 收集所有字段的值
+        fields.forEach(field => {
+            const input = document.getElementById(`qty-${field.key}`);
+            if (input) {
+                const value = parseFloat(input.value);
+                if (field.required && (!value || value <= 0)) {
+                    isValid = false;
+                    input.style.borderColor = 'red';
+                } else {
+                    measurements[field.key] = value || 0;
+                    input.style.borderColor = '';
+                }
+            }
+        });
+        
+        if (!isValid) {
+            this.showToast('请填写所有必填字段', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading();
+            
+            // 计算总量
+            const result = app.calculateQuantity(fields, fields[0].processCode);
+            
+            const updateData = {
+                measurements: JSON.stringify(measurements),
+                planned_quantity: result.value,
+                quantity_unit: result.unit
+            };
+            
+            // 如果是未开始状态，自动开始
+            if (shouldStart) {
+                updateData.status = 'in_progress';
+                updateData.actual_start_date = new Date().toISOString().split('T')[0];
+            }
+            
+            const apiResult = await api.processes.update(processId, updateData);
+            
+            if (apiResult.success) {
+                app.closeModal();
+                this.showToast(shouldStart ? '工序已开始' : '工程量已更新');
+                
+                // 重新加载工序列表
+                if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
+                    await ProjectDetail.loadProcesses();
+                }
+            }
+        } catch (error) {
+            console.error('Save quantity error:', error);
+            this.showToast('保存失败', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    };

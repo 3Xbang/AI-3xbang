@@ -297,7 +297,12 @@
                     busy(false);
                     d.close(); parent.close();
                     toast(`已生成：新增 ${r.data.added} 个，移除 ${r.data.removed} 个 สร้างเรียบร้อย`);
-                    if (window.ProjectDetail) ProjectDetail.showSubView('site');
+                    if (window.ProjectDetail) await ProjectDetail.showSubView('site');
+                    try {
+                        const tr = await call('GET', `/projects/${projectId}/team`);
+                        const n = (tr.data && (tr.data.members || tr.data)) || [];
+                        if (!n.length) SiteTeam.open(projectId);
+                    } catch (e) { /* ignore */ }
                 } catch (e) { busy(false); toast(e.message, 'error'); }
             };
         }
@@ -355,7 +360,7 @@
         head() {
             const d = this.data;
             const menu = `<details class="td-menu"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
-                `<a href="#" data-menu="team">👥 团队名册 ทีมงาน</a>` +
+                `<a href="#" data-menu="team">👥 施工团队与工种 ทีมงานและประเภทช่าง</a>` +
                 (isManager() ? `<a href="#" data-menu="profile">📝 项目申请表 แบบฟอร์มโครงการ</a>` : '') +
                 `<a href="#" data-menu="overrides">📋 提前开始记录 บันทึกการเริ่มก่อน</a>` +
                 `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
@@ -401,13 +406,18 @@
                 `<div class="td-stat"><b>${waitN}</b><span>${bi('在等前面的工序', 'รองานก่อนหน้า')}</span></div>` +
                 `<div class="td-stat"><b>${hasTeam ? here + '/' + d.team.length : '—'}</b><span>${bi('今天到场', 'มาวันนี้')}</span></div></div>` +
                 `<div class="td-tip">系统只给建议，怎么安排由工头决定。<small class="td-th">ระบบแนะนำเท่านั้น หัวหน้าช่างตัดสินใจ</small></div>`;
+            if (!hasTeam) {
+                html = `<div class="td-banner"><b>项目准备未完成 · 请先录入施工团队</b><br>` +
+                    `需要登记：班组/工人名单、每人的工种（可会多个）、技工或普工。录入后系统才能按人员安排工作、借调和评估班组效率。<br>` +
+                    `<span class="td-sub">ขั้นตอน: 1. ข้อมูลโครงการ ✓  2. ทีมงานและประเภทช่าง (ยังไม่ได้กรอก)  3. สร้างงาน ✓</span><br>` +
+                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="team">录入施工团队与工种 กรอกทีมงาน</button>` : '请联系管理者录入施工团队') + `</div>` + html;
+            }
             d.warnings.forEach(w => { html += `<div class="td-warn">⚠ ${esc(w.zh)}</div>`; });
 
-            // ① 今天谁来了
-            html += `<section class="td-sec"><h3><span class="td-num">1</span>${bi('今天谁来了', 'วันนี้ใครมา')}</h3>`;
+            // ① 出勤登记
+            html += `<section class="td-sec"><h3><span class="td-num">1</span>${bi('出勤登记', 'บันทึกการเข้างาน')}</h3>`;
             if (!hasTeam) {
-                html += `<div class="td-empty">还没有团队成员，系统没法帮你派人。<br>` +
-                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="team">添加团队成员 เพิ่มสมาชิก</button>` : '请联系管理者添加团队成员') + `</div>`;
+                html += `<div class="td-empty">项目团队还没有录入，无法登记出勤和安排工作。</div>`;
             } else {
                 const absent = new Set(d.absent);
                 html += `<div class="td-sub" style="margin-bottom:6px">点一下名字，标记今天没来的人 · แตะชื่อเพื่อทำเครื่องหมายคนที่ไม่มา</div><div>` +

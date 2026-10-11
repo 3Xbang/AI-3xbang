@@ -107,58 +107,51 @@
     // ================= 团队名册 =================
     const SiteTeam = {
         async open(projectId) {
-            const r = await call('GET', `/projects/${projectId}/team`);
-            const members = r.data.members, cap = r.data.crewCapacity || {};
-            const capHtml = Object.keys(cap).length
-                ? Object.keys(cap).map(k => `<span class="sb-chip">${esc(tradeName(k))} 最多 ${cap[k]} 组</span>`).join('')
-                : '<span class="sb-sub">还没有够组成一个班组的人 ยังไม่มีคนพอจะตั้งทีม</span>';
-            const rows = members.length ? members.map(m =>
-                `<div class="sb-member-row"><div class="sb-grow"><b>${esc(m.name)}</b> <span class="sb-chip ${m.level === 'skilled' ? 'skilled' : ''}">${m.level === 'skilled' ? '技工 ช่างฝีมือ' : '普工 ผู้ช่วย'}</span>` +
-                `<div class="sb-sub">${m.skills.map(s => esc(tradeName(s))).join('、') || '未设置工种'}</div></div>` +
-                (isManager() ? `<button class="sb-btn small" data-edit="${m.id}">编辑</button><button class="sb-btn small" data-del="${m.id}">移除</button>` : '') + `</div>`).join('')
-                : '<div class="sb-empty">还没有团队成员。请先添加，看板才能给你派人建议。<br>ยังไม่มีสมาชิก กรุณาเพิ่มก่อน</div>';
-            const d = overlay('项目团队 ทีมงานโครงการ',
-                `<div class="sb-note">技工带班，一个技工可以会多个工种（同一天只能在一个任务上）；普工打下手。<br>ช่างฝีมือนำทีม คนหนึ่งทำได้หลายงาน (แต่วันเดียวทำได้งานเดียว) ผู้ช่วยช่วยงาน</div>` +
-                `<div class="sb-sub" style="margin-bottom:8px">共 ${members.length} 人，按名册估算各工种最多能组的班组（多能工是共享的，所以是上限）：</div><div style="margin-bottom:10px">${capHtml}</div>${rows}`,
-                isManager() ? '<button class="sb-btn primary" data-add>+ 添加成员 เพิ่มสมาชิก</button>' : '');
+            const r = await call('GET', `/projects/${projectId}/crews`);
+            const crews = r.data.crews, tot = r.data.total;
+            const rows = crews.length ? crews.map(c =>
+                `<div class="sb-member-row"><div class="sb-grow"><b>${esc(c.name)}</b>` +
+                `<div class="sb-sub" style="margin-top:4px">大工 ${c.skilled_count} 人：${c.skills.map(s => esc(tradeName(s))).join('、') || '—'}</div>` +
+                `<div class="sb-sub">普工 ${c.helper_count} 人（打下手，什么都能帮）</div></div>` +
+                (isManager() ? `<button class="sb-btn small" data-edit="${c.id}">编辑</button><button class="sb-btn small" data-del="${c.id}">删除</button>` : '') + `</div>`).join('')
+                : '<div class="sb-empty">还没有班组。点下面的「添加班组」开始。<br>ยังไม่มีทีม กดเพิ่มทีมด้านล่าง</div>';
+            const d = overlay('施工团队 ทีมงานก่อสร้าง',
+                `<div class="sb-note">只需要填：班组名称、大工有几个人、大工会干什么工种、普工有几个人。<br>ช่างฝีมือคือหัวหน้างาน ผู้ช่วยคือคนงานทั่วไป</div>` +
+                `<div class="sb-sub" style="margin-bottom:10px"><b>共 ${crews.length} 个班组 · 大工 ${tot.skilled} 人 · 普工 ${tot.helper} 人</b></div>${rows}`,
+                isManager() ? '<button class="sb-btn primary" data-add>+ 添加班组 เพิ่มทีม</button>' : '');
             const reload = () => { d.close(); SiteTeam.open(projectId); if (window.SiteBoard && ProjectDetail.currentView === 'site') SiteBoard.refresh(); };
             const add = d.q('[data-add]'); if (add) add.onclick = () => SiteTeam.form(projectId, null, reload);
-            d.qa('[data-edit]').forEach(b => b.onclick = () => SiteTeam.form(projectId, members.find(m => String(m.id) === b.dataset.edit), reload));
+            d.qa('[data-edit]').forEach(b => b.onclick = () => SiteTeam.form(projectId, crews.find(c => String(c.id) === b.dataset.edit), reload));
             d.qa('[data-del]').forEach(b => b.onclick = async () => {
-                if (!confirm('确认移除这位成员？ ยืนยันลบสมาชิก')) return;
-                await call('DELETE', `/team/${b.dataset.del}`); reload();
+                if (!confirm('确认删除这个班组？ ยืนยันลบทีมนี้')) return;
+                try { await call('DELETE', `/crews/${b.dataset.del}`); reload(); } catch (e) { toast(e.message, 'error'); }
             });
         },
-        form(projectId, m, done) {
-            const skills = m ? m.skills : [];
-            const boxes = Object.keys(TRADES).map(k =>
+        form(projectId, c, done) {
+            const skills = c ? c.skills : [];
+            const boxes = Object.keys(TRADES).filter(k => k !== 'general').map(k =>
                 `<label><input type="checkbox" name="skill" value="${k}" ${skills.includes(k) ? 'checked' : ''}> ${esc(TRADES[k].zh)} ${esc(TRADES[k].th)}</label>`).join('');
-            const d = overlay(m ? '编辑成员 แก้ไขสมาชิก' : '添加成员 เพิ่มสมาชิก',
-                `<div class="sb-field" style="margin-bottom:10px"><label>姓名 ชื่อ *</label><input type="text" id="tm-name" value="${esc(m ? m.name : '')}"></div>` +
-                `<div class="sb-field" style="margin-bottom:10px"><label>级别 ระดับ</label><select id="tm-level"><option value="skilled">技工（能带班）ช่างฝีมือ</option><option value="helper">普工（打下手）ผู้ช่วย</option></select></div>` +
-                `<div class="sb-field" style="margin-bottom:10px"><label id="tm-skill-label">会什么工种（可多选）ทำงานอะไรได้บ้าง</label>` +
-                `<div class="sb-skill-box" id="tm-skills">${boxes}</div>` +
-                `<label class="sb-field check" style="margin-top:6px"><span id="tm-any-wrap"><input type="checkbox" id="tm-any" ${skills.includes('*') ? 'checked' : ''}> 普工：什么工种都能帮 ช่วยได้ทุกงาน</span></label></div>` +
-                `<div class="sb-grid"><div class="sb-field"><label>电话 โทร</label><input type="text" id="tm-phone" value="${esc(m && m.phone ? m.phone : '')}"></div>` +
-                `<div class="sb-field"><label>日薪 ค่าแรงต่อวัน</label><input type="number" id="tm-wage" value="${esc(m && m.daily_wage ? m.daily_wage : '')}"></div></div>`,
+            const d = overlay(c ? '编辑班组 แก้ไขทีม' : '添加班组 เพิ่มทีม',
+                `<div class="sb-field" style="margin-bottom:12px"><label>班组名称 ชื่อทีม *</label><input type="text" id="cr-name" placeholder="例如：A 班组、泥水班" value="${esc(c ? c.name : '')}"></div>` +
+                `<div class="sb-grid" style="margin-bottom:12px">` +
+                `<div class="sb-field"><label>大工几个人 ช่างฝีมือ (คน)</label><input type="number" id="cr-skilled" min="0" max="100" value="${c ? c.skilled_count : 1}"></div>` +
+                `<div class="sb-field"><label>普工几个人 ผู้ช่วย (คน)</label><input type="number" id="cr-helper" min="0" max="300" value="${c ? c.helper_count : 2}"></div></div>` +
+                `<div class="sb-field"><label>大工会干什么（可多选）ช่างฝีมือทำงานอะไรได้</label><div class="sb-skill-box" id="cr-skills">${boxes}</div></div>`,
                 '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok>保存 บันทึก</button>', true);
-            d.q('#tm-level').value = m ? m.level : 'skilled';
-            const sync = () => {
-                const helper = d.q('#tm-level').value === 'helper';
-                d.q('#tm-any-wrap').parentElement.style.display = helper ? '' : 'none';
-            };
-            d.q('#tm-level').onchange = sync; sync();
             d.q('[data-cancel]').onclick = d.close;
             d.q('[data-ok]').onclick = async () => {
-                const level = d.q('#tm-level').value;
-                let sk = d.qa('input[name=skill]:checked').map(x => x.value);
-                if (level === 'helper' && d.q('#tm-any').checked) sk = ['*'];
-                const body = { name: d.q('#tm-name').value.trim(), level, skills: sk, phone: d.q('#tm-phone').value.trim(), daily_wage: d.q('#tm-wage').value };
-                if (!body.name) { toast('请填写姓名 กรุณากรอกชื่อ', 'error'); return; }
-                if (level === 'skilled' && !sk.length) { toast('技工至少选一个工种 เลือกอย่างน้อย 1 งาน', 'error'); return; }
+                const body = {
+                    name: d.q('#cr-name').value.trim(),
+                    skilled_count: Number(d.q('#cr-skilled').value) || 0,
+                    helper_count: Number(d.q('#cr-helper').value) || 0,
+                    skills: d.qa('input[name=skill]:checked').map(x => x.value)
+                };
+                if (!body.name) { toast('请填写班组名称 กรุณากรอกชื่อทีม', 'error'); return; }
+                if (body.skilled_count + body.helper_count < 1) { toast('班组至少要有 1 个人', 'error'); return; }
+                if (body.skilled_count > 0 && !body.skills.length) { toast('请选择大工会干的工种 เลือกงานที่ทำได้', 'error'); return; }
                 try {
                     busy(true);
-                    if (m) await call('PUT', `/team/${m.id}`, body); else await call('POST', `/projects/${projectId}/team`, body);
+                    if (c) await call('PUT', `/crews/${c.id}`, body); else await call('POST', `/projects/${projectId}/crews`, body);
                     d.close(); done();
                 } catch (e) { toast(e.message, 'error'); } finally { busy(false); }
             };
@@ -408,7 +401,7 @@
                 `<div class="td-tip">系统只给建议，怎么安排由工头决定。<small class="td-th">ระบบแนะนำเท่านั้น หัวหน้าช่างตัดสินใจ</small></div>`;
             if (!hasTeam) {
                 html = `<div class="td-banner"><b>项目准备未完成 · 请先录入施工团队</b><br>` +
-                    `需要登记：班组/工人名单、每人的工种（可会多个）、技工或普工。录入后系统才能按人员安排工作、借调和评估班组效率。<br>` +
+                    `需要登记：班组名称、大工几个人和会干什么、普工几个人。录入后系统才能按人员安排工作和评估班组效率。<br>` +
                     `<span class="td-sub">ขั้นตอน: 1. ข้อมูลโครงการ ✓  2. ทีมงานและประเภทช่าง (ยังไม่ได้กรอก)  3. สร้างงาน ✓</span><br>` +
                     (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">去「项目准备」录入团队 กรอกทีมงาน</button>` : '请联系管理者录入施工团队') + `</div>` + html;
             }

@@ -132,6 +132,89 @@ router.delete('/team/:workerId', authenticate, requirePermission('manage_project
   res.json({ success: true });
 }));
 
+// ---------- 施工班组：只填班组名、大工(会什么)、普工人数；系统自动生成对应的“人”用于出勤和派工 ----------
+function cleanCrew(b) {
+  const name = String(b.name || '').trim();
+  if (!name) throw new S.HttpError(400, '请填写班组名称');
+  const skilled = Math.floor(Number(b.skilled_count));
+  const helper = Math.floor(Number(b.helper_count));
+  if (!(skilled >= 0 && skilled <= 100) || !(helper >= 0 && helper <= 300)) throw new S.HttpError(400, '人数不正确');
+  if (skilled + helper < 1) throw new S.HttpError(400, '班组至少要有 1 个人');
+  const skills = (Array.isArray(b.skills) ? b.skills : []).filter(s => TRADE_KEYS.includes(s));
+  if (skilled > 0 && !skills.length) throw new S.HttpError(400, '请选择大工会干的工种');
+  return { name, skilled, helper, skills };
+}
+
+// 让 workers 表里这个班组的人数、名字、工种与班组设置一致（多出来的设为 inactive，不删历史派工）
+async function syncCrewWorkers(client, projectId, crewId, c) {
+  for (const level of ['skilled', 'helper']) {
+    const want = level === 'skilled' ? c.skilled : c.helper;
+    const label = level === 'skilled' ? '大工' : '普工';
+    const skills = level === 'skilled' ? c.skills : ['*'];
+    const have = (await client.query(
+      `SELECT worker_id FROM workers WHERE crew_id = $1 AND level = $2 AND status = 'active' ORDER BY worker_id`, [crewId, level])).rows;
+    if (have.length > want) {
+      await client.query(`UPDATE workers SET status = 'inactive' WHERE worker_id = ANY($1::int[])`, [have.slice(want).map(r => r.worker_id)]);
+    }
+    for (let i = 0; i < want; i++) {
+      const nm = `${c.name} ${label}${i + 1}`;
+      if (i < have.length) {
+        await client.query('UPDATE workers SET name = $1, skills = $2::jsonb WHERE worker_id = $3', [nm, JSON.stringify(skills), have[i].worker_id]);
+      } else {
+        await client.query(
+          `INSERT INTO workers (project_id, name, daily_wage, level, skills, crew_id) VALUES ($1, $2, 0, $3, $4::jsonb, $5)`,
+          [projectId, nm, level, JSON.stringify(skills), crewId]);
+      }
+    }
+  }
+}
+
+router.get('/projects/:projectId/crews', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const r = await pool.query(
+    `SELECT id, name, skilled_count, helper_count, skills FROM project_crews WHERE project_id = $1 AND status = 'active' ORDER BY id`, [req.params.projectId]);
+  const crews = r.rows;
+  const tot = crews.reduce((s, c) => ({ skilled: s.skilled + c.skilled_count, helper: s.helper + c.helper_count }), { skilled: 0, helper: 0 });
+  res.json({ success: true, data: { crews, total: tot } });
+}));
+
+router.post('/projects/:projectId/crews', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  const c = cleanCrew(req.body);
+  const id = await tx(async client => {
+    const r = await client.query(
+      `INSERT INTO project_crews (project_id, name, skilled_count, helper_count, skills) VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING id`,
+      [req.params.projectId, c.name, c.skilled, c.helper, JSON.stringify(c.skills)]);
+    await syncCrewWorkers(client, Number(req.params.projectId), r.rows[0].id, c);
+    return r.rows[0].id;
+  });
+  res.json({ success: true, data: { id } });
+}));
+
+router.put('/crews/:id', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  const c = cleanCrew(req.body);
+  await tx(async client => {
+    const cur = await client.query(`SELECT project_id FROM project_crews WHERE id = $1 AND status = 'active'`, [req.params.id]);
+    if (!cur.rows.length) throw new S.HttpError(404, '班组不存在');
+    const pid = cur.rows[0].project_id;
+    if (!(await checkProjectAccess(client, req.user.id, req.user.role, pid))) throw new S.HttpError(403, '无权访问此项目');
+    await client.query(
+      `UPDATE project_crews SET name = $1, skilled_count = $2, helper_count = $3, skills = $4::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = $5`,
+      [c.name, c.skilled, c.helper, JSON.stringify(c.skills), req.params.id]);
+    await syncCrewWorkers(client, pid, Number(req.params.id), c);
+  });
+  res.json({ success: true });
+}));
+
+router.delete('/crews/:id', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  await tx(async client => {
+    const cur = await client.query(`SELECT project_id FROM project_crews WHERE id = $1 AND status = 'active'`, [req.params.id]);
+    if (!cur.rows.length) throw new S.HttpError(404, '班组不存在');
+    if (!(await checkProjectAccess(client, req.user.id, req.user.role, cur.rows[0].project_id))) throw new S.HttpError(403, '无权访问此项目');
+    await client.query(`UPDATE project_crews SET status = 'inactive' WHERE id = $1`, [req.params.id]);
+    await client.query(`UPDATE workers SET status = 'inactive' WHERE crew_id = $1`, [req.params.id]);
+  });
+  res.json({ success: true });
+}));
+
 // ---------- 出勤 ----------
 router.get('/projects/:projectId/attendance', authenticate, requireProjectAccess(), wrap(async (req, res) => {
   const date = validDate(req.query.date);
@@ -288,6 +371,7 @@ router.get('/projects/:projectId/readiness', authenticate, requireProjectAccess(
   const prof = await S.getProfile(pool, pid);
   const team = (await pool.query(
     `SELECT count(*)::int AS n, count(*) FILTER (WHERE level = 'skilled')::int AS skilled FROM workers WHERE project_id = $1 AND status = 'active'`, [pid])).rows[0];
+  const crewN = (await pool.query(`SELECT count(*)::int AS n FROM project_crews WHERE project_id = $1 AND status = 'active'`, [pid])).rows[0].n;
   const tasks = (await pool.query(
     `SELECT count(*)::int AS total,
             count(*) FILTER (WHERE COALESCE(pe.quantity_unit, '') <> '项')::int AS countable,
@@ -301,7 +385,7 @@ router.get('/projects/:projectId/readiness', authenticate, requireProjectAccess(
     { key: 'profile', required: true, done: !!prof,
       detail: prof ? `${a.floors || '?'} 层${a.units > 1 ? `，${a.units} 套` : ''}${a.total_area ? `，约 ${a.total_area} 平方米` : ''}` : '还没有填写' },
     { key: 'team', required: true, done: team.n > 0 && team.skilled > 0,
-      detail: team.n ? `共 ${team.n} 人，其中技工 ${team.skilled} 人` + (team.skilled ? '' : '（至少要有 1 名技工）') : '还没有录入人员' },
+      detail: team.n ? `${crewN} 个班组，大工 ${team.skilled} 人，普工 ${team.n - team.skilled} 人` + (team.skilled ? '' : '（至少要有 1 名大工）') : '还没有录入班组' },
     { key: 'plan', required: true, done: tasks.total > 0,
       detail: tasks.total ? `已生成 ${tasks.total} 道工序${prof && prof.plan_generated_at ? '（' + prof.plan_generated_at + '）' : ''}` : '还没有生成工序' },
     { key: 'quantities', required: false, done: tasks.countable > 0 && tasks.with_qty >= tasks.countable,

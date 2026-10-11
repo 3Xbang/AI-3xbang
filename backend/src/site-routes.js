@@ -228,6 +228,28 @@ router.post('/processes/:id/start', authenticate, wrap(async (req, res) => {
   res.json({ success: true, data: out });
 }));
 
+// 进行中的任务：标记缺材料 / 天气停工 / 恢复。这些天在统计效率时不算班组的责任。
+router.post('/processes/:id/work-status', authenticate, wrap(async (req, res) => {
+  const execId = Number(req.params.id);
+  const status = req.body.status;
+  if (!['in_progress', 'waiting_material', 'weather_stop'].includes(status)) throw new S.HttpError(400, '状态不正确');
+  const note = String(req.body.note || '').trim();
+  if (status === 'waiting_material' && !note) throw new S.HttpError(400, '请写明缺什么材料');
+  await tx(async client => {
+    await requireAccessToExec(client, req, execId);
+    const cur = await client.query('SELECT status FROM process_execution WHERE id = $1', [execId]);
+    if (!['in_progress', 'waiting_material', 'weather_stop'].includes(cur.rows[0].status)) {
+      throw new S.HttpError(409, '只有进行中的任务才能标记缺材料或天气停工');
+    }
+    await client.query(
+      `UPDATE process_execution SET status = $1, notes = COALESCE($2::jsonb, notes), updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+      [status, note ? JSON.stringify({ zh: note, th: note }) : null, execId]);
+    await logActivity(client, req.user.id, 'work_status', 'process_execution', execId,
+      { message: `状态改为 ${status}${note ? '：' + note : ''}` });
+  });
+  res.json({ success: true });
+}));
+
 router.get('/projects/:projectId/overrides', authenticate, requireProjectAccess(), wrap(async (req, res) => {
   const r = await pool.query(
     `SELECT o.id, o.severity, o.reason, o.unmet, o.decided_by_name, to_char(o.created_at, 'YYYY-MM-DD HH24:MI') AS created_at, pn.process_name

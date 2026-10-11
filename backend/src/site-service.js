@@ -263,14 +263,24 @@ async function buildBoard(client, projectId, dateISO) {
     quantities: L.quantities, team: { members }, assignments, absent, floorArea, allowMissingQuantity: true
   });
 
+  const rowByKey = new Map(L.rows.map(r => [keyOfRow(r), r]));
   const nameByKey = new Map(L.rows.map(r => [keyOfRow(r), r.process_name]));
-  const decorate = x => Object.assign({}, x, { execId: L.execByKey.get(x.key), name: nameByKey.get(x.key), quantityMissing: x.kind === 'work' && !(L.quantities[x.key] > 0) });
+  const decorate = x => {
+    const r = rowByKey.get(x.key);
+    return Object.assign({}, x, {
+      execId: L.execByKey.get(x.key), name: nameByKey.get(x.key), code: r.master_code, floor: r.floor_no,
+      quantityMissing: x.kind === 'work' && !(L.quantities[x.key] > 0),
+      unit: r.quantity_unit, plannedQuantity: Number(r.planned_quantity) > 0 ? Number(r.planned_quantity) : null,
+      workStatus: r.status          // not_started | in_progress | waiting_material | weather_stop | completed
+    });
+  };
   const sug = adv.suggestions.map(s => Object.assign({}, s, { execId: L.execByKey.get(s.key), name: nameByKey.get(s.key) }));
 
   return {
     planned: true, date: L.todayISO, workingDay: L.state.today, projectStart: L.startISO,
     ready: adv.ready.map(decorate), inProgress: adv.inProgress.map(decorate), blocked: adv.blocked.map(decorate),
     suggestions: sug, idle: adv.idle, queued: adv.queued.map(q => Object.assign({}, q, { execId: L.execByKey.get(q.key) })),
+    absentNames: members.filter(m => absent.includes(m.id)).map(m => m.name),
     warnings: adv.warnings, congestionLimit: adv.congestionLimit,
     team: members, absent,
     assignments: Object.fromEntries(Object.keys(assignments).map(k => [L.execByKey.get(k), assignments[k]])),

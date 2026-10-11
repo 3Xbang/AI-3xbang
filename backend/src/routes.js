@@ -994,11 +994,13 @@ router.post('/daily-progress', authenticate, async (req, res) => {
       material_used
     } = req.body;
     
-    const today = new Date().toISOString().split('T')[0];
+    // 用泰国时间的日期（服务器是 UTC，早上 7 点前会算成前一天）
+    const today = new Date(Date.now() + 7 * 3600 * 1000).toISOString().split('T')[0];
     
     // 获取工序信息
     const processInfo = await pool.query(
-      'SELECT total_completed, planned_quantity FROM process_execution WHERE id = $1',
+      `SELECT pe.status, pe.total_completed, pe.planned_quantity, pn.master_code
+         FROM process_execution pe JOIN process_nodes pn ON pn.id = pe.process_node_id WHERE pe.id = $1`,
       [process_execution_id]
     );
     
@@ -1006,11 +1008,21 @@ router.post('/daily-progress', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: '工序不存在' });
     }
     
+    // 总库生成的工序必须先「开始」（开始时会检查前置条件），不能靠记录进度绕过
+    if (processInfo.rows[0].master_code && processInfo.rows[0].status === 'not_started') {
+      return res.status(409).json({ success: false, message: '这个任务还没开始，请先点「开始」再记录进度' });
+    }
+    
+    // 工程量还没录入时，按数量算不出百分比；以前会当成 1 来算，录入任何数量都变成几百个百分点
+    if (!(parseFloat(processInfo.rows[0].planned_quantity) > 0)) {
+      return res.status(400).json({ success: false, message: '这个任务的工程量还没录入，无法按数量记录进度。请先录入工程量，或改用「按百分比」记录' });
+    }
+    
     // 计算累计完成量和百分比
     const previousTotal = parseFloat(processInfo.rows[0].total_completed) || 0;
     const newTotal = previousTotal + parseFloat(quantity_completed);
-    const plannedQty = parseFloat(processInfo.rows[0].planned_quantity) || 1;
-    const percentage = (newTotal / plannedQty) * 100;
+    const plannedQty = parseFloat(processInfo.rows[0].planned_quantity);
+    const percentage = Math.min(100, (newTotal / plannedQty) * 100);
     
     // 插入每日进度记录
     const progressResult = await pool.query(`

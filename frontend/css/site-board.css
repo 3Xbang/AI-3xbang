@@ -64,3 +64,81 @@
 .sb-noti { padding: 9px 0; border-bottom: 1px solid #f1f5f9; }
 .sb-noti.unread { background: #fff7ed; margin: 0 -8px; padding: 9px 8px; }
 .sb-noti pre { white-space: pre-wrap; font-family: inherit; margin: 4px 0 0; font-size: 13px; color: #334155; }
+
+/* ===== 修复：项目页被标签栏撑宽，右侧内容被裁掉 =====
+   外层是 flex 容器，子元素默认 min-width:auto，会被横向很长的标签栏撑开；这里让它们可以收缩，标签栏自己横向滚动。 */
+.main-container > .view, #project-detail-view, #project-detail-container { min-width: 0; max-width: 100%; }
+#project-detail-container .project-nav { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#project-detail-container .project-nav .nav-item { flex-shrink: 0; }
+#project-subview-container { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* ===== 今日现场安排 ===== */
+.td-wrap { max-width: 980px; margin: 0 auto; padding-bottom: 60px; }
+.td-th { color: #94a3b8; font-weight: 400; font-size: .72em; margin-left: 6px; }
+.td-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.td-title { margin: 0; font-size: 22px; color: #0f172a; }
+.td-date { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.td-date input[type=date] { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff; }
+.td-sub { color: #64748b; font-size: 13px; }
+.td-menu { position: relative; }
+.td-menu > summary { list-style: none; cursor: pointer; }
+.td-menu > summary::-webkit-details-marker { display: none; }
+.td-menu.inline { display: inline-block; }
+.td-pop { position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.15); z-index: 50; min-width: 230px; padding: 4px; }
+.td-pop a { display: block; padding: 10px 12px; color: #1e293b; text-decoration: none; border-radius: 7px; font-size: 14px; }
+.td-pop a:hover { background: #f1f5f9; }
+.td-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.td-stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; }
+.td-stat b { display: block; font-size: 26px; color: #0f172a; line-height: 1.1; }
+.td-stat span { font-size: 12px; color: #64748b; }
+.td-stat.hot { border-color: #2563eb; background: #eff6ff; }
+.td-stat.hot b { color: #1d4ed8; }
+.td-tip { color: #64748b; font-size: 13px; margin-bottom: 8px; }
+.td-warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; padding: 9px 12px; border-radius: 10px; font-size: 14px; margin-bottom: 8px; }
+.td-banner { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; }
+.td-sec { margin: 22px 0 0; }
+.td-sec > h3, .td-sum { margin: 0 0 10px; font-size: 17px; color: #0f172a; display: flex; align-items: center; gap: 8px; cursor: default; }
+.td-sum { cursor: pointer; font-weight: 600; }
+.td-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 13px; flex-shrink: 0; }
+.td-count { color: #64748b; font-size: 13px; font-weight: 400; }
+.td-empty { text-align: center; padding: 22px 12px; color: #64748b; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; font-size: 14px; line-height: 1.7; }
+.td-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.td-card.doing { border-left: 5px solid #f59e0b; }
+.td-card.paused { border-left-color: #94a3b8; background: #f8fafc; }
+.td-card.ready { border-left: 5px solid #2563eb; }
+.td-top { display: flex; align-items: flex-start; gap: 10px; }
+.td-grow { flex: 1; min-width: 0; }
+.td-name { font-size: 16px; color: #0f172a; }
+.td-pct { font-size: 20px; font-weight: 700; color: #b45309; }
+.td-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.td-bar i { display: block; height: 100%; background: #f59e0b; border-radius: 4px; }
+.td-people { margin: 6px 0; min-height: 26px; }
+.td-suggest { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 8px 10px; margin: 8px 0 4px; font-size: 14px; color: #166534; }
+.td-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.td-actions .sb-btn { min-height: 40px; padding: 8px 14px; }
+.td-chip { display: inline-block; background: #f1f5f9; border-radius: 14px; padding: 3px 11px; font-size: 13px; color: #334155; margin: 2px 4px 2px 0; text-decoration: none; }
+.td-chip a { color: #991b1b; text-decoration: none; margin-left: 2px; }
+.td-chip.skilled { background: #dbeafe; color: #1e40af; }
+.td-chip.free { background: #dcfce7; color: #166534; }
+.td-chip.off { background: #fee2e2; color: #991b1b; text-decoration: line-through; }
+.td-chip.big { padding: 9px 16px; font-size: 15px; border-radius: 22px; margin: 4px 6px 4px 0; cursor: pointer; border: 1px solid transparent; }
+.td-chip.big:hover { border-color: #94a3b8; }
+.td-tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 6px; background: #f1f5f9; color: #475569; margin-left: 4px; }
+.td-tag.warn { background: #fef3c7; color: #92400e; }
+.td-tag.gray { background: #e2e8f0; color: #475569; }
+.td-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 6px; }
+.td-row.wait { border-left: 4px solid #cbd5e1; }
+.td-link { color: #b45309; font-size: 13px; text-decoration: none; white-space: nowrap; }
+.td-link:hover { text-decoration: underline; }
+.td-grp { margin: 6px 0; }
+.td-grp > summary { cursor: pointer; padding: 8px 4px; font-weight: 600; color: #334155; }
+.td-pickrow { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; }
+
+/* 手机和窄屏 */
+@media (max-width: 720px) {
+  .td-summary { grid-template-columns: repeat(2, 1fr); }
+  .td-title { font-size: 19px; }
+  .td-actions .sb-btn { flex: 1 1 auto; justify-content: center; }
+  .td-pop { right: auto; left: 0; }
+  .td-row { flex-wrap: wrap; }
+}

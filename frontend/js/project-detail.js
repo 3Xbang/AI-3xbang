@@ -2,7 +2,7 @@
 const ProjectDetail = {
     projectId: null,
     project: null,
-    currentView: 'overview', // overview, tasks, processes, materials, photos, settings
+    currentView: 'site', // site(今日现场安排), processes, overview, materials, photos, settings
 
     // 初始化项目详情
     async init(projectId) {
@@ -20,7 +20,7 @@ const ProjectDetail = {
         }
         
         this.render();
-        this.showSubView('overview');
+        this.showSubView('site');
         if (typeof SiteNotify !== 'undefined') SiteNotify.refreshCount();
     },
 
@@ -69,25 +69,20 @@ const ProjectDetail = {
 
             <!-- 项目导航 -->
             <div class="project-nav">
-                <button class="nav-item ${this.currentView === 'overview' ? 'active' : ''}" 
-                        onclick="ProjectDetail.showSubView('overview')">
-                    <span class="nav-icon">📊</span>
-                    <span class="nav-label">${"项目概览 ภาพรวมโครงการ"}</span>
-                </button>
-                <button class="nav-item ${this.currentView === 'tasks' ? 'active' : ''}" 
-                        onclick="ProjectDetail.showSubView('tasks')">
-                    <span class="nav-icon">📋</span>
-                    <span class="nav-label">${"今日任务 งานวันนี้"}</span>
-                </button>
                 <button class="nav-item ${this.currentView === 'site' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('site')">
                     <span class="nav-icon">🏗️</span>
-                    <span class="nav-label">${"现场安排 จัดงานหน้างาน"}</span>
+                    <span class="nav-label">${"今日现场安排 จัดงานวันนี้"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'processes' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('processes')">
                     <span class="nav-icon">🔧</span>
                     <span class="nav-label">${"工序进度 ความคืบหน้างาน"}</span>
+                </button>
+                <button class="nav-item ${this.currentView === 'overview' ? 'active' : ''}" 
+                        onclick="ProjectDetail.showSubView('overview')">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">${"项目概览 ภาพรวมโครงการ"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'materials' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('materials')">
@@ -161,7 +156,7 @@ const ProjectDetail = {
 
     // 获取视图索引
     getViewIndex(viewName) {
-        const views = ['overview', 'tasks', 'site', 'processes', 'materials', 'photos', 'settings'];
+        const views = ['site', 'processes', 'overview', 'materials', 'photos', 'settings'];
         return views.indexOf(viewName) + 1;
     },
 

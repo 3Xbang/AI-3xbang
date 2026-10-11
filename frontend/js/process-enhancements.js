@@ -5,8 +5,14 @@ if (typeof app !== 'undefined') {
     // 保存原始的renderProcesses函数
     app._originalRenderProcesses = app.renderProcesses;
     
+    // 存储当前加载的工序列表（用于快速访问）
+    app._currentProcesses = [];
+    
     // 替换renderProcesses函数以使用新设计
     app.renderProcesses = function(processes) {
+        // 保存工序列表供其他函数使用
+        app._currentProcesses = processes || [];
+        
         const container = document.getElementById('processes-list');
         
         // 添加工序管理头部（如果有权限）
@@ -115,7 +121,7 @@ if (typeof app !== 'undefined') {
                     </div>
                     <div class="process-actions">
                         ${actionButtons}
-                        <button class="btn-quantity" onclick="app.showQuantityInput(${JSON.stringify(process).replace(/"/g, '&quot;')})">
+                        <button class="btn-quantity" onclick="app.showQuantityInputById(${process.id})" data-process-id="${process.id}">
                             📊 工程量
                         </button>
                         <button class="btn-toggle-subtasks" onclick="app.toggleSubtasksInline(${process.id})">
@@ -864,4 +870,19 @@ console.log('✓ 工序进度页面增强功能已加载');
         } finally {
             this.hideLoading();
         }
+    };
+    
+    // 通过ID显示工程量输入（新增的包装函数）
+    app.showQuantityInputById = async function(processId) {
+        // 从缓存的工序列表中查找
+        const process = app._currentProcesses.find(p => p.id === processId);
+        
+        if (!process) {
+            console.error('Process not found:', processId);
+            this.showToast('工序不存在', 'error');
+            return;
+        }
+        
+        // 调用原有的 showQuantityInput 函数
+        await this.showQuantityInput(process);
     };

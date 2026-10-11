@@ -199,3 +199,5 @@ details[open] > .td-sum::before { content: '▾'; }
 .sb-skill-num input { width:64px; padding:6px 8px; border:1.5px solid #cbd5e1; border-radius:8px; text-align:center; font-size:15px; font-weight:600; }
 .sb-skill-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
 @media (max-width: 640px) { .sb-skill-grid { grid-template-columns: 1fr; } }
+.sb-skill-num input { width:54px !important; padding:5px 6px; }
+.sb-skill-num { padding-right:4px; }

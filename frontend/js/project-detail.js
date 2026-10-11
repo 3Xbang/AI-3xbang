@@ -1,4 +1,4 @@
-// 项目详情页面 - 进入项目后的主界面
+﻿// 项目详情页面 - 进入项目后的主界面
 const ProjectDetail = {
     projectId: null,
     project: null,
@@ -21,6 +21,7 @@ const ProjectDetail = {
         
         this.render();
         this.showSubView('overview');
+        if (typeof SiteNotify !== 'undefined') SiteNotify.refreshCount();
     },
 
     // 加载项目信息
@@ -58,6 +59,7 @@ const ProjectDetail = {
                     </div>
                 </div>
                 <div class="header-right">
+                    <button class="sb-btn" onclick="SiteNotify.open(${this.projectId})" title="通知 การแจ้งเตือน">🔔<span id="sb-bell-count" class="sb-badge" style="display:none"></span></button>
                     <div class="project-progress-mini">
                         <span>进度 ความคืบหน้า: </span>
                         <strong>${Math.round(this.project.progress || 0)}%</strong>
@@ -76,6 +78,11 @@ const ProjectDetail = {
                         onclick="ProjectDetail.showSubView('tasks')">
                     <span class="nav-icon">📋</span>
                     <span class="nav-label">${"今日任务 งานวันนี้"}</span>
+                </button>
+                <button class="nav-item ${this.currentView === 'site' ? 'active' : ''}" 
+                        onclick="ProjectDetail.showSubView('site')">
+                    <span class="nav-icon">🏗️</span>
+                    <span class="nav-label">${"现场安排 จัดงานหน้างาน"}</span>
                 </button>
                 <button class="nav-item ${this.currentView === 'processes' ? 'active' : ''}" 
                         onclick="ProjectDetail.showSubView('processes')">
@@ -130,6 +137,10 @@ const ProjectDetail = {
                 container.innerHTML = '<div id="daily-tasks-container"></div>';
                 await this.loadDailyTasks();
                 break;
+            case 'site':
+                container.innerHTML = '<div id="site-board-container"></div>';
+                await SiteBoard.init(this.projectId);
+                break;
             case 'processes':
                 container.innerHTML = '<div id="processes-list" class="process-timeline"></div>';
                 await this.loadProcesses();
@@ -150,7 +161,7 @@ const ProjectDetail = {
 
     // 获取视图索引
     getViewIndex(viewName) {
-        const views = ['overview', 'tasks', 'processes', 'materials', 'photos', 'settings'];
+        const views = ['overview', 'tasks', 'site', 'processes', 'materials', 'photos', 'settings'];
         return views.indexOf(viewName) + 1;
     },
 
@@ -221,22 +232,22 @@ const ProjectDetail = {
 
     // 加载概览数据
     async loadOverviewData() {
+        // 数据返回时用户可能已经切到别的标签，元素不在了就跳过，不报错
+        const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
         try {
             // 加载工序统计
             const processResult = await api.processes.getList(this.projectId);
             if (processResult.success) {
                 const processes = processResult.data;
-                document.getElementById('overview-processes').textContent = processes.length;
-                document.getElementById('overview-completed').textContent = 
-                    processes.filter(p => p.status === 'completed').length;
-                document.getElementById('overview-inprogress').textContent = 
-                    processes.filter(p => p.status === 'in_progress').length;
+                setText('overview-processes', processes.length);
+                setText('overview-completed', processes.filter(p => p.status === 'completed').length);
+                setText('overview-inprogress', processes.filter(p => p.status === 'in_progress').length);
             }
 
             // 加载团队成员统计
             const membersResult = await api.getProjectMembers(this.projectId);
             if (membersResult.success) {
-                document.getElementById('overview-members').textContent = membersResult.data.length;
+                setText('overview-members', membersResult.data.length);
             }
         } catch (error) {
             console.error('Load overview data error:', error);
@@ -289,6 +300,11 @@ const ProjectDetail = {
                     <button class="btn btn-secondary" onclick="projectMembers.showMembersModal(${this.projectId}, '${getI18nField(this.project, 'name')}')">
                         <span>👥</span> ${t('projects.membersManagement')}
                     </button>
+                </div>
+                <div class="settings-section" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
+                    <button class="btn btn-secondary" onclick="SiteProfile.open(${this.projectId})"><span>📝</span> 项目申请表 แบบฟอร์มโครงการ</button>
+                    <button class="btn btn-secondary" onclick="SiteTeam.open(${this.projectId})"><span>🧰</span> 团队名册 ทีมงาน</button>
+                    <button class="btn btn-secondary" onclick="SiteBoard.showOverrides(${this.projectId})"><span>📋</span> 提前开始记录 บันทึกการเริ่มก่อน</button>
                 </div>
             </div>
         `;

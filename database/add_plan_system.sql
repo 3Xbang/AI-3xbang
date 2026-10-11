@@ -70,3 +70,12 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(to_user_id, read_at, created_at);
 
 SELECT 'plan system schema ready' AS status;
+
+-- 8. workers 原来没有外键，删除项目时成员记录会留下垃圾数据。先清理已没有所属项目的记录，再补级联外键。
+DELETE FROM workers WHERE project_id NOT IN (SELECT id FROM projects);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'workers_project_id_fkey') THEN
+    ALTER TABLE workers ADD CONSTRAINT workers_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+  END IF;
+END $$;

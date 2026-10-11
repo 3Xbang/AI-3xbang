@@ -33,7 +33,10 @@ async function apiRequest(endpoint, options = {}) {
                 localStorage.removeItem('authToken');
                 window.location.reload();
             }
-            throw new Error(data.message || 'Request failed');
+            const err = new Error(data.message || 'Request failed');
+            err.status = response.status;   // 页面可据此识别「前置没满足」(409) 等情况
+            err.data = data;
+            throw err;
         }
 
         return data;

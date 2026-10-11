@@ -481,8 +481,11 @@ if (typeof app !== 'undefined') {
             'STR-02-06': [ // 梁板混凝土浇筑
                 { key: 'volume', label: '混凝土体积', unit: 'm³', required: true }
             ],
-            'STR-02-07': [ // 楼梯施工（按楼梯投影面积计算）
-                { key: 'area', label: '楼梯面积', unit: 'm²', required: true }
+            'STR-02-07': [ // 楼梯施工（按台阶数+尺寸）
+                { key: 'steps', label: '台阶数量 จำนวนขั้นบันได', unit: '步', required: true, placeholder: '如：18' },
+                { key: 'width', label: '楼梯宽度 ความกว้างบันได', unit: 'm', required: true, placeholder: '如：1.2' },
+                { key: 'step_depth', label: '踏步深度（进深）ความลึกขั้นบันได', unit: 'cm', required: true, placeholder: '如：30' },
+                { key: 'step_height', label: '踏步高度（踢面高）ความสูงขั้นบันได', unit: 'cm', required: true, placeholder: '如：17' }
             ],
             'STR-02-08': [ // 屋面结构层
                 { key: 'area', label: '面积', unit: 'm²', required: true }
@@ -1080,6 +1083,10 @@ console.log('✓ 工序进度页面增强功能已加载');
             } else if (measurements.area) {
                 plannedQuantity = measurements.area;
                 if (!quantityUnit) quantityUnit = 'm²';
+            } else if (measurements.steps) {
+                // 楼梯：按台阶数计算
+                plannedQuantity = measurements.steps;
+                if (!quantityUnit) quantityUnit = '步';
             } else if (measurements.count) {
                 plannedQuantity = measurements.count;
                 if (!quantityUnit) quantityUnit = fields.find(f => f.key === 'count')?.unit || '个';

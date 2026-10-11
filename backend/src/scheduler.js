@@ -1,4 +1,4 @@
-// 排程：在先后关系 + 工种班组数量限制下，逐个工作日排出每个任务的开始/完成，
+﻿// 排程：在先后关系 + 工种班组数量限制下，逐个工作日排出每个任务的开始/完成，
 // 以及每天每个工种用了几个班组、多少人、哪些任务在排队等班组。
 // 时间单位是「工作日」序号（第 1 天、第 2 天……），日历日期由 workingDayToDate 换算。
 //
@@ -10,7 +10,9 @@ const { getQuota } = require('./process-quota');
 const EPS = 1e-9;
 
 function schedule(plan, opts) {
-  const { quantities, crews } = opts;
+  const { quantities } = opts;
+  const crews = Object.assign({}, opts.crews);               // 复制一份，宽松模式下会补默认班组
+  const assumedCrews = new Set();
   const maxCrews = opts.maxCrewsPerTask || 2;
   const maxDays = opts.maxDays || 1500;
 
@@ -26,9 +28,16 @@ function schedule(plan, opts) {
     };
     if (q.kind === 'work') {
       const qty = quantities[t.key];
-      if (!(qty > 0)) throw new Error('缺少工程量：' + t.key);
-      if (!(crews[q.trade] > 0)) throw new Error('没有配置该工种的班组：' + q.trade + '（' + t.key + '）');
-      o.qty = qty; o.total = qty / q.output; o.crewSize = q.crew.skilled + q.crew.helper;
+      if (!(crews[q.trade] > 0)) {
+        if (!opts.lenient) throw new Error('没有配置该工种的班组：' + q.trade + '（' + t.key + '）');
+        crews[q.trade] = 1; assumedCrews.add(q.trade);        // 宽松模式：团队里没有这个工种，先按 1 个标准班组估算
+      }
+      if (!(qty > 0)) {
+        if (!opts.lenient) throw new Error('缺少工程量：' + t.key);
+        o.kind = 'fixed'; o.assumedQty = true; o.total = opts.defaultDays || 2;   // 宽松模式：没有工程量，先按固定天数估算
+      } else {
+        o.qty = qty; o.total = qty / q.output; o.crewSize = q.crew.skilled + q.crew.helper;
+      }
     } else {
       o.total = q.days;
     }
@@ -129,7 +138,7 @@ function schedule(plan, opts) {
   });
   const headcounts = daily.map(r => r.headcount);
   return {
-    finishDay, tasks, daily, util,
+    finishDay, tasks, daily, util, assumedCrews: Array.from(assumedCrews), crewsUsed: crews,
     peakHeadcount: Math.max(...headcounts),
     avgHeadcount: headcounts.reduce((a, b) => a + b, 0) / headcounts.length,
     maxConcurrent: Math.max(...daily.map(r => r.running.length)),

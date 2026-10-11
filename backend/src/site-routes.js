@@ -276,6 +276,12 @@ router.get('/projects/:projectId/site-board', authenticate, requireProjectAccess
   res.json({ success: true, data });
 }));
 
+// 预计工期与人员配置：每道工序要几个班组、几个大工几个普工、预计几天；整体预计完工日
+router.get('/projects/:projectId/estimate', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const data = await S.buildEstimate(pool, req.params.projectId);
+  res.json({ success: true, data });
+}));
+
 // 工头给今天派人：{ date, assignments: { 工序id: [工人id] } }（整天覆盖）
 router.put('/projects/:projectId/site-assignments', authenticate, requireProjectAccess(), wrap(async (req, res) => {
   const projectId = Number(req.params.projectId);

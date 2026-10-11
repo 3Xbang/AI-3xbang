@@ -294,6 +294,91 @@ async function buildBoard(client, projectId, dateISO) {
   };
 }
 
+// ================= 预计工期与人员配置 =================
+// 按“当前团队 + 已有工程量”排一遍计划：每道工序要几个班组、每班几个大工几个普工、预计几天、哪天开始哪天完成。
+// 缺工程量的工序按 2 天估算，团队里没有的工种按 1 个标准班组估算，结果里都会标出来（assumed），不会假装是准的。
+const { schedule, workingDayToDate } = require('./scheduler');
+const { getQuota } = require('./process-quota');
+const { crewsFromTeam } = require('./advisor');
+
+async function loadMembers(client, projectId) {
+  const rows = (await client.query(
+    `SELECT worker_id, name, level, skills FROM workers WHERE project_id = $1 AND status = 'active' ORDER BY worker_id`, [projectId])).rows;
+  return rows.map(w => {
+    const level = w.level === 'skilled' ? 'skilled' : 'helper';
+    let skills = Array.isArray(w.skills) ? w.skills : [];
+    if (level === 'helper' && !skills.length) skills = ['*'];
+    return { id: w.worker_id, name: w.name, level, skills };
+  });
+}
+
+async function buildEstimate(client, projectId) {
+  const L = await loadPlanState(client, projectId);
+  if (!L.planned) return { planned: false };
+  const members = await loadMembers(client, projectId);
+  const crews = crewsFromTeam({ members });
+  const maxCrews = 2;
+  const res = schedule(L.plan, { quantities: L.quantities, crews, lenient: true, defaultDays: 2, maxCrewsPerTask: maxCrews });
+  const byKey = new Map(res.tasks.map(o => [o.key, o]));
+  const startISO = L.startISO;
+  const dateOf = d => (d ? workingDayToDate(startISO, d) : null);
+  const skilledOf = tr => members.filter(m => m.level === 'skilled' && m.skills.includes(tr)).length;
+  const helperOf = tr => members.filter(m => m.level === 'helper' && (m.skills.includes('*') || m.skills.includes(tr))).length;
+
+  const tasks = L.plan.tasks.map(t => {
+    const q = getQuota(t.code, L.plan.profile);
+    const o = byKey.get(t.key);
+    const out = {
+      key: t.key, execId: L.execByKey.get(t.key), code: t.code, floor: t.floor, name: t.zh,
+      kind: q.kind, startDay: o.start, finishDay: o.finish, startDate: dateOf(o.start), finishDate: dateOf(o.finish),
+      assumedQty: !!o.assumedQty, placeholder: !!q.placeholder
+    };
+    if (q.kind === 'work') {
+      const sk = skilledOf(q.trade), hp = helperOf(q.trade);
+      const bySk = q.crew.skilled ? Math.floor(sk / q.crew.skilled) : Infinity;
+      const byHp = q.crew.helper ? Math.floor(hp / q.crew.helper) : Infinity;
+      const can = Math.min(bySk, byHp);
+      const avail = can === Infinity ? 0 : can;
+      const use = Math.max(1, Math.min(maxCrews, avail));
+      const qty = L.quantities[t.key];
+      const workload = qty > 0 ? qty / q.output : null;     // 班组·天
+      Object.assign(out, {
+        trade: q.trade, crewStd: { skilled: q.crew.skilled, helper: q.crew.helper },
+        crewsUsed: use, people: { skilled: use * q.crew.skilled, helper: use * q.crew.helper },
+        crewsAvailable: avail, shortage: avail < 1,
+        shortageText: avail >= 1 ? null : (q.crew.skilled && sk < q.crew.skilled
+          ? `团队里会「${(TRADES[q.trade] || {}).zh || q.trade}」的大工不够（需要 ${q.crew.skilled} 个，现有 ${sk} 个）`
+          : `普工不够（每班需要 ${q.crew.helper} 个，现有 ${hp} 个）`),
+        qty: qty > 0 ? qty : null, unit: q.unit, output: q.output,
+        workloadCrewDays: workload,
+        estDays: workload ? Math.max(1, Math.ceil(workload / use - 1e-9)) : null
+      });
+    } else {
+      out.estDays = q.days;
+    }
+    return out;
+  });
+
+  const proj = (await client.query(`SELECT to_char(planned_end_date, 'YYYY-MM-DD') AS e FROM projects WHERE id = $1`, [projectId])).rows[0];
+  const finishDate = dateOf(res.finishDay);
+  const byTrade = Object.keys(res.util).map(tr => ({
+    trade: tr, name: (TRADES[tr] || {}).zh || tr, crews: res.util[tr].crews, assumed: res.assumedCrews.includes(tr),
+    busyCrewDays: Math.round(res.util[tr].busyCrewDays * 10) / 10, firstDay: res.util[tr].firstDay, lastDay: res.util[tr].lastDay
+  })).filter(x => x.busyCrewDays > 0).sort((a, b) => b.busyCrewDays - a.busyCrewDays);
+
+  return {
+    planned: true, startDate: startISO, finishDay: res.finishDay, finishDate, plannedEnd: proj ? proj.e : null,
+    lateDays: proj && proj.e && finishDate ? Math.round((new Date(finishDate) - new Date(proj.e)) / 86400000) : null,
+    peakHeadcount: res.peakHeadcount, avgHeadcount: Math.round(res.avgHeadcount),
+    assumed: {
+      missingQty: tasks.filter(t => t.assumedQty).length,
+      missingCrewTrades: res.assumedCrews.map(tr => (TRADES[tr] || {}).zh || tr),
+      noTeam: members.length === 0
+    },
+    byTrade, tasks
+  };
+}
+
 // ================= 开始工序：把关 + 提前开始的记录与通知 =================
 async function userName(client, userId) {
   const r = await client.query('SELECT username, full_name FROM users WHERE id = $1', [userId]);
@@ -354,5 +439,5 @@ async function startProcess(client, execId, user, forceReason, dateISO) {
 
 module.exports = {
   HttpError, TRADES, DEFAULT_PROFILE,
-  getProfile, saveProfile, previewPlan, applyPlan, loadPlanState, buildBoard, startProcess, notifyManagers, userName
+  getProfile, saveProfile, previewPlan, applyPlan, loadPlanState, buildBoard, buildEstimate, startProcess, notifyManagers, userName
 };

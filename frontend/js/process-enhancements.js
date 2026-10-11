@@ -481,8 +481,8 @@ if (typeof app !== 'undefined') {
             'STR-02-06': [ // 梁板混凝土浇筑
                 { key: 'volume', label: '混凝土体积', unit: 'm³', required: true }
             ],
-            'STR-02-07': [ // 楼梯施工
-                { key: 'count', label: '楼梯数量', unit: '段', required: true }
+            'STR-02-07': [ // 楼梯施工（按楼梯投影面积计算）
+                { key: 'area', label: '楼梯面积', unit: 'm²', required: true }
             ],
             'STR-02-08': [ // 屋面结构层
                 { key: 'area', label: '面积', unit: 'm²', required: true }
@@ -579,15 +579,15 @@ if (typeof app !== 'undefined') {
                 { key: 'area', label: '涂刷面积', unit: 'm²', required: true }
             ],
             
-            // 门窗类
+            // 门窗类（注意：数据库单位统一使用"樘"）
             'DOR-05-01': [ // 门窗框安装
                 { key: 'count', label: '门窗数量', unit: '樘', required: true }
             ],
             'DOR-05-02': [ // 门扇安装
-                { key: 'count', label: '门扇数量', unit: '扇', required: true }
+                { key: 'count', label: '门数量', unit: '樘', required: true }
             ],
             'DOR-05-03': [ // 窗扇安装
-                { key: 'count', label: '窗扇数量', unit: '扇', required: true }
+                { key: 'count', label: '窗数量', unit: '樘', required: true }
             ],
             'DOR-05-04': [ // 玻璃安装
                 { key: 'area', label: '玻璃面积', unit: 'm²', required: true }
@@ -625,21 +625,21 @@ if (typeof app !== 'undefined') {
                 { key: 'count', label: '灯具数量', unit: '盏', required: true }
             ],
             
-            // 防水类
+            // 卫浴类（注意：数据库单位统一使用"套"）
             'SAN-07-01': [ // 卫生间防水
                 { key: 'area', label: '防水面积', unit: 'm²', required: true }
             ],
             'SAN-07-02': [ // 卫生洁具安装
-                { key: 'count', label: '洁具数量', unit: '件', required: true }
+                { key: 'count', label: '洁具数量', unit: '套', required: true }
             ],
             'SAN-07-03': [ // 淋浴房安装
-                { key: 'count', label: '淋浴房数量', unit: '间', required: true }
+                { key: 'count', label: '淋浴房数量', unit: '套', required: true }
             ],
             'N07_WATERPROOF': [ // 防水工程
                 { key: 'area', label: '防水面积', unit: 'm²', required: true }
             ],
             'N14_SANITARY': [ // 洁具安装
-                { key: 'count', label: '洁具数量', unit: '件', required: true }
+                { key: 'count', label: '洁具数量', unit: '套', required: true }
             ],
             
             // 厨房类
@@ -701,7 +701,9 @@ if (typeof app !== 'undefined') {
             result = `<div>工程量：<strong style="color: #0066cc; font-size: 18px;">${calculatedValue.toFixed(2)}</strong> ${unit}</div>`;
         } else if (values.count) {
             calculatedValue = values.count;
-            unit = '个';
+            // 根据工序代码获取正确的单位，而不是硬编码"个"
+            const field = fields.find(f => f.key === 'count');
+            unit = field ? field.unit : '个';
             result = `<div>工程量：<strong style="color: #0066cc; font-size: 18px;">${calculatedValue}</strong> ${unit}</div>`;
         }
         

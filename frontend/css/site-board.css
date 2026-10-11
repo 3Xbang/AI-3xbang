@@ -162,3 +162,28 @@ details[open] > .td-sum::before { content: '▾'; }
 .sb-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
 .sb-table th, .sb-table td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; vertical-align: top; }
 .sb-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+
+/* ---------- 项目准备 ---------- */
+.pp-wrap { max-width: 860px; margin: 0 auto; padding: 4px 4px 24px; }
+.pp-banner { border-radius: 10px; padding: 12px 14px; margin: 10px 0 14px; font-size: 14px; line-height: 1.6; }
+.pp-banner.ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+.pp-banner.todo { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
+.pp-step { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.pp-step.done { border-left-color: #10b981; }
+.pp-step.todo { border-left-color: #f59e0b; }
+.pp-num { flex: 0 0 30px; height: 30px; border-radius: 50%; background: #e2e8f0; color: #334155; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.pp-step.done .pp-num { background: #10b981; color: #fff; }
+.pp-step.todo .pp-num { background: #f59e0b; color: #fff; }
+.pp-main { flex: 1; min-width: 0; }
+.pp-title { font-weight: 600; font-size: 15px; color: #0f172a; }
+.pp-title small { color: #64748b; font-weight: 400; margin-left: 4px; }
+.pp-why { color: #475569; font-size: 13px; margin-top: 4px; }
+.pp-detail { color: #0f172a; font-size: 13px; margin-top: 6px; background: #f8fafc; border-radius: 6px; padding: 4px 8px; display: inline-block; }
+.pp-chip { font-size: 12px; border-radius: 999px; padding: 1px 8px; margin-left: 6px; font-weight: 500; }
+.pp-chip.ok { background: #d1fae5; color: #065f46; }
+.pp-chip.todo { background: #fef3c7; color: #92400e; }
+.pp-chip.later { background: #e2e8f0; color: #475569; }
+.pp-act { flex: 0 0 auto; text-align: right; }
+.pp-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; max-width: 150px; }
+.pp-step .sb-btn[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 560px) { .pp-step { flex-wrap: wrap; } .pp-act { flex: 1 1 100%; text-align: left; } }

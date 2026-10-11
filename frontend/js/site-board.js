@@ -298,7 +298,8 @@
                     busy(false);
                     d.close(); parent.close();
                     toast(`已生成：新增 ${r.data.added} 个，移除 ${r.data.removed} 个 สร้างเรียบร้อย`);
-                    if (window.ProjectDetail) await ProjectDetail.showSubView('site');
+                    if (window.ProjectDetail && ProjectDetail.currentView !== 'prepare') await ProjectDetail.showSubView('site');
+                    if (window.ProjectDetail && ProjectDetail.currentView === 'prepare') return;
                     try {
                         const tr = await call('GET', `/projects/${projectId}/team`);
                         const n = (tr.data && (tr.data.members || tr.data)) || [];
@@ -361,13 +362,10 @@
         head() {
             const d = this.data;
             const menu = `<details class="td-menu"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
-                `<a href="#" data-menu="team">👥 施工团队与工种 ทีมงานและประเภทช่าง</a>` +
-                (isManager() ? `<a href="#" data-menu="profile">📝 项目申请表 แบบฟอร์มโครงการ</a>` : '') +
-                (isManager() ? `<a href="#" data-menu="boq">📥 导入工程量清单 นำเข้า BOQ</a>` : '') +
-                `<a href="#" data-menu="overrides">📋 提前开始记录 บันทึกการเริ่มก่อน</a>` +
+                (isManager() ? `<a href="#" data-menu="prepare">📝 项目准备 เตรียมโครงการ</a>` : '') +
                 `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
                 `<a href="#" data-menu="refresh">🔄 刷新 รีเฟรช</a></div></details>`;
-            return `<div class="td-head"><div><h2 class="td-title">今日现场安排 <small class="td-th">จัดงานหน้างานวันนี้</small></h2>` +
+            return `<div class="td-head"><div><h2 class="td-title">今日现场 <small class="td-th">หน้างานวันนี้</small></h2>` +
                 `<div class="td-date"><input type="date" id="td-date" value="${esc(this.date || '')}">` +
                 (d && d.planned ? `<span class="td-sub">第 ${d.workingDay} 个工作日（周日休息）</span>` : '') + `</div></div>${menu}</div>`;
         },
@@ -389,7 +387,7 @@
             const doing = rows.filter(r => ['in_progress', 'waiting_material', 'weather_stop'].includes(r.status)).map(item);
             const todo = rows.filter(r => !r.status || r.status === 'not_started').map(item);
             let html = `<div class="td-banner">这个项目还没有按申请表生成工序，下面是原来的工序。` +
-                (isManager() ? ` <button class="sb-btn primary small" data-menu="profile">填写项目申请表并生成 สร้างงานจากแบบฟอร์ม</button>` : '') + `</div>`;
+                (isManager() ? ` <button class="sb-btn primary small" data-menu="prepare">去「项目准备」填写申请表并生成 สร้างงานจากแบบฟอร์ม</button>` : '') + `</div>`;
             html += `<section class="td-sec"><h3>${bi('正在做', 'กำลังทำ')} <span class="td-count">${doing.length}</span></h3>` +
                 (doing.length ? doing.map(x => this.cardDoing(x, false)).join('') : '<div class="td-empty">暂无</div>') + `</section>`;
             html += `<section class="td-sec"><h3>${bi('还没开始', 'ยังไม่เริ่ม')} <span class="td-count">${todo.length}</span></h3>` +
@@ -412,7 +410,7 @@
                 html = `<div class="td-banner"><b>项目准备未完成 · 请先录入施工团队</b><br>` +
                     `需要登记：班组/工人名单、每人的工种（可会多个）、技工或普工。录入后系统才能按人员安排工作、借调和评估班组效率。<br>` +
                     `<span class="td-sub">ขั้นตอน: 1. ข้อมูลโครงการ ✓  2. ทีมงานและประเภทช่าง (ยังไม่ได้กรอก)  3. สร้างงาน ✓</span><br>` +
-                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="team">录入施工团队与工种 กรอกทีมงาน</button>` : '请联系管理者录入施工团队') + `</div>` + html;
+                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">去「项目准备」录入团队 กรอกทีมงาน</button>` : '请联系管理者录入施工团队') + `</div>` + html;
             }
             d.warnings.forEach(w => { html += `<div class="td-warn">⚠ ${esc(w.zh)}</div>`; });
 
@@ -510,7 +508,8 @@
             on('[data-menu]', el => {
                 const k = el.dataset.menu;
                 document.querySelectorAll('.td-menu[open]').forEach(m => m.removeAttribute('open'));
-                if (k === 'team') SiteTeam.open(pid);
+                if (k === 'prepare') ProjectDetail.showSubView('prepare');
+                else if (k === 'team') SiteTeam.open(pid);
                 else if (k === 'profile') SiteProfile.open(pid);
                 else if (k === 'boq') SiteBoq.open(pid);
                 else if (k === 'overrides') this.showOverrides(pid);
@@ -761,7 +760,7 @@
                     busy(false);
                     d.close();
                     toast(`已写入 ${out.written} 道工序的计划数量 บันทึกปริมาณแล้ว`);
-                    if (window.SiteBoard && window.ProjectDetail) SiteBoard.refresh();
+                    if (window.SiteBoard && window.ProjectDetail && ProjectDetail.currentView === 'site') SiteBoard.refresh();
                 } catch (e) { busy(false); toast(e.message, 'error'); }
             };
         }

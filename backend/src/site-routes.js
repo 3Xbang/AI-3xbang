@@ -282,6 +282,37 @@ router.post('/notifications/:id/read', authenticate, wrap(async (req, res) => {
   res.json({ success: true });
 }));
 
+// ---------- 项目准备完成度：前 3 步必须完成才能开工，后 2 步可以边做边补 ----------
+router.get('/projects/:projectId/readiness', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const pid = Number(req.params.projectId);
+  const prof = await S.getProfile(pool, pid);
+  const team = (await pool.query(
+    `SELECT count(*)::int AS n, count(*) FILTER (WHERE level = 'skilled')::int AS skilled FROM workers WHERE project_id = $1 AND status = 'active'`, [pid])).rows[0];
+  const tasks = (await pool.query(
+    `SELECT count(*)::int AS total,
+            count(*) FILTER (WHERE COALESCE(pe.quantity_unit, '') <> '项')::int AS countable,
+            count(*) FILTER (WHERE COALESCE(pe.quantity_unit, '') <> '项' AND pe.planned_quantity > 0)::int AS with_qty
+       FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id = pn.id
+      WHERE pn.project_id = $1 AND pn.master_code IS NOT NULL`, [pid])).rows[0];
+  const accounts = (await pool.query('SELECT count(*)::int AS n FROM project_members WHERE project_id = $1', [pid])).rows[0].n;
+
+  const a = prof ? prof.answers : {};
+  const steps = [
+    { key: 'profile', required: true, done: !!prof,
+      detail: prof ? `${a.floors || '?'} 层${a.units > 1 ? `，${a.units} 套` : ''}${a.total_area ? `，约 ${a.total_area} 平方米` : ''}` : '还没有填写' },
+    { key: 'team', required: true, done: team.n > 0 && team.skilled > 0,
+      detail: team.n ? `共 ${team.n} 人，其中技工 ${team.skilled} 人` + (team.skilled ? '' : '（至少要有 1 名技工）') : '还没有录入人员' },
+    { key: 'plan', required: true, done: tasks.total > 0,
+      detail: tasks.total ? `已生成 ${tasks.total} 道工序${prof && prof.plan_generated_at ? '（' + prof.plan_generated_at + '）' : ''}` : '还没有生成工序' },
+    { key: 'quantities', required: false, done: tasks.countable > 0 && tasks.with_qty >= tasks.countable,
+      detail: tasks.total ? `${tasks.with_qty} / ${tasks.countable} 道工序已有数量（可以先开工，现场再补）` : '先生成工序' },
+    { key: 'accounts', required: false, done: accounts > 1,
+      detail: `${accounts} 个账号可以访问本项目` }
+  ];
+  const missing = steps.filter(s => s.required && !s.done).map(s => s.key);
+  res.json({ success: true, data: { steps, ready: missing.length === 0, missing } });
+}));
+
 // ---------- 导入工程量清单（Excel） ----------
 const multer = require('multer');
 const { generatePlan } = require('./process-master');

@@ -624,6 +624,7 @@
             on('[data-stat]', el => { const [s, id] = el.dataset.stat.split(':'); this.setStatus(Number(id), s); });
             on('[data-qty]', el => this.quantityDialog(Number(el.dataset.qty)));
             on('[data-subtasks]', el => { if (hasApp() && app.showSubtasks) app.showSubtasks(Number(el.dataset.subtasks)); else toast('子任务功能不可用', 'error'); });
+            on('[data-reset]', el => this.resetProcess(Number(el.dataset.reset)));
             on('[data-hist]', el => this.history(Number(el.dataset.hist)));
         },
 
@@ -777,6 +778,14 @@
             const x = this.findItem(execId);
             if (!confirm(`确认「${x ? x.label : ''}」已经全部完成？ ยืนยันว่างานเสร็จสมบูรณ์`)) return;
             await this.run(() => call('PUT', `/processes/${execId}`, { status: 'completed', completion_percentage: 100, actual_end_date: this.date || new Date().toISOString().slice(0, 10) }), '已完成 เสร็จแล้ว');
+        },
+        async resetProcess(execId) {
+            if (!confirm('确认把这道工序重置为「未开始」？状态会清零，进度数据保留。')) return;
+            await this.run(() => call('PUT', '/processes/'+execId, {
+                status: 'not_started',
+                completion_percentage: 0,
+                actual_start_date: null
+            }), '已重置 รีเซ็ตแล้ว');
         },
         async setStatus(execId, status) {
             let note = '';

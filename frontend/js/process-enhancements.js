@@ -1,4 +1,4 @@
-﻿// 工序进度页面增强功能 / Process Progress Page Enhancements
+// 工序进度页面增强功能 / Process Progress Page Enhancements
 
 // 双语文本定义 (中文 + 泰语)
 const BilingualTexts = {
@@ -38,19 +38,19 @@ if (typeof app !== 'undefined') {
         
         const container = document.getElementById('processes-list');
         
-        // 添加工序管理头部（如果有权限）
-        let header = '';
-        if (typeof PermissionManager !== 'undefined' && PermissionManager.canManageProjects()) {
-            header = `
-                <div class="processes-header">
-                    <h3>工序管理 การจัดการกระบวนการ</h3>
-                    <button class="btn btn-primary" onclick="ProcessManager.showAddProcessModal()">
-                        <span class="btn-icon">+</span>
-                        <span>添加工序 เพิ่มกระบวนการ</span>
-                    </button>
-                </div>
-            `;
-        }
+        // 工序管理头部已移除（工序通过项目申请表自动生成）
+
+
+
+
+
+
+
+
+
+
+
+
         
         if (!processes || processes.length === 0) {
             container.innerHTML = `
@@ -60,9 +60,9 @@ if (typeof app !== 'undefined') {
                     <h3>暂无工序 ยังไม่มีกระบวนการ</h3>
                     <p>请添加项目工序开始管理 โปรดเพิ่มกระบวนการเพื่อเริ่มการจัดการ</p>
                     ${PermissionManager.canManageProjects() ? `
-                        <button class="btn btn-primary btn-large" onclick="ProcessManager.showAddProcessModal()">
-                            <span class="btn-icon">+</span>
-                            <span>添加第一个工序 เพิ่มกระบวนการแรก</span>
+
+
+
                         </button>
                     ` : ''}
                 </div>
@@ -301,7 +301,7 @@ if (typeof app !== 'undefined') {
                 </div>
                 <div class="subtask-actions-inline">
                     ${!isCompleted ? `
-                        <button class="btn-xs btn-primary" onclick="app.recordSubtaskProgress(${subtask.id}, ${processExecutionId})">
+
                             记录进度 บันทึกความคืบหน้า
                         </button>
                     ` : `

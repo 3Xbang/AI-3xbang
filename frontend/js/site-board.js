@@ -517,6 +517,8 @@
             const estLine = est && est.kind === 'work' && est.estDays
                 ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
                 : '';
+            const dailyTarget = est && est.kind === 'work' && est.output && est.crewsUsed ? (est.output * est.crewsUsed) : null;
+            const quotaLine = dailyTarget && !paused ? `<div class="fc-quota">🎯 今日定额：<b>${dailyTarget} ${esc(est.unit||'')}</b></div>` : '';
             const statusLabel = { waiting_material: '🟡 缺材料 — 等待补料', weather_stop: '⛅ 天气停工 — 等待天气好转' }[x.workStatus] || '';
 
             return `<div class="fc-card doing ${paused ? 'paused' : ''}">
@@ -525,6 +527,7 @@
                     <div class="fc-card-pct">${pct}%</div>
                 </div>
                 <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%"></div></div>
+                ${quotaLine}
                 ${estLine || statusLabel ? `<div class="fc-card-meta">${statusLabel ? `<span class="fc-status-tag">${statusLabel}</span>` : ''}${estLine && !paused ? estLine : ''}</div>` : ''}
                 ${hasPeople ? `<div class="fc-people">${this.peopleChips(x.execId, true)}</div>` : ''}
 
@@ -730,36 +733,71 @@
 
         progressDialog(execId) {
             const x = this.findItem(execId); if (!x) return;
-            const cur = pctOf(x), hasQty = x.plannedQuantity > 0;
+            const est = this.estMap && this.estMap[x.execId];
+            const quota = est && est.kind === 'work' && est.output ? est.output : null;
+            const crews = est && est.crewsUsed ? est.crewsUsed : 1;
+            const dailyTarget = quota ? (quota * crews) : null;
+            const unit = x.unit || (est && est.unit) || '';
+            const hasQty = x.plannedQuantity > 0;
             const name = nm(x);
+
+            const targetHtml = dailyTarget
+                ? `<div class="pg-target">🎯 今日定额：<b>${dailyTarget} ${esc(unit)}</b>（${crews} 班标准量）</div>`
+                : '';
+
             const body = `
-                <div style="text-align:center;margin-bottom:16px">
-                    <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px">${name}</div>
-                    <div id="pg-display" style="font-size:64px;font-weight:900;color:#2563eb;line-height:1">${cur}%</div>
-                    <div style="font-size:13px;color:#64748b;margin-top:4px">完成了多少 ความคืบหน้า</div>
+                <div class="pg-title">${name}</div>
+                ${targetHtml}
+                <div class="pg-label">今天实际做了多少？ ทำได้เท่าไหร่วันนี้</div>
+                <div class="pg-qty-row">
+                    <input type="number" id="pg-qty" min="0" step="0.1" placeholder="0"
+                        style="flex:1;font-size:28px;font-weight:800;padding:14px;text-align:center;border:2.5px solid #bfdbfe;border-radius:12px;color:#1e3a8a">
+                    <span class="pg-unit">${esc(unit)}</span>
                 </div>
-                <input type="range" id="pg-slider" min="0" max="100" value="${cur}"
-                    style="width:100%;height:32px;cursor:pointer;accent-color:#2563eb;margin-bottom:16px">
-                <div style="display:flex;gap:8px;margin-bottom:16px">
-                    ${[25,50,75,100].map(v => `<button type="button" onclick="document.getElementById('pg-slider').value=${v};document.getElementById('pg-display').textContent='${v}%'" style="flex:1;padding:12px 4px;border-radius:10px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;font-size:15px;cursor:pointer">${v}%</button>`).join('')}
-                </div>
-                ${hasQty ? `<div style="margin-bottom:12px;font-size:13px;color:#475569">计划总量 ${x.plannedQuantity} ${esc(x.unit||'')}</div>` : ''}
-                <div class="sb-field"><label style="font-size:13px">备注 หมายเหตุ（可不填）</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
-            const dlg = overlay('填今天进度 บันทึกความคืบหน้า', body, '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 20px">✅ 保存 บันทึก</button>', true);
-            const slider = dlg.q('#pg-slider'), display = dlg.q('#pg-display');
-            slider.oninput = () => { display.textContent = slider.value + '%'; };
+                ${dailyTarget ? `
+                <div class="pg-shortcuts">
+                    <button type="button" class="pg-scut" data-v="${Math.round(dailyTarget * 0.5 * 10) / 10}">50%<br><small>${Math.round(dailyTarget * 0.5 * 10) / 10}</small></button>
+                    <button type="button" class="pg-scut pg-scut-std" data-v="${dailyTarget}">定额<br><small>${dailyTarget}</small></button>
+                    <button type="button" class="pg-scut pg-scut-over" data-v="${Math.round(dailyTarget * 1.2 * 10) / 10}">120%⚡<br><small>${Math.round(dailyTarget * 1.2 * 10) / 10}</small></button>
+                </div>` : ''}
+                ${!hasQty ? `<div class="pg-warn">工程量未录入，进度将按百分比记录</div>` : ''}
+                <div class="sb-field" style="margin-top:10px"><label style="font-size:13px">备注（可不填）หมายเหตุ</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
+
+            const dlg = overlay('今天完成了多少 บันทึกผลงานวันนี้', body,
+                '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 24px">✅ 保存</button>', true);
+
+            dlg.qa('.pg-scut').forEach(b => b.onclick = () => { dlg.q('#pg-qty').value = b.dataset.v; });
             dlg.q('[data-cancel]').onclick = dlg.close;
             dlg.q('[data-ok]').onclick = async () => {
-                const p = parseFloat(slider.value);
+                const qtyVal = parseFloat(dlg.q('#pg-qty').value);
                 const note = dlg.q('#pg-note').value.trim();
-                if (!(p >= 0 && p <= 100)) { toast('请拖动滑条选择进度', 'error'); return; }
+                if (isNaN(qtyVal) || qtyVal < 0) { toast('请填写完成的数量', 'error'); return; }
                 try {
                     busy(true);
-                    const body = { completion_percentage: p };
-                    if (p >= 100) { body.status = 'completed'; body.actual_end_date = this.date || new Date().toISOString().slice(0, 10); }
-                    if (note) body.notes = { zh: note, th: note };
-                    await call('PUT', `/processes/${execId}`, body);
-                    dlg.close(); toast('进度已记录 ✅'); await this.refresh();
+                    if (hasQty && qtyVal > 0) {
+                        // 有工程量 → 按实物量记录
+                        await call('POST', '/daily-progress', {
+                            process_execution_id: execId,
+                            quantity_completed: qtyVal,
+                            unit,
+                            work_status: 'normal',
+                            notes: note ? { zh: note, th: note } : null
+                        });
+                        if (dailyTarget && qtyVal > dailyTarget) {
+                            toast(`⚡ 超出定额！完成 ${qtyVal} ${unit}，定额 ${dailyTarget} ${unit}`, 'success');
+                        } else {
+                            toast('进度已记录 ✅');
+                        }
+                    } else {
+                        // 没有工程量 → 按百分比记录（把数量当百分比）
+                        const p = Math.min(100, Math.max(0, qtyVal));
+                        const body = { completion_percentage: p };
+                        if (p >= 100) { body.status = 'completed'; body.actual_end_date = this.date || new Date().toISOString().slice(0, 10); }
+                        if (note) body.notes = { zh: note, th: note };
+                        await call('PUT', `/processes/${execId}`, body);
+                        toast('进度已记录 ✅');
+                    }
+                    dlg.close(); await this.refresh();
                 } catch (e) { toast(e.message, 'error'); } finally { busy(false); }
             };
         },

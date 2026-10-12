@@ -307,3 +307,24 @@ body { background: var(--bg); color: var(--ink); font-family: "Noto Sans Thai", 
 .fc-more-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0; }
 .fc-more-btn { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; cursor:pointer; }
 .fc-more-btn:hover { background:#e2e8f0; color:#334155; }
+
+/* 今日定额标签（在进度条下方） */
+.fc-quota { margin: 6px 0; padding: 5px 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; font-size: 13px; color: #92400e; }
+.fc-quota b { color: #b45309; }
+
+/* 录进度弹窗 */
+.pg-title { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 10px; }
+.pg-target { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #92400e; margin-bottom: 12px; }
+.pg-target b { font-size: 18px; color: #b45309; }
+.pg-label { font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+.pg-qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.pg-unit { font-size: 20px; font-weight: 700; color: #334155; white-space: nowrap; }
+.pg-shortcuts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.pg-scut { padding: 10px 6px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #334155; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; line-height: 1.3; }
+.pg-scut:hover { background: #e2e8f0; }
+.pg-scut small { font-weight: 500; font-size: 12px; display: block; color: #64748b; margin-top: 2px; }
+.pg-scut-std { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.pg-scut-std small { color: #b45309; }
+.pg-scut-over { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.pg-scut-over small { color: #15803d; }
+.pg-warn { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 7px 10px; font-size: 13px; color: #b91c1c; margin-bottom: 8px; }

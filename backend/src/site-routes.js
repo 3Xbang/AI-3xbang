@@ -612,11 +612,8 @@ router.put('/daily-assignments/:id', authenticate, wrap(async(req,res)=>{
   if(!(await checkProjectAccess(pool,req.user.id,req.user.role,cur.project_id))) throw new S.HttpError(403,'forbidden');
   const {status,completion_note}=req.body;
   if(!['assigned','in_progress','completed'].includes(status)) throw new S.HttpError(400,'invalid status');
-  await pool.query(
-    `UPDATE daily_task_assignments SET status=$1, completion_note=$2,
-       completed_at=CASE WHEN $1::text='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
-       updated_at=CURRENT_TIMESTAMP WHERE id=$3`,
-    [status,completion_note||null,req.params.id]);
+  const ts=status==='completed'?'CURRENT_TIMESTAMP':'NULL';
+  await pool.query('UPDATE daily_task_assignments SET status=$1::text, completion_note=$2, completed_at='+ts+', updated_at=CURRENT_TIMESTAMP WHERE id=$3::int',[status,completion_note||null,Number(req.params.id)]);;
   res.json({success:true});
 }));
 

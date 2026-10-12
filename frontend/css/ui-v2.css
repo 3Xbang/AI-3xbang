@@ -418,3 +418,6 @@ tr.qr-modified { background: #fffde7; }
 
 /* Gantt Thai name */
 .gc-name-th { display:block; font-size:10px; font-weight:500; color:#94a3b8; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.gc-weight small { font-size: 9px; }
+.gc-weight { font-size: 10px !important; background: #e2e8f0 !important; color: #94a3b8 !important; border: 1px solid #cbd5e1; }

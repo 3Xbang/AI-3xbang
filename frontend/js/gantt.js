@@ -82,7 +82,7 @@ const GanttChart = {
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
                             <span class="gc-name"><b>${s.zh}</b><span class="gc-name-th">${s.th||""}</span></span>
-                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span><span class="gc-weight">${s.weight}%</span>
+                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span><span class="gc-weight"><small>造价占${s.weight}%</small></span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
                         <div class="gc-track">${bar}</div>

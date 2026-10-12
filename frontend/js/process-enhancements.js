@@ -79,7 +79,8 @@ if (typeof app !== 'undefined') {
             // 状态对应的操作按钮
             let actionButtons = '';
             if (statusClass === 'not_started') {
-                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">开始 เริ่ม</button>`;
+                actionButtons = `<button class="btn-start" onclick="app.startProcess(${process.id})">▶ 开始 เริ่ม</button>
+                    <button class="btn-complete" onclick="app.completeProcess(${process.id})" title="直接标记已完成（接手旧项目时用）" style="background:#6b7280;border-color:#6b7280">✅ 标记完成</button>`;
             } else if (statusClass === 'in_progress') {
                 actionButtons = `
                     <button class="btn-update-progress" onclick="app.showUpdateProgress(${process.id}, ${percentage})">更新进度 อัปเดตความคืบหน้า</button>

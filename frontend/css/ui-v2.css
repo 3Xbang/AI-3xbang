@@ -425,3 +425,9 @@ tr.qr-modified { background: #fffde7; }
 /* Progress label always outside bar */
 .gc-bar-ext-label { position:absolute; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; white-space:nowrap; pointer-events:none; z-index:2; }
 .gc-track { position:relative; overflow:visible; }
+
+/* Wider label column so names don't truncate */
+.gc-label-head, .gc-label { flex: 0 0 175px !important; }
+@media (max-width: 900px) { .gc-label-head, .gc-label { flex: 0 0 130px !important; } }
+.gc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+.gc-name b { font-size: 13px; }

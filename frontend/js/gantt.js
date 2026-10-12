@@ -127,8 +127,9 @@ const GanttChart = {
             if (sp != null && ep != null) {
                 const w = Math.max(0.5, ep - sp);
                 const col = t.status === 'completed' ? '#16a34a' : t.status === 'in_progress' ? '#3b82f6' : '#cbd5e1';
-                bar = '<div class="gc-bar task" style="left:'+sp+'%;width:'+w+'%;background:'+(t.status==='not_started'?'#f8fafc':col+'18')+';border:1.5px solid '+(t.status==='not_started'?'#e2e8f0':col+'80')+'"><div class="gc-bar-fill" style="width:'+t.pct+'%;background:linear-gradient(90deg,'+col+'99,'+col+'cc);border-radius:4px;"></div></div>';
+                bar = '<div class="gc-bar task" style="left:'+sp+'%;width:'+w+'%;background:#eef2ff;border:1.5px solid '+col+'80"><div class="gc-bar-fill" style="width:'+t.pct+'%;background:linear-gradient(90deg,'+col+'cc,'+col+'ee);border-radius:4px;"></div></div><span class="gc-bar-ext-label" style="left:'+(Math.min(97,sp+w+0.5))+'%;color:'+col+';font-size:11px">'+t.pct+'%</span>';
             }
+            if (!bar) bar = '<span class="gc-bar-ext-label" style="left:1%;color:#94a3b8;font-size:11px">0%</span>';
             const icon = t.status === 'completed' ? '&#x2705;' : t.status === 'in_progress' ? '&#x1F535;' : '&#x2B1C;';
             const floorTag = t.floor != null ? ' &middot; ' + t.floor + '&#23618;' : '';
             const eid = t.execId;

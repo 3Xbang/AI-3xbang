@@ -288,3 +288,22 @@ body { background: var(--bg); color: var(--ink); font-family: "Noto Sans Thai", 
     .fc-main-btn { font-size:16px; padding:14px 10px; }
     .fc-card-title { font-size:15px; }
 }
+
+/* 停工原因选择行 */
+.fc-reason-label { font-size:12px; color:#94a3b8; margin:12px 0 6px; font-weight:600; }
+.fc-reason-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:4px; }
+.fc-reason-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:12px 6px; border-radius:14px; border:2px solid; cursor:pointer; font-size:12px; font-weight:700; text-align:center; transition:all .12s; background:#fff; line-height:1.3; }
+.fc-reason-btn:active { transform:scale(.95); }
+.fc-reason-btn.material { border-color:#fde68a; color:#92400e; }
+.fc-reason-btn.material:hover { background:#fef3c7; }
+.fc-reason-btn.weather { border-color:#bae6fd; color:#0369a1; }
+.fc-reason-btn.weather:hover { background:#e0f2fe; }
+.fc-reason-btn.done { border-color:#a7f3d0; color:#065f46; }
+.fc-reason-btn.done:hover { background:#d1fae5; }
+.fc-reason-icon { font-size:24px; }
+.fc-reason-btn small { font-size:11px; font-weight:500; display:block; }
+
+/* 更多功能：小文字链接排一行，放最底部 */
+.fc-more-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0; }
+.fc-more-btn { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; cursor:pointer; }
+.fc-more-btn:hover { background:#e2e8f0; color:#334155; }

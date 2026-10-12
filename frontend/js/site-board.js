@@ -517,29 +517,48 @@
             const estLine = est && est.kind === 'work' && est.estDays
                 ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
                 : '';
-            const statusIcon = { waiting_material: '🟡 缺材料', weather_stop: '⛅ 天气停工' }[x.workStatus] || '';
+            const statusLabel = { waiting_material: '🟡 缺材料 — 等待补料', weather_stop: '⛅ 天气停工 — 等待天气好转' }[x.workStatus] || '';
+
             return `<div class="fc-card doing ${paused ? 'paused' : ''}">
                 <div class="fc-card-top">
                     <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
                     <div class="fc-card-pct">${pct}%</div>
                 </div>
                 <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%"></div></div>
-                ${estLine || statusIcon ? `<div class="fc-card-meta">${statusIcon ? `<span class="fc-status-tag">${statusIcon}</span>` : ''}${estLine}</div>` : ''}
+                ${estLine || statusLabel ? `<div class="fc-card-meta">${statusLabel ? `<span class="fc-status-tag">${statusLabel}</span>` : ''}${estLine && !paused ? estLine : ''}</div>` : ''}
                 ${hasPeople ? `<div class="fc-people">${this.peopleChips(x.execId, true)}</div>` : ''}
+
                 ${paused
                     ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ 恢复施工 กลับมาทำต่อ</button>`
                     : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 填今天进度 บันทึกความคืบหน้า</button>`
                 }
-                <div class="fc-secondary">
-                    ${!paused ? `<button class="fc-sec-btn done" data-done="${x.execId}">✅ 完成</button>` : ''}
-                    ${!paused ? `<button class="fc-sec-btn warn" data-stat="waiting_material:${x.execId}">🟡 缺材料</button>` : ''}
-                    ${!paused ? `<button class="fc-sec-btn" data-stat="weather_stop:${x.execId}">⛅ 下雨</button>` : ''}
-                    ${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 派人</button>` : ''}
-                    <button class="fc-sec-btn" data-hist="${x.execId}">📊 历史</button>
+
+                ${!paused ? `
+                <div class="fc-reason-label">遇到问题了？ มีปัญหา?</div>
+                <div class="fc-reason-row">
+                    <button class="fc-reason-btn material" data-stat="waiting_material:${x.execId}">
+                        <span class="fc-reason-icon">🟡</span>
+                        <span>缺材料<br><small>ขาดวัสดุ</small></span>
+                    </button>
+                    <button class="fc-reason-btn weather" data-stat="weather_stop:${x.execId}">
+                        <span class="fc-reason-icon">⛅</span>
+                        <span>下雨停工<br><small>หยุดเพราะฝน</small></span>
+                    </button>
+                    <button class="fc-reason-btn done" data-done="${x.execId}">
+                        <span class="fc-reason-icon">✅</span>
+                        <span>完成了<br><small>เสร็จแล้ว</small></span>
+                    </button>
+                </div>
+                ` : ''}
+
+                <div class="fc-more-row">
+                    ${planned ? `<button class="fc-more-btn" data-pick="${x.execId}">👷 派人</button>` : ''}
+                    <button class="fc-more-btn" data-qty="${x.execId}">📐 工程量</button>
+                    <button class="fc-more-btn" data-hist="${x.execId}">📊 历史</button>
+                    <button class="fc-more-btn" data-subtasks="${x.execId}">📑 子任务</button>
                 </div>
             </div>`;
         },
-
         cardReady(x, sug, planned) {
             const est = this.estMap && this.estMap[x.execId];
             const estLine = est && est.kind === 'work' && est.estDays

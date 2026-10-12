@@ -478,4 +478,56 @@ router.post('/projects/:projectId/boq/apply', authenticate, requireProjectAccess
   res.json({ success: true, data: out });
 }));
 
+// ============ 工序定额设置（仅管理者）============
+const { QUOTA } = require('./process-quota');
+const { LIB } = require('./process-master');
+
+router.get('/quotas', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  const overrides = (await pool.query('SELECT process_code, output, skilled_count, helper_count FROM quota_overrides')).rows;
+  const ovMap = Object.fromEntries(overrides.map(r => [r.process_code, r]));
+  const list = Object.keys(QUOTA)
+    .filter(code => QUOTA[code].kind === 'work')
+    .map(code => {
+      const q = QUOTA[code];
+      const ov = ovMap[code];
+      const def = LIB[code] || {};
+      return {
+        code,
+        name: def.zh || code,
+        unit: q.unit,
+        output: ov ? Number(ov.output) : q.output,
+        skilled: ov ? ov.skilled_count : q.crew.skilled,
+        helper: ov ? ov.helper_count : q.crew.helper,
+        isOverridden: !!ov,
+        defaultOutput: q.output,
+        defaultSkilled: q.crew.skilled,
+        defaultHelper: q.crew.helper
+      };
+    });
+  res.json({ success: true, data: list });
+}));
+
+router.put('/quotas/:code', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  const code = req.params.code;
+  if (!QUOTA[code] || QUOTA[code].kind !== 'work') throw new S.HttpError(400, '工序编码不存在或不是按量计算的工序');
+  const output = Number(req.body.output);
+  const skilled = Math.floor(Number(req.body.skilled));
+  const helper = Math.floor(Number(req.body.helper));
+  if (!(output > 0 && output < 10000)) throw new S.HttpError(400, '产量必须大于 0');
+  if (!(skilled >= 0 && skilled <= 20)) throw new S.HttpError(400, '大工人数不对');
+  if (!(helper >= 0 && helper <= 20)) throw new S.HttpError(400, '普工人数不对');
+  await pool.query(
+    `INSERT INTO quota_overrides (process_code, output, skilled_count, helper_count, updated_by)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (process_code) DO UPDATE SET output = EXCLUDED.output, skilled_count = EXCLUDED.skilled_count,
+       helper_count = EXCLUDED.helper_count, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP`,
+    [code, output, skilled, helper, req.user.id]);
+  res.json({ success: true });
+}));
+
+router.delete('/quotas/:code', authenticate, requirePermission('manage_projects'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM quota_overrides WHERE process_code = $1', [req.params.code]);
+  res.json({ success: true, message: '已恢复默认值' });
+}));
+
 module.exports = router;

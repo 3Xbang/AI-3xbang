@@ -391,7 +391,7 @@
             const d = this.data;
             const menu = `<details class="td-menu"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
                 (isManager() ? `<a href="#" data-menu="prepare">📝 项目准备 เตรียมโครงการ</a>` : '') +
-                `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
+                (isManager() ? `<a href="#" data-menu="quota">⚖️ 工序定额设置 ตั้งค่ามาตรฐาน</a>` : '') + `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
                 `<a href="#" data-menu="refresh">🔄 刷新 รีเฟรช</a></div></details>`;
             return `<div class="td-head"><div><h2 class="td-title">今日现场 <small class="td-th">หน้างานวันนี้</small></h2>` +
                 `<div class="td-date"><input type="date" id="td-date" value="${esc(this.date || '')}">` +
@@ -601,6 +601,7 @@
                 else if (k === 'team') SiteTeam.open(pid);
                 else if (k === 'profile') SiteProfile.open(pid);
                 else if (k === 'boq') SiteBoq.open(pid);
+                else if (k === 'quota') SiteQuota.open();
                 else if (k === 'overrides') this.showOverrides(pid);
                 else if (k === 'notify') SiteNotify.open(pid);
                 else this.refresh();
@@ -959,6 +960,54 @@
         }
     };
 
+
+    // ================= 定额设置（仅管理者）=================
+    const SiteQuota = {
+        async open() {
+            busy(true);
+            let rows;
+            try { rows = (await call('GET', '/quotas')).data; } catch(e) { busy(false); toast(e.message,'error'); return; }
+            busy(false);
+            const th = `<tr><th>工序</th><th>代码</th><th>单位</th><th style="text-align:right">大工</th><th style="text-align:right">普工</th><th style="text-align:right">每班/天</th><th></th></tr>`;
+            const trs = rows.map(r =>
+                `<tr class="${r.isOverridden ? 'qr-modified' : ''}">
+                    <td>${esc(r.name)}</td><td><span class="td-tag">${esc(r.code)}</span></td><td>${esc(r.unit)}</td>
+                    <td style="text-align:right"><input class="qin" type="number" data-code="${esc(r.code)}" data-f="skilled" min="0" max="20" value="${r.skilled}" style="width:48px"></td>
+                    <td style="text-align:right"><input class="qin" type="number" data-code="${esc(r.code)}" data-f="helper" min="0" max="20" value="${r.helper}" style="width:48px"></td>
+                    <td style="text-align:right"><input class="qin qin-out" type="number" data-code="${esc(r.code)}" data-f="output" min="0.01" step="0.01" value="${r.output}" style="width:72px"></td>
+                    <td>${r.isOverridden ? `<button class="fc-more-btn qr-reset" data-code="${esc(r.code)}" title="恢复默认 ${r.defaultOutput} ${esc(r.unit)}">↺</button>` : ''}</td>
+                </tr>`).join('');
+            const d = overlay('工序定额设置 ตั้งค่ามาตรฐานผลงาน',
+                `<div class="sb-note">只有管理者能修改。更改后立刻生效，影响今日定额的显示和效率计算。泰文：ผู้จัดการเท่านั้นที่แก้ไขได้</div>
+                <div class="qr-note">🟡 高亮 = 已手动修改（默认值显示在恢复按钮提示上）</div>
+                <div style="overflow-x:auto"><table class="sb-table qr-table">${th}<tbody>${trs}</tbody></table></div>`,
+                '<button class="sb-btn" data-cancel>关闭</button><button class="sb-btn primary" data-save>保存所有修改 บันทึก</button>');
+            d.q('[data-cancel]').onclick = d.close;
+            d.qa('.qr-reset').forEach(b => b.onclick = async () => {
+                try { await call('DELETE', `/quotas/${b.dataset.code}`); d.close(); SiteQuota.open(); } catch(e) { toast(e.message,'error'); }
+            });
+            d.q('[data-save]').onclick = async () => {
+                const pending = [];
+                d.qa('tr').forEach(row => {
+                    const code = row.querySelector('[data-f="output"]')?.dataset.code;
+                    if (!code) return;
+                    const output = parseFloat(row.querySelector('[data-f="output"]').value);
+                    const skilled = parseInt(row.querySelector('[data-f="skilled"]').value);
+                    const helper = parseInt(row.querySelector('[data-f="helper"]').value);
+                    if (output > 0) pending.push({ code, output, skilled, helper });
+                });
+                try {
+                    busy(true);
+                    for (const p of pending) await call('PUT', `/quotas/${p.code}`, p);
+                    busy(false); d.close(); toast('定额已保存 ✅');
+                    if (window.SiteEstimate) SiteEstimate.cache = {};
+                    if (window.SiteBoard && ProjectDetail.currentView === 'site') SiteBoard.refresh();
+                } catch(e) { busy(false); toast(e.message,'error'); }
+            };
+        }
+    };
+
+    window.SiteQuota = SiteQuota;
     window.SiteEstimate = SiteEstimate;
     window.SiteBoq = SiteBoq;
     window.SiteBoard = SiteBoard;

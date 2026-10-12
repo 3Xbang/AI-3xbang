@@ -1657,7 +1657,7 @@ router.get('/projects/:projectId/members', authenticate, requireProjectAccess(),
 });
 
 // 添加项目成员（仅管理者）
-router.post('/projects/:projectId/members', authenticate, requirePermission('users', 'assign'), async (req, res) => {
+router.post('/projects/:projectId/members', authenticate, requirePermission('manage_users'), async (req, res) => {
   try {
     const { user_id, notes } = req.body;
     
@@ -1681,7 +1681,7 @@ router.post('/projects/:projectId/members', authenticate, requirePermission('use
 });
 
 // 移除项目成员（仅管理者）
-router.delete('/projects/:projectId/members/:userId', authenticate, requirePermission('users', 'assign'), async (req, res) => {
+router.delete('/projects/:projectId/members/:userId', authenticate, requirePermission('manage_users'), async (req, res) => {
   try {
     await pool.query(
       'DELETE FROM project_members WHERE project_id = $1 AND user_id = $2',

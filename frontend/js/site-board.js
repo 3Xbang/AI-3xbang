@@ -611,7 +611,18 @@
             });
             on('[data-da-start]',el=>{const id=Number(el.dataset.daStart);this.run(()=>apiRequest('/api/daily-assignments/'+id,{method:'PUT',body:JSON.stringify({status:'in_progress'})}),'已开始');});
             on('[data-da-done]',el=>{const id=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+id,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成');});
-            on('[data-da-start]',el=>{const did=Number(el.dataset.daStart);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'in_progress'})}),'已开始 เริ่มแล้ว');});
+            on('[data-da-start]',el=>{
+                const did=Number(el.dataset.daStart);
+                this.run(async()=>{
+                    // 1. 更新指派任务状态
+                    await apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'in_progress'})});
+                    // 2. 如果绑定了工序，同时启动工序（从第3块消失）
+                    const asgn=(this._assignedTasks||[]).find(t=>t.id===did);
+                    if(asgn && asgn.process_execution_id){
+                        try{ await SiteStart.start(asgn.process_execution_id); }catch(_){}
+                    }
+                },'已开始 เริ่มแล้ว');
+            });
             on('[data-da-done]',el=>{const did=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成 เสร็จ');});
             on('[data-att]', el => this.toggleAbsent(Number(el.dataset.att)));
             on('[data-rm]', el => { const [k, i] = el.dataset.rm.split(':'); this.assign[k] = (this.assign[k] || []).filter(x => x !== Number(i)); this.commit(); });

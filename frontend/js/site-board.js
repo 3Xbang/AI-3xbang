@@ -561,6 +561,7 @@
                     <button class="fc-more-btn" data-qty="${x.execId}">📐 工程量</button>
                     <button class="fc-more-btn" data-hist="${x.execId}">📊 历史</button>
                     <button class="fc-more-btn" data-subtasks="${x.execId}">📑 子任务</button>
+                    <button class="fc-more-btn" data-reset="${x.execId}" style="color:#dc2626">🔄 重置</button>
                 </div>
             </div>`;
         },

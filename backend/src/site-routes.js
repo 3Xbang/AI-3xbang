@@ -1,4 +1,4 @@
-// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+﻿// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
 const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');

@@ -562,4 +562,68 @@ router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap
   res.json({success:true,data:{projectStart:p.s,plannedEnd:p.e,estimatedEnd:est?est.finishDate:null,overallPct,sections:list}});
 }));
 
+
+// ===== Daily Task Assignments =====
+const multerDTA = require('multer');
+const dta_upload = multerDTA({ storage: multerDTA.diskStorage({
+  destination: (req,file,cb)=>cb(null,'uploads/'),
+  filename: (req,file,cb)=>cb(null,Date.now()+'_'+Math.random().toString(36).slice(7)+require('path').extname(file.originalname))
+}), limits:{fileSize:10*1024*1024}, fileFilter:(req,file,cb)=>cb(null,/image/i.test(file.mimetype)) });
+
+router.get('/projects/:projectId/daily-assignments', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const date = req.query.date || todayInBangkok();
+  const rows = (await pool.query(
+    `SELECT dta.*, to_char(dta.work_date,'YYYY-MM-DD') AS work_date_str,
+            pe.status AS proc_status, pe.completion_percentage,
+            pn.process_code, pn.process_name, pn.master_code, pn.floor_no
+       FROM daily_task_assignments dta
+       LEFT JOIN process_execution pe ON pe.id = dta.process_execution_id
+       LEFT JOIN process_nodes pn ON pn.id = pe.process_node_id
+      WHERE dta.project_id=$1 AND dta.work_date=$2
+      ORDER BY dta.sort_order, dta.id`, [req.params.projectId, date])).rows;
+  res.json({success:true,data:rows});
+}));
+
+router.post('/projects/:projectId/daily-assignments', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async(req,res)=>{
+  const {work_date, process_execution_id, custom_title, custom_description, sort_order} = req.body;
+  if(!work_date) throw new S.HttpError(400,'date required');
+  if(!process_execution_id && !custom_title) throw new S.HttpError(400,'process or title required');
+  const r=await pool.query(
+    `INSERT INTO daily_task_assignments (project_id,work_date,process_execution_id,custom_title,custom_description,sort_order,assigned_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+    [req.params.projectId,work_date,process_execution_id||null,custom_title||null,custom_description||null,sort_order||0,req.user.id]);
+  res.json({success:true,data:{id:r.rows[0].id}});
+}));
+
+router.post('/daily-assignments/:id/photos', authenticate, requirePermission('manage_projects'), dta_upload.array('photos',10), wrap(async(req,res)=>{
+  const cur=(await pool.query('SELECT reference_photos, project_id FROM daily_task_assignments WHERE id=$1',[req.params.id])).rows[0];
+  if(!cur) throw new S.HttpError(404,'not found');
+  if(!(await checkProjectAccess(pool,req.user.id,req.user.role,cur.project_id))) throw new S.HttpError(403,'forbidden');
+  const ex=Array.isArray(cur.reference_photos)?cur.reference_photos:[];
+  const added=(req.files||[]).map(f=>({url:'/uploads/'+f.filename,caption:''}));
+  const all=[...ex,...added];
+  await pool.query('UPDATE daily_task_assignments SET reference_photos=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2',[JSON.stringify(all),req.params.id]);
+  res.json({success:true,data:{photos:all}});
+}));
+
+router.put('/daily-assignments/:id', authenticate, wrap(async(req,res)=>{
+  const cur=(await pool.query('SELECT project_id FROM daily_task_assignments WHERE id=$1',[req.params.id])).rows[0];
+  if(!cur) throw new S.HttpError(404,'not found');
+  if(!(await checkProjectAccess(pool,req.user.id,req.user.role,cur.project_id))) throw new S.HttpError(403,'forbidden');
+  const {status,completion_note}=req.body;
+  if(!['assigned','in_progress','completed'].includes(status)) throw new S.HttpError(400,'invalid status');
+  await pool.query(
+    `UPDATE daily_task_assignments SET status=$1, completion_note=$2,
+       completed_at=CASE WHEN $1='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+       updated_at=CURRENT_TIMESTAMP WHERE id=$3`,
+    [status,completion_note||null,req.params.id]);
+  res.json({success:true});
+}));
+
+router.delete('/daily-assignments/:id', authenticate, requirePermission('manage_projects'), wrap(async(req,res)=>{
+  await pool.query('DELETE FROM daily_task_assignments WHERE id=$1',[req.params.id]);
+  res.json({success:true});
+}));
+
+
 module.exports = router;

@@ -153,13 +153,14 @@ const DailyAssign = {
             await apiRequest('/api/daily-assignments/' + id, {method:'PUT', body:JSON.stringify({status:'in_progress'})});
             // 2. If linked to a process, start it too (move from section 3 to section 2)
             if (asgn.process_execution_id) {
-                try { const _r=await apiRequest('/api/processes/'+asgn.process_execution_id+'/start',{method:'POST',body:'{}'}); } catch(_) { /* blocked is ok */ }
+                try { await apiRequest('/api/processes/'+asgn.process_execution_id+'/start',{method:'POST',body:JSON.stringify({force_reason:'老板安排，直接开始 มอบหมายจากเจ้าของ'})}); } catch(_) { /* ignore */ }
             }
             if (typeof app !== 'undefined') app.hideLoading();
             if (typeof app !== 'undefined' && app.showToast) app.showToast('已加入正在做 ✅');
             // Refresh the assignment panel and site board
             await this.load();
             if (window.SiteBoard && window.ProjectDetail && ProjectDetail.currentView === 'site') SiteBoard.refresh();
+            this.close(); // auto-close panel
         } catch(e) {
             if (typeof app !== 'undefined') app.hideLoading();
             alert('失败: ' + e.message);

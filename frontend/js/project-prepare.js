@@ -163,7 +163,13 @@ const ProjectPrepare = {
                 const j = await r.json();
                 if(typeof app!=='undefined')app.hideLoading();
                 if(!j.success){alert(j.message||'识别失败');return;}
-                const {profile,hints} = j.data;
+                const {profile,hints,rawText,allLines} = j.data;
+                // DEBUG: if rawText present, show it so we can tune the parser
+                if(rawText !== undefined) {
+                    const lineHtml = (allLines||[]).map((l,i)=>'<div style="font-size:11px;border-bottom:1px solid #e5e7eb;padding:2px 0"><b style="color:#6b7280;margin-right:6px">'+(i+1)+'</b>'+l.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>').join('');
+                    d.querySelector('#boq-hints').innerHTML = '<div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 12px;margin-top:8px"><b>🔍 PDF 提取文字（前100行）— ' + (j.data.fileDesc||'') + '</b><div style="max-height:300px;overflow-y:auto;margin-top:6px">'+lineHtml+'</div></div>';
+                    return;
+                }
                 d.querySelector('#boq-hints').innerHTML = '<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-top:8px"><b>识别结果：</b><br>' +
                     (hints.length ? hints.map(h=>'✅ '+h).join('<br>') : '未能识别出关键信息，请手动填写申请表') + '</div>';
                 if(Object.keys(profile).length>0){

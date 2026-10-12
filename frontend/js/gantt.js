@@ -1,4 +1,4 @@
-// 甘特图：按9大阶段显示项目进度时间线
+﻿// 甘特图：按9大阶段显示项目进度时间线
 // 老板视角：一眼看懂整体，点行展开细节
 const GanttChart = {
     projectId: null,
@@ -120,26 +120,50 @@ const GanttChart = {
         const start = new Date(d.projectStart || '2026-01-01');
         const endEst = new Date(d.estimatedEnd || '2027-12-31');
         const totalMs = endEst - start;
-        const pctOf = (ds) => ds ? Math.min(100, Math.max(0, ((new Date(ds) - start) / totalMs) * 100)) : null;
-
+        const pctOf = ds => ds ? Math.min(100, Math.max(0, ((new Date(ds) - start) / totalMs) * 100)) : null;
         return s.tasks.map(t => {
             const sp = pctOf(t.startDate), ep = pctOf(t.endDate);
             let bar = '';
             if (sp != null && ep != null) {
                 const w = Math.max(0.5, ep - sp);
                 const col = t.status === 'completed' ? '#16a34a' : t.status === 'in_progress' ? '#2563eb' : '#94a3b8';
-                bar = `<div class="gc-bar task" style="left:${sp}%;width:${w}%;background:${col}20;border:2px solid ${col}">
-                    <div class="gc-bar-fill" style="width:${t.pct}%;background:${col}"></div>
-                    <span class="gc-bar-label" style="font-size:11px">${t.pct > 0 ? t.pct+'%' : ''}</span>
-                </div>`;
+                bar = `<div class="gc-bar task" style="left:${sp}%;width:${w}%;background:${col}20;border:2px solid ${col}"><div class="gc-bar-fill" style="width:${t.pct}%;background:${col}"></div><span class="gc-bar-label" style="font-size:11px">${t.pct > 0 ? t.pct+'%' :''}</span></div>`;
             }
-            const icon = t.status === 'completed' ? '✅' : t.status === 'in_progress' ? '🔵' : '⬜';
-            const floorTag = t.floor != null ? ` · ${t.floor}层` : '';
-            return `<div class="gc-row task-row">
-                <div class="gc-label sub"><span>${icon}</span><span class="gc-name">${t.name}${floorTag}</span></div>
-                <div class="gc-track">${bar}</div>
-            </div>`;
+            const icon = t.status === 'completed' ? '&#x2705;' : t.status === 'in_progress' ? '&#x1F535;' : '&#x2B1C;';
+            const floorTag = t.floor != null ? ' &middot; ' + t.floor + '&#23618;' : '';
+            const eid = t.execId;
+            const acts = eid ? '<div class="gc-task-acts">' +
+                (t.status !== 'completed' ? '<button class="gc-act-btn prog" onclick="GanttChart.updateProgress(' + eid + ')">&#128221; &#25913;&#36827;&#24230;</button>' : '') +
+                '<button class="gc-act-btn ' + (t.status === 'completed' ? 'done-done' : 'done') + '" onclick="GanttChart.markDone(' + eid + ')">' + (t.status === 'completed' ? '&#10003; &#24050;&#23436;&#25104;' : '&#9989; &#23436;&#25104;') + '</button>' +
+                '</div>' : '';
+            return '<div class="gc-row task-row"><div class="gc-label sub"><span>' + icon + '</span><span class="gc-name">' + t.name + floorTag + '</span></div><div class="gc-track">' + bar + acts + '</div></div>';
         }).join('');
+    },
+
+    async updateProgress(execId) {
+        if (typeof app !== 'undefined' && app.showUpdateProgress) {
+            const procs = this.data && this.data.sections ? this.data.sections.flatMap(s => s.tasks) : [];
+            const task = procs.find(t => t.execId === execId);
+            const cur = task ? task.pct : 0;
+            app.showUpdateProgress(execId, cur);
+            // After modal closes, reload
+            const observer = new MutationObserver(() => {
+                if (!document.getElementById('modal-container').innerHTML.trim()) {
+                    observer.disconnect();
+                    setTimeout(() => { SiteEstimate && (SiteEstimate.cache = {}); this.load(); }, 500);
+                }
+            });
+            observer.observe(document.getElementById('modal-container'), { childList: true });
+        }
+    },
+
+    async markDone(execId) {
+        if (typeof app !== 'undefined' && app.completeProcess) {
+            await app.completeProcess(execId);
+            SiteEstimate && (SiteEstimate.cache = {});
+            setTimeout(() => this.load(), 800);
+        }
     }
+
 };
 window.GanttChart = GanttChart;

@@ -530,4 +530,33 @@ router.delete('/quotas/:code', authenticate, requirePermission('manage_projects'
   res.json({ success: true, message: '已恢复默认值' });
 }));
 
+
+
+
+const GANTT_SECTIONS={A:{zh:'前期准备',color:'#64748b'},B:{zh:'地基基础',color:'#92400e'},C:{zh:'主体结构',color:'#1e40af'},D:{zh:'屋面工程',color:'#166534'},E:{zh:'机电工程',color:'#9333ea'},F:{zh:'内装修',color:'#b45309'},G:{zh:'外立面',color:'#0e7490'},H:{zh:'室外工程',color:'#065f46'},I:{zh:'竣工验收',color:'#374151'}};
+
+router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap(async(req,res)=>{
+  const pid=req.params.projectId;
+  const p=(await pool.query(`SELECT to_char(start_date,'YYYY-MM-DD') AS s,to_char(planned_end_date,'YYYY-MM-DD') AS e FROM projects WHERE id=$1`,[pid])).rows[0]||{};
+  const rows=(await pool.query(`SELECT pn.master_code AS code,pn.floor_no AS floor,pe.status,pe.completion_percentage AS pct,to_char(pe.actual_start_date,'YYYY-MM-DD') AS astart,to_char(pe.actual_end_date,'YYYY-MM-DD') AS aend FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id=pn.id WHERE pn.project_id=$1 AND pn.master_code IS NOT NULL ORDER BY pn.sequence_number`,[pid])).rows;
+  const est=await S.buildEstimate(pool,pid).catch(()=>null);
+  const em={};if(est&&est.tasks)est.tasks.forEach(t=>{em[t.key]=t;});
+  const secs={};
+  rows.forEach(r=>{
+    const sec=r.code.charAt(0);if(!GANTT_SECTIONS[sec])return;
+    const key=r.floor!=null?`${r.code}@${r.floor}`:r.code;
+    const e=em[key]||{};
+    if(!secs[sec])secs[sec]={...GANTT_SECTIONS[sec],sec,tasks:[],doneCount:0,totalCount:0,inProgressCount:0};
+    const s=secs[sec];s.totalCount++;
+    if(r.status==='completed')s.doneCount++;
+    if(r.status==='in_progress')s.inProgressCount++;
+    s.tasks.push({key,code:r.code,floor:r.floor,name:(LIB[r.code]||{}).zh||r.code,status:r.status,pct:Number(r.pct)||0,startDate:r.astart||e.startDate||null,endDate:r.aend||e.finishDate||null});
+  });
+  const list=Object.values(secs).map(s=>{
+    const dd=s.tasks.flatMap(t=>[t.startDate,t.endDate]).filter(Boolean).sort();
+    return{...s,startDate:dd[0]||null,endDate:dd[dd.length-1]||null,pct:s.totalCount?Math.round(s.doneCount/s.totalCount*100):0};
+  });
+  res.json({success:true,data:{projectStart:p.s,plannedEnd:p.e,estimatedEnd:est?est.finishDate:null,sections:list}});
+}));
+
 module.exports = router;

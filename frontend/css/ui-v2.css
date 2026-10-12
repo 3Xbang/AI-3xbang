@@ -444,3 +444,12 @@ tr.qr-modified { background: #fffde7; }
   .gc-label-head, .gc-label, .gc-label.sub { flex: 0 0 140px !important; min-width: 140px !important; }
   .gc-name { max-width: 95px !important; }
 }
+
+/* Weight badge: compact, no wrap */
+.gc-weight { white-space: nowrap !important; flex-shrink: 0; font-size: 9px !important; padding: 1px 5px !important; vertical-align: middle; }
+.gc-weight small { font-size: 9px; }
+.gc-cnt { flex-shrink: 0; white-space: nowrap; }
+/* Tighten label gap so weight doesn't push to next line */
+.gc-label { gap: 4px !important; flex-wrap: nowrap !important; }
+.gc-name { flex: 1 1 0; min-width: 0; }
+.gc-arrow { flex-shrink: 0; }

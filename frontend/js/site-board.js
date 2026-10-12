@@ -423,71 +423,143 @@
             return html;
         },
 
+
         renderPlanned() {
             const d = this.data;
             const doing = d.inProgress;
-            const readyN = d.ready.length, waitN = d.blocked.length, hasTeam = d.team.length > 0;
+            const readyN = d.ready.length, hasTeam = d.team.length > 0;
             const here = d.team.length - d.absent.length;
-            let html = `<div class="td-summary">` +
-                `<div class="td-stat s-doing"><i>🔨</i><div><b>${doing.length}</b><span>${bi('正在做', 'กำลังทำ')}</span></div></div>` +
-                `<div class="td-stat s-ready ${readyN ? 'hot' : ''}"><i>✅</i><div><b>${readyN}</b><span>${bi('现在能开工', 'เริ่มได้เลย')}</span></div></div>` +
-                `<div class="td-stat s-wait"><i>⏳</i><div><b>${waitN}</b><span>${bi('在等前面的工序', 'รองานก่อนหน้า')}</span></div></div>` +
-                `<div class="td-stat s-here"><i>👷</i><div><b>${hasTeam ? here + '/' + d.team.length : '—'}</b><span>${bi('今天到场', 'มาวันนี้')}</span></div></div></div>` +
-                `<div class="td-tip">系统只给建议，怎么安排由工头决定。<small class="td-th">ระบบแนะนำเท่านั้น หัวหน้าช่างตัดสินใจ</small></div>`;
+            let html = '';
+
+            // 没有团队 → 顶部提示
             if (!hasTeam) {
-                html = `<div class="td-banner"><b>项目准备未完成 · 请先录入施工团队</b><br>` +
-                    `需要登记：班组名称、大工几个人和会干什么、普工几个人。录入后系统才能按人员安排工作和评估班组效率。<br>` +
-                    `<span class="td-sub">ขั้นตอน: 1. ข้อมูลโครงการ ✓  2. ทีมงานและประเภทช่าง (ยังไม่ได้กรอก)  3. สร้างงาน ✓</span><br>` +
-                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">去「项目准备」录入团队 กรอกทีมงาน</button>` : '请联系管理者录入施工团队') + `</div>` + html;
+                html += `<div class="td-banner"><b>请先录入施工团队 กรุณากรอกทีมงาน</b><br>去「项目准备」填写班组信息，填完才能派人。<br>` +
+                    (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">录入团队</button>` : '') + `</div>`;
             }
             d.warnings.forEach(w => { html += `<div class="td-warn">⚠ ${esc(w.zh)}</div>`; });
 
-            // ① 出勤登记
-            html += `<section class="td-sec"><h3><span class="td-num">1</span>${bi('出勤登记', 'บันทึกการเข้างาน')}</h3>`;
+            // ═══ 今天到场几个人（顶部简单一行）═══
+            if (hasTeam) {
+                const absent = new Set(d.absent);
+                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} 个任务进行中 · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} 人到场</span></div>`;
+            }
+
+            // ═══ 第 1 步：点名 ═══
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b>点名 บันทึกเข้างาน</b></div>`;
             if (!hasTeam) {
-                html += `<div class="td-empty">项目团队还没有录入，无法登记出勤和安排工作。</div>`;
+                html += `<div class="fc-empty">先录入团队再点名</div>`;
             } else {
                 const absent = new Set(d.absent);
-                html += `<div class="td-sub" style="margin-bottom:6px">点一下名字，标记今天没来的人 · แตะชื่อเพื่อทำเครื่องหมายคนที่ไม่มา</div><div>` +
-                    d.team.map(m => `<a href="#" class="td-chip big ${absent.has(m.id) ? 'off' : (m.level === 'skilled' ? 'skilled' : 'free')}" data-att="${m.id}">${esc(m.name)}${absent.has(m.id) ? ' · 没来' : ''}</a>`).join('') + `</div>`;
+                html += `<div class="fc-att-grid">` +
+                    d.team.map(m => {
+                        const isAbsent = absent.has(m.id);
+                        return `<button class="fc-att ${isAbsent ? 'absent' : (m.level === 'skilled' ? 'skilled' : 'helper')}" data-att="${m.id}">
+                            <span class="fc-att-icon">${isAbsent ? '❌' : '✅'}</span>
+                            <span class="fc-att-name">${esc(m.name)}</span>
+                            <span class="fc-att-status">${isAbsent ? '没来' : '到了'}</span>
+                        </button>`;
+                    }).join('') + `</div>`;
             }
-            html += `</section>`;
+            html += `</div>`;
 
-            // ② 正在做
-            html += `<section class="td-sec"><h3><span class="td-num">2</span>${bi('正在做的事', 'งานที่กำลังทำ')} <span class="td-count">${doing.length}</span></h3>` +
-                (doing.length ? doing.map(x => this.cardDoing(x, true)).join('') : '<div class="td-empty">现在没有在做的任务</div>') + `</section>`;
+            // ═══ 第 2 步：正在做的任务 ═══
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">2</span><b>正在做 กำลังทำ</b>${doing.length ? `<span class="fc-badge">${doing.length}</span>` : ''}</div>`;
+            if (doing.length) {
+                html += doing.map(x => this.cardDoing(x, true)).join('');
+            } else {
+                html += `<div class="fc-empty">现在没有进行中的任务</div>`;
+            }
+            html += `</div>`;
 
-            // ③ 现在能开工
-            html += `<section class="td-sec"><h3><span class="td-num">3</span>${bi('现在可以开工', 'เริ่มงานได้ตอนนี้')} <span class="td-count">${readyN}</span></h3>` +
-                (readyN ? d.ready.map(x => this.cardReady(x, d.suggestions.find(s => s.execId === x.execId), true)).join('')
-                    : '<div class="td-empty">现在没有新的任务可以开工，多半在等前面的工序或混凝土养护。<br>下面“快要能开始”里可以提前做准备。</div>') + `</section>`;
+            // ═══ 第 3 步：可以开工的任务 ═══
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num fc-num-green">3</span><b>可以开工 เริ่มได้เลย</b>${readyN ? `<span class="fc-badge green">${readyN}</span>` : ''}</div>`;
+            if (readyN) {
+                html += d.ready.map(x => this.cardReady(x, d.suggestions.find(s => s.execId === x.execId), true)).join('');
+            } else {
+                html += `<div class="fc-empty">没有新任务可开工，在等前面的工序完成</div>`;
+            }
+            html += `</div>`;
 
-            // ④ 快要能开始 / ⑤ 其他在等
+            // ═══ 快要能开始（折叠）═══
             const doingKeys = new Set(doing.map(x => x.key));
             const near = d.blocked.filter(b => b.reasons.every(r => (r.type === 'lag' && r.daysLeft <= 5) || ((r.type === 'pred_not_finished' || r.type === 'ss_progress') && doingKeys.has(r.pred))));
             near.sort((a, b) => a.reasons.length - b.reasons.length || a.key.localeCompare(b.key));
             const nearTop = near.slice(0, 8), nearSet = new Set(nearTop.map(x => x.key));
             if (nearTop.length) {
-                html += `<section class="td-sec"><h3><span class="td-num">4</span>${bi('快要能开始', 'ใกล้เริ่มได้')} <span class="td-count">${nearTop.length}</span></h3>` +
-                    nearTop.map(x => this.rowWaiting(x)).join('') + `</section>`;
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">4</span><b>快要能开工 ใกล้เริ่มได้</b><span class="fc-badge gray">${nearTop.length}</span></summary>` +
+                    nearTop.map(x => this.rowWaiting(x)).join('') + `</details></div>`;
             }
 
+            // ═══ 其他等待中（深度折叠）═══
             const rest = d.blocked.filter(b => !nearSet.has(b.key));
             if (rest.length) {
                 const groups = {};
                 rest.forEach(x => { const k = x.floor != null ? x.floor + '层' : '整栋'; (groups[k] = groups[k] || []).push(x); });
                 const names = Object.keys(groups).sort((a, b) => (parseInt(a) || 999) - (parseInt(b) || 999));
-                html += `<section class="td-sec"><details><summary class="td-sum"><span class="td-num">5</span>${bi('其他在等待的', 'งานอื่นที่รออยู่')} <span class="td-count">${rest.length} 项，点开看在等什么</span></summary>` +
-                    names.map(n => `<details class="td-grp"><summary>${esc(n)} <span class="td-count">${groups[n].length} 项</span></summary>${groups[n].map(x => this.rowWaiting(x)).join('')}</details>`).join('') +
-                    `</details></section>`;
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">…</span><b>其他在等待 งานที่รออยู่</b><span class="fc-badge gray">${rest.length}</span></summary>` +
+                    names.map(n => `<details class="td-grp" style="margin:4px 0"><summary style="padding:6px 0;cursor:pointer;font-weight:600">${esc(n)} (${groups[n].length})</summary>${groups[n].map(x => this.rowWaiting(x)).join('')}</details>`).join('') +
+                    `</details></div>`;
             }
+
             if (d.idle.length) {
-                html += `<section class="td-sec"><details><summary class="td-sum">${bi('空闲的人', 'คนที่ว่าง')} <span class="td-count">${d.idle.length} 人</span></summary>` +
-                    d.idle.map(i => `<div class="td-row"><span class="td-chip free">${esc(i.name)}</span><span class="td-sub">${i.canBorrowTo.length ? '可去：' + i.canBorrowTo.map(esc).join('、') : '暂时没有合适的任务'}</span></div>`).join('') + `</details></section>`;
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">👥</span><b>空闲的人 คนที่ว่าง</b><span class="fc-badge gray">${d.idle.length}</span></summary>` +
+                    d.idle.map(i => `<div class="td-row"><span class="td-chip free">${esc(i.name)}</span><span class="td-sub">${i.canBorrowTo.length ? '可去：' + i.canBorrowTo.map(esc).join('、') : '暂时没有合适的任务'}</span></div>`).join('') +
+                    `</details></div>`;
             }
             return html;
         },
 
+        cardDoing(x, planned) {
+            const pct = pctOf(x);
+            const paused = x.workStatus === 'waiting_material' || x.workStatus === 'weather_stop';
+            const hasPeople = planned && (this.assign[x.execId] || []).length > 0;
+            const est = this.estMap && this.estMap[x.execId];
+            const estLine = est && est.kind === 'work' && est.estDays
+                ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
+                : '';
+            const statusIcon = { waiting_material: '🟡 缺材料', weather_stop: '⛅ 天气停工' }[x.workStatus] || '';
+            return `<div class="fc-card doing ${paused ? 'paused' : ''}">
+                <div class="fc-card-top">
+                    <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
+                    <div class="fc-card-pct">${pct}%</div>
+                </div>
+                <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%"></div></div>
+                ${estLine || statusIcon ? `<div class="fc-card-meta">${statusIcon ? `<span class="fc-status-tag">${statusIcon}</span>` : ''}${estLine}</div>` : ''}
+                ${hasPeople ? `<div class="fc-people">${this.peopleChips(x.execId, true)}</div>` : ''}
+                ${paused
+                    ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ 恢复施工 กลับมาทำต่อ</button>`
+                    : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 填今天进度 บันทึกความคืบหน้า</button>`
+                }
+                <div class="fc-secondary">
+                    ${!paused ? `<button class="fc-sec-btn done" data-done="${x.execId}">✅ 完成</button>` : ''}
+                    ${!paused ? `<button class="fc-sec-btn warn" data-stat="waiting_material:${x.execId}">🟡 缺材料</button>` : ''}
+                    ${!paused ? `<button class="fc-sec-btn" data-stat="weather_stop:${x.execId}">⛅ 下雨</button>` : ''}
+                    ${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 派人</button>` : ''}
+                    <button class="fc-sec-btn" data-hist="${x.execId}">📊 历史</button>
+                </div>
+            </div>`;
+        },
+
+        cardReady(x, sug, planned) {
+            const est = this.estMap && this.estMap[x.execId];
+            const estLine = est && est.kind === 'work' && est.estDays
+                ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
+                : '';
+            const sugPeople = sug ? sug.members.map(m => `<span class="fc-sug-chip">${esc(m.name)}</span>`).join('') : '';
+            return `<div class="fc-card ready">
+                <div class="fc-card-top">
+                    <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
+                </div>
+                ${estLine ? `<div class="fc-card-meta">${estLine}</div>` : ''}
+                ${sugPeople ? `<div class="fc-sug">💡 建议派：${sugPeople}</div>` : ''}
+                ${sug && planned
+                    ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ 按建议开工 เริ่มตามคำแนะนำ</button>
+                       <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">只开始不派人</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
+                    : `<button class="fc-main-btn start" data-start="${x.execId}">▶ 开工 เริ่มงาน</button>
+                       ${planned ? `<div class="fc-secondary"><button class="fc-sec-btn" data-pick="${x.execId}">👷 选人再开工</button></div>` : ''}`
+                }
+            </div>`;
+        },
         rowWaiting(x) {
             const why = x.reasons.slice(0, 2).map(r => esc(r.zh)).join('；') + (x.reasons.length > 2 ? ` 等 ${x.reasons.length} 项` : '');
             return `<div class="td-row wait"><div class="td-grow"><b>${nm(x)}</b> ${this.floorTag(x)}<div class="td-sub">${why}</div>${SiteEstimate.mini(this.estMap && this.estMap[x.execId])}</div>` +
@@ -640,33 +712,35 @@
         progressDialog(execId) {
             const x = this.findItem(execId); if (!x) return;
             const cur = pctOf(x), hasQty = x.plannedQuantity > 0;
-            const body = `<div class="sb-note">${nm(x)}：目前完成 ${cur}%</div>` +
-                (hasQty ? `<div class="sb-field" style="margin-bottom:10px"><label>怎么记？ จะบันทึกแบบไหน</label><select id="pg-mode"><option value="pct">直接填现在完成了百分之几</option><option value="qty">填今天完成了多少（${esc(x.unit || '')}）</option></select></div>` : '') +
-                `<div class="sb-field" id="pg-pct-box" style="margin-bottom:10px"><label>现在一共完成了百分之几 (0–100) *</label><input type="number" id="pg-pct" min="0" max="100" value="${cur}"></div>` +
-                (hasQty ? `<div class="sb-field" id="pg-qty-box" style="margin-bottom:10px;display:none"><label>今天完成的数量 (${esc(x.unit || '')}，计划总量 ${x.plannedQuantity}) *</label><input type="number" id="pg-qty" min="0" step="0.01"></div>` : '') +
-                `<div class="sb-field"><label>备注 หมายเหตุ（可不填）</label><textarea id="pg-note" rows="2"></textarea></div>`;
-            const dlg = overlay('记录进度 บันทึกความคืบหน้า', body, '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>保存 บันทึก</button>', true);
-            const mode = dlg.q('#pg-mode');
-            if (mode) mode.onchange = () => { const q = mode.value === 'qty'; dlg.q('#pg-pct-box').style.display = q ? 'none' : ''; dlg.q('#pg-qty-box').style.display = q ? '' : 'none'; };
+            const name = nm(x);
+            const body = `
+                <div style="text-align:center;margin-bottom:16px">
+                    <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px">${name}</div>
+                    <div id="pg-display" style="font-size:64px;font-weight:900;color:#2563eb;line-height:1">${cur}%</div>
+                    <div style="font-size:13px;color:#64748b;margin-top:4px">完成了多少 ความคืบหน้า</div>
+                </div>
+                <input type="range" id="pg-slider" min="0" max="100" value="${cur}"
+                    style="width:100%;height:32px;cursor:pointer;accent-color:#2563eb;margin-bottom:16px">
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    ${[25,50,75,100].map(v => `<button type="button" onclick="document.getElementById('pg-slider').value=${v};document.getElementById('pg-display').textContent='${v}%'" style="flex:1;padding:12px 4px;border-radius:10px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;font-size:15px;cursor:pointer">${v}%</button>`).join('')}
+                </div>
+                ${hasQty ? `<div style="margin-bottom:12px;font-size:13px;color:#475569">计划总量 ${x.plannedQuantity} ${esc(x.unit||'')}</div>` : ''}
+                <div class="sb-field"><label style="font-size:13px">备注 หมายเหตุ（可不填）</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
+            const dlg = overlay('填今天进度 บันทึกความคืบหน้า', body, '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 20px">✅ 保存 บันทึก</button>', true);
+            const slider = dlg.q('#pg-slider'), display = dlg.q('#pg-display');
+            slider.oninput = () => { display.textContent = slider.value + '%'; };
             dlg.q('[data-cancel]').onclick = dlg.close;
             dlg.q('[data-ok]').onclick = async () => {
+                const p = parseFloat(slider.value);
                 const note = dlg.q('#pg-note').value.trim();
-                const byQty = mode && mode.value === 'qty';
+                if (!(p >= 0 && p <= 100)) { toast('请拖动滑条选择进度', 'error'); return; }
                 try {
                     busy(true);
-                    if (byQty) {
-                        const q = parseFloat(dlg.q('#pg-qty').value);
-                        if (!(q > 0)) { toast('请填写大于 0 的数量', 'error'); busy(false); return; }
-                        await call('POST', '/daily-progress', { process_execution_id: execId, quantity_completed: q, unit: x.unit, work_status: 'normal', notes: note ? { zh: note, th: note } : null });
-                    } else {
-                        const p = parseFloat(dlg.q('#pg-pct').value);
-                        if (!(p >= 0 && p <= 100)) { toast('百分比要在 0 到 100 之间', 'error'); busy(false); return; }
-                        const body = { completion_percentage: p };
-                        if (p >= 100) { body.status = 'completed'; body.actual_end_date = this.date || new Date().toISOString().slice(0, 10); }
-                        if (note) body.notes = { zh: note, th: note };
-                        await call('PUT', `/processes/${execId}`, body);
-                    }
-                    dlg.close(); toast('进度已记录 บันทึกแล้ว'); await this.refresh();
+                    const body = { completion_percentage: p };
+                    if (p >= 100) { body.status = 'completed'; body.actual_end_date = this.date || new Date().toISOString().slice(0, 10); }
+                    if (note) body.notes = { zh: note, th: note };
+                    await call('PUT', `/processes/${execId}`, body);
+                    dlg.close(); toast('进度已记录 ✅'); await this.refresh();
                 } catch (e) { toast(e.message, 'error'); } finally { busy(false); }
             };
         },

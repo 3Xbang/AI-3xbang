@@ -211,3 +211,80 @@ body { background: var(--bg); color: var(--ink); font-family: "Noto Sans Thai", 
 .est-mini { font-size: 12.5px; color: #475569; margin-top: 3px; }
 .process-card .est-grid { grid-template-columns: 1fr; }
 @media (max-width: 640px) { .est-grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   今日现场 工头版：大按钮、清晰三步、手机友好
+   ============================================================ */
+
+/* 页面头部信息行 */
+.fc-header { display:flex; justify-content:space-between; align-items:center; padding:10px 4px 6px; font-size:13px; color:var(--muted); border-bottom:2px solid var(--line); margin-bottom:4px; }
+.fc-date { font-weight:700; color:var(--navy); }
+
+/* 步骤区块 */
+.fc-step { background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:16px 16px 14px; margin:12px 0; border:0; }
+.fc-step.collapsed { padding:0; background:transparent; box-shadow:none; }
+.fc-step-label { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.fc-step-label b { font-size:18px; font-weight:800; color:var(--navy); }
+.fc-step-label.summ { list-style:none; cursor:pointer; padding:10px 16px; background:var(--card); border-radius:14px; box-shadow:var(--shadow); margin:0; }
+.fc-step-label.summ::-webkit-details-marker { display:none; }
+.fc-num { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--blue),#1d4ed8); color:#fff; font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center; flex:0 0 34px; box-shadow:0 3px 10px rgba(37,99,235,.35); }
+.fc-num.fc-num-green { background:linear-gradient(135deg,var(--green),#15803d); box-shadow:0 3px 10px rgba(22,163,74,.35); }
+.fc-num.fc-num-gray { background:#94a3b8; box-shadow:none; font-size:13px; }
+.fc-badge { background:#dbeafe; color:#1e40af; border-radius:99px; padding:2px 10px; font-size:13px; font-weight:700; }
+.fc-badge.green { background:#dcfce7; color:#166534; }
+.fc-badge.gray { background:#e2e8f0; color:#475569; }
+.fc-empty { text-align:center; padding:18px; color:var(--muted); background:#f8fafc; border-radius:12px; border:2px dashed var(--line); }
+
+/* 出勤网格 */
+.fc-att-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+.fc-att { display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 10px; border-radius:16px; border:2.5px solid; cursor:pointer; transition:all .15s; font-size:13px; background:#fff; }
+.fc-att.skilled { border-color:#93c5fd; background:#eff6ff; }
+.fc-att.helper { border-color:#bbf7d0; background:#f0fdf4; }
+.fc-att.absent { border-color:#fca5a5; background:#fff1f2; opacity:.8; }
+.fc-att:active { transform:scale(.95); }
+.fc-att-icon { font-size:28px; line-height:1; }
+.fc-att-name { font-weight:700; color:var(--navy); text-align:center; word-break:break-all; }
+.fc-att-status { font-size:12px; font-weight:600; }
+.fc-att.absent .fc-att-status { color:var(--red); }
+.fc-att.skilled .fc-att-status { color:var(--blue); }
+.fc-att.helper .fc-att-status { color:var(--green); }
+
+/* 任务卡片 */
+.fc-card { border-radius:16px; border:2px solid var(--line); padding:14px 14px 10px; margin:10px 0; border-left:6px solid #94a3b8; background:#fff; box-shadow:0 1px 4px rgba(15,42,74,.07); }
+.fc-card.doing { border-left-color:var(--blue); background:linear-gradient(90deg,#f0f6ff,#fff 50%); }
+.fc-card.doing.paused { border-left-color:var(--amber); background:linear-gradient(90deg,#fffbeb,#fff 50%); }
+.fc-card.ready { border-left-color:var(--green); background:linear-gradient(90deg,#f0fdf4,#fff 50%); }
+.fc-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px; }
+.fc-card-title { font-size:17px; font-weight:800; color:var(--navy); line-height:1.3; flex:1; }
+.fc-card-pct { font-size:22px; font-weight:900; color:var(--blue); white-space:nowrap; }
+.fc-progress { height:12px; border-radius:99px; background:#e2e8f0; margin:6px 0 10px; overflow:hidden; }
+.fc-progress-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#3b82f6,#2563eb); transition:width .3s; }
+.fc-card.paused .fc-progress-fill { background:linear-gradient(90deg,var(--amber),#d97706); }
+.fc-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.fc-est-pill { background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; border-radius:99px; padding:3px 10px; font-size:12px; font-weight:600; }
+.fc-status-tag { border-radius:99px; padding:3px 10px; font-size:12px; font-weight:700; background:#fef3c7; color:#92400e; }
+
+/* 主操作按钮：超大、一眼就看到 */
+.fc-main-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:16px 12px; border-radius:14px; font-size:17px; font-weight:800; border:0; cursor:pointer; transition:all .15s; margin-top:6px; letter-spacing:.3px; }
+.fc-main-btn:active { transform:scale(.97); }
+.fc-main-btn.prog { background:linear-gradient(135deg,var(--blue),#1d4ed8); color:#fff; box-shadow:0 6px 18px rgba(37,99,235,.35); }
+.fc-main-btn.start { background:linear-gradient(135deg,var(--green),#15803d); color:#fff; box-shadow:0 6px 18px rgba(22,163,74,.35); }
+.fc-main-btn.resume { background:linear-gradient(135deg,var(--amber),#d97706); color:#fff; box-shadow:0 6px 18px rgba(217,119,6,.35); }
+
+/* 次要操作：小按钮排一行 */
+.fc-secondary { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+.fc-sec-btn { padding:8px 14px; border-radius:10px; font-size:13px; font-weight:600; border:1.5px solid var(--line); background:#f8fafc; color:#334155; cursor:pointer; }
+.fc-sec-btn:hover { background:#e2e8f0; }
+.fc-sec-btn.done { border-color:#a7f3d0; background:#f0fdf4; color:#065f46; }
+.fc-sec-btn.warn { border-color:#fde68a; background:#fffbeb; color:#92400e; }
+
+/* 派人、建议 */
+.fc-people { margin:8px 0; display:flex; flex-wrap:wrap; gap:6px; }
+.fc-sug { margin:6px 0; font-size:13px; color:#475569; display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
+.fc-sug-chip { background:#dbeafe; color:#1e40af; border-radius:99px; padding:3px 10px; font-size:12px; font-weight:700; }
+
+@media (max-width:560px) {
+    .fc-att-grid { grid-template-columns:repeat(3,1fr); }
+    .fc-main-btn { font-size:16px; padding:14px 10px; }
+    .fc-card-title { font-size:15px; }
+}

@@ -71,6 +71,7 @@ const DailyAssign = {
                     📷 <input type="file" accept="image/*" multiple style="display:none" onchange="DailyAssign.uploadPhotos(${t.id},this)">
                 </label>
                 
+                <button class="sb-btn small primary" onclick="DailyAssign.startNow(${t.id})" style="white-space:nowrap;margin-bottom:4px">▶ 加入正在做</button>
                 <button class="sb-btn small warn" onclick="DailyAssign.remove(${t.id})">🗑</button>
             </div>
         </div>`;

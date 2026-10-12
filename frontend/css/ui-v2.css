@@ -337,3 +337,53 @@ body { background: var(--bg); color: var(--ink); font-family: "Noto Sans Thai", 
 tr.qr-modified { background: #fffde7; }
 .qr-reset { font-size: 16px; border-radius: 8px; background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 .qr-note { font-size: 12px; color: #92400e; background: #fffde7; padding: 5px 10px; border-radius: 8px; margin-bottom: 10px; }
+
+/* ============================================================
+   甘特图 Gantt Chart
+   ============================================================ */
+.gc-wrap { font-size: 14px; }
+.gc-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 4px 14px; font-size: 13px; }
+.gc-plan-tag { background: #fee2e2; color: #b91c1c; border-radius: 99px; padding: 2px 10px; font-weight: 700; }
+.gc-est-tag { border-radius: 99px; padding: 2px 10px; font-weight: 700; }
+.gc-est-tag.late { background: #fef2f2; color: #b91c1c; }
+.gc-est-tag.ok { background: #dcfce7; color: #166534; }
+
+/* Chart grid */
+.gc-chart { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }
+.gc-header { display: flex; background: #f8fafc; border-bottom: 2px solid var(--line); }
+.gc-label-head { flex: 0 0 200px; padding: 10px 14px; font-weight: 700; color: var(--navy); font-size: 13px; border-right: 2px solid var(--line); }
+.gc-track-head { flex: 1; position: relative; height: 36px; overflow: visible; }
+.gc-month { position: absolute; top: 8px; font-size: 11px; color: #94a3b8; transform: translateX(-50%); white-space: nowrap; }
+.gc-today { position: absolute; top: 0; bottom: 0; width: 2px; background: #dc2626; z-index: 5; }
+.gc-today span { position: absolute; top: 2px; left: 4px; font-size: 10px; color: #dc2626; font-weight: 700; white-space: nowrap; background: #fff; padding: 0 2px; border-radius: 4px; }
+.gc-deadline { position: absolute; top: 0; bottom: 0; width: 2px; background: #f97316; z-index: 4; }
+.gc-deadline::after { content: '截止'; position: absolute; top: 2px; left: 3px; font-size: 9px; color: #f97316; white-space: nowrap; }
+
+/* Rows */
+.gc-row { display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; min-height: 42px; cursor: pointer; transition: background .1s; }
+.gc-row:hover { background: #f8fafc; }
+.gc-row.task-row { min-height: 32px; cursor: default; background: #fafbfc; }
+.gc-row.task-row:hover { background: #f1f5f9; }
+.gc-label { flex: 0 0 200px; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-right: 2px solid var(--line); min-height: inherit; overflow: hidden; }
+.gc-label.sub { padding-left: 28px; font-size: 12.5px; }
+.gc-dot { font-size: 14px; flex: 0 0 18px; }
+.gc-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc-cnt { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.gc-arrow { font-size: 10px; color: #94a3b8; flex: 0 0 12px; }
+.gc-track { flex: 1; position: relative; height: 100%; min-height: 32px; overflow: visible; }
+
+/* Bars */
+.gc-bar { position: absolute; top: 50%; transform: translateY(-50%); height: 20px; border-radius: 6px; min-width: 4px; overflow: hidden; display: flex; align-items: center; }
+.gc-bar.task { height: 14px; border-radius: 4px; }
+.gc-bar-fill { height: 100%; border-radius: 6px; }
+.gc-bar-label { position: absolute; right: 4px; font-size: 11px; font-weight: 700; color: #0f172a; white-space: nowrap; z-index: 2; }
+
+@media (max-width: 700px) {
+    .gc-label-head, .gc-label { flex: 0 0 120px; }
+}
+
+/* 进度计划视图切换工具栏 */
+.proc-toolbar { display:flex; align-items:center; gap:8px; padding:10px 4px 14px; }
+.proc-view-label { font-size:13px; color:var(--muted); font-weight:600; }
+.proc-toggle { padding:8px 18px; border-radius:10px; border:2px solid var(--line); background:#fff; color:#334155; font-size:14px; font-weight:700; cursor:pointer; }
+.proc-toggle.active { background:var(--blue); border-color:var(--blue); color:#fff; }

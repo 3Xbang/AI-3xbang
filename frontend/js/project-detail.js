@@ -120,9 +120,16 @@ const ProjectDetail = {
                 await SiteBoard.init(this.projectId);
                 break;
             case 'processes':
-                container.innerHTML = '<div id="processes-list" class="process-timeline"></div>';
-                await this.loadProcesses();
+                container.innerHTML = `<div class="proc-toolbar">
+                    <span class="proc-view-label">视图 มุมมอง：</span>
+                    <button class="proc-toggle active" id="btn-gantt" onclick="ProjectDetail.switchProcView('gantt')">📊 甘特图</button>
+                    <button class="proc-toggle" id="btn-cards" onclick="ProjectDetail.switchProcView('cards')">🃏 卡片</button>
+                </div>
+                <div id="gantt-container"></div>
+                <div id="processes-list" class="process-timeline" style="display:none"></div>`;
+                await GanttChart.init(this.projectId);
                 break;
+
             case 'materials':
                 container.innerHTML = '<div id="materials-container"></div>';
                 MaterialManager.init(this.projectId);

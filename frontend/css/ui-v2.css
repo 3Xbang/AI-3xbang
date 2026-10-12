@@ -431,3 +431,16 @@ tr.qr-modified { background: #fffde7; }
 @media (max-width: 900px) { .gc-label-head, .gc-label { flex: 0 0 130px !important; } }
 .gc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
 .gc-name b { font-size: 13px; }
+
+/* Fix label column - wider, names can wrap */
+.gc-label-head, .gc-label { flex: 0 0 210px !important; min-width: 210px !important; }
+.gc-label.sub { flex: 0 0 210px !important; min-width: 210px !important; padding-left: 24px !important; }
+.gc-name { white-space: normal !important; overflow: visible !important; max-width: 155px !important; line-height: 1.3; }
+.gc-name b { font-size: 13px; font-weight: 700; }
+.gc-name-th { font-size: 9.5px !important; margin-top: 1px; display: block; }
+.gc-row { min-height: 46px !important; }
+.gc-cnt { font-size: 11px; white-space: nowrap; }
+@media (max-width: 900px) {
+  .gc-label-head, .gc-label, .gc-label.sub { flex: 0 0 140px !important; min-width: 140px !important; }
+  .gc-name { max-width: 95px !important; }
+}

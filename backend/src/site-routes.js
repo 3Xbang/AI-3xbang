@@ -1,4 +1,4 @@
-﻿// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
 const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
@@ -614,7 +614,7 @@ router.put('/daily-assignments/:id', authenticate, wrap(async(req,res)=>{
   if(!['assigned','in_progress','completed'].includes(status)) throw new S.HttpError(400,'invalid status');
   await pool.query(
     `UPDATE daily_task_assignments SET status=$1, completion_note=$2,
-       completed_at=CASE WHEN $1='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+       completed_at=CASE WHEN $1::text='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
        updated_at=CURRENT_TIMESTAMP WHERE id=$3`,
     [status,completion_note||null,req.params.id]);
   res.json({success:true});

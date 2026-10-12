@@ -1,4 +1,4 @@
-﻿// 甘特图：按9大阶段显示项目进度时间线
+// 甘特图：按9大阶段显示项目进度时间线
 // 老板视角：一眼看懂整体，点行展开细节
 const GanttChart = {
     projectId: null,
@@ -19,6 +19,8 @@ const GanttChart = {
             const r = await apiRequest(`/api/projects/${this.projectId}/gantt`);
             this.data = r.data;
             this.render();
+            // 若 render 产生了空 DOM 则显示备用表格
+            if (!c.querySelector(".gc-wrap")) this.renderFallback(c);
         } catch (e) {
             c.innerHTML = `<div class="td-empty">加载失败: ${e.message}</div>`;
         }

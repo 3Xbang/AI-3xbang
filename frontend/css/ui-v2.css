@@ -387,3 +387,12 @@ tr.qr-modified { background: #fffde7; }
 .proc-view-label { font-size:13px; color:var(--muted); font-weight:600; }
 .proc-toggle { padding:8px 18px; border-radius:10px; border:2px solid var(--line); background:#fff; color:#334155; font-size:14px; font-weight:700; cursor:pointer; }
 .proc-toggle.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+/* 甘特图任务操作按钮 */
+.gc-task-acts { display:inline-flex; gap:5px; align-items:center; position:absolute; right:4px; top:50%; transform:translateY(-50%); z-index:3; }
+.gc-act-btn { padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700; border:1.5px solid; cursor:pointer; white-space:nowrap; }
+.gc-act-btn.prog { border-color:#bfdbfe; background:#eff6ff; color:#1e40af; }
+.gc-act-btn.prog:hover { background:#dbeafe; }
+.gc-act-btn.done { border-color:#a7f3d0; background:#f0fdf4; color:#065f46; }
+.gc-act-btn.done:hover { background:#dcfce7; }
+.gc-act-btn.done-done { border-color:#e2e8f0; background:#f8fafc; color:#94a3b8; font-size:11px; }

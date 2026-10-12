@@ -550,7 +550,7 @@ router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap
     const s=secs[sec];s.totalCount++;
     if(r.status==='completed')s.doneCount++;
     if(r.status==='in_progress')s.inProgressCount++;
-    s.tasks.push({key,code:r.code,floor:r.floor,name:(LIB[r.code]||{}).zh||r.code,status:r.status,pct:Number(r.pct)||0,startDate:r.astart||e.startDate||null,endDate:r.aend||e.finishDate||null});
+    s.tasks.push({key,code:r.code,floor:r.floor,name:(LIB[r.code]||{}).zh||r.code,status:r.status,pct:Number(r.pct)||0,startDate:r.astart||e.startDate||null,endDate:r.aend||e.finishDate||null,execId:e.execId||null});
   });
   const list=Object.values(secs).map(s=>{
     const dd=s.tasks.flatMap(t=>[t.startDate,t.endDate]).filter(Boolean).sort();

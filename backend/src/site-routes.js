@@ -554,7 +554,7 @@ router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap
   });
   const list=Object.values(secs).map(s=>{
     const dd=s.tasks.flatMap(t=>[t.startDate,t.endDate]).filter(Boolean).sort();
-    return{...s,startDate:dd[0]||null,endDate:dd[dd.length-1]||null,pct:s.totalCount?Math.round(s.doneCount/s.totalCount*100):0};
+    return{...s,startDate:dd[0]||null,endDate:dd[dd.length-1]||null,pct:s.tasks.length?Math.round(s.tasks.reduce((sum,t)=>sum+(t.status==='completed'?100:t.pct),0)/s.tasks.length):0};
   });
   res.json({success:true,data:{projectStart:p.s,plannedEnd:p.e,estimatedEnd:est?est.finishDate:null,sections:list}});
 }));

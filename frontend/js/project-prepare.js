@@ -6,10 +6,20 @@ const ProjectPrepare = {
     timer: null,
 
     STEPS: {
+        drawings: {
+            zh: '图纸上传', th: 'อัปโหลดแบบก่อสร้าง', optional: true,
+            why: '上传设计图纸（PDF 或图片）。工头和老板都能在系统里查看，不需要到处找文件。',
+            btn: '上传图纸', run: pid => ProjectPrepare.openDrawings(pid)
+        },
+        boq: {
+            zh: '工程量清单 BOQ', th: 'ปริมาณงาน (BOQ)', optional: true,
+            why: '有报价单 Excel 就上传，系统自动识别楼层、套数、卫生间等，帮你填好申请表。没有就跳过，手动填。',
+            btn: '上传 BOQ（自动识别）', run: pid => ProjectPrepare.openBoqExtract(pid)
+        },
         profile: {
             zh: '项目申请表', th: 'แบบฟอร์มโครงการ',
-            why: '告诉系统这栋楼是什么样：几层、几套、有几个卫生间、屋顶和装修做法。',
-            btn: '填写 / 修改', run: pid => SiteProfile.open(pid)
+            why: '告诉系统这栋楼是什么样：几层、几套、有几个卫生间、屋顶和装修做法。BOQ上传后已自动填好部分内容。',
+            btn: '填写 / 确认申请表', run: pid => SiteProfile.open(pid)
         },
         team: {
             zh: '施工团队与工种', th: 'ทีมงานและประเภทช่าง',
@@ -20,11 +30,6 @@ const ProjectPrepare = {
             zh: '生成工序计划', th: 'สร้างแผนงาน',
             why: '系统按申请表自动生成每层的工序和先后顺序。先预览，确认后再生成。',
             btn: '预览并生成工序', run: pid => SiteProfile.open(pid), needs: ['profile']
-        },
-        quantities: {
-            zh: '工程量清单', th: 'ปริมาณงาน (BOQ)', optional: true,
-            why: '导入报价单的 Excel，系统自动对应到各工序。没有的可以先开工，现场再补。',
-            btn: '导入清单（Excel）', run: pid => SiteBoq.open(pid), needs: ['plan']
         },
         accounts: {
             zh: '系统账号与权限', th: 'บัญชีผู้ใช้และสิทธิ์', optional: true,
@@ -100,6 +105,79 @@ const ProjectPrepare = {
     },
 
     // 弹窗关闭后自动刷新完成度
+    async openDrawings(pid) {
+        const d = document.createElement('div'); d.className='sb-overlay';
+        d.innerHTML = '<div class="sb-dialog"><header><h3>📐 图纸上传 อัปโหลดแบบก่อสร้าง</h3><button data-x>&times;</button></header>' +
+            '<div class="sb-body">' +
+            '<div class="sb-note">支持 PDF、JPG、PNG 格式，最大 50MB 每个文件。上传后工头可以在手机上查看。</div>' +
+            '<div id="draw-list" style="margin:10px 0"></div>' +
+            '<div class="sb-field"><label>上传图纸</label><input type="file" id="draw-files" multiple accept=".pdf,image/*" style="font-size:14px;padding:8px 0"></div>' +
+            '<div class="sb-field"><label>备注（可选）</label><input type="text" id="draw-desc" placeholder="例如：一楼平面图、立面图"></div>' +
+            '</div>' +
+            '<footer><button class="sb-btn" data-cancel>关闭</button><button class="sb-btn primary" data-upload>📤 上传</button></footer></div>';
+        document.body.appendChild(d);
+        const close = () => d.remove();
+        d.querySelector('[data-x]').onclick = d.querySelector('[data-cancel]').onclick = close;
+        // Load existing drawings
+        try {
+            const r = await apiRequest('/api/projects/'+pid+'/drawings');
+            const list = d.querySelector('#draw-list');
+            list.innerHTML = (r.data||[]).length ? '<b>已上传的图纸：</b><br>' + r.data.map(f=>'<div style="margin:4px 0">📄 <a href="'+f.file_url+'" target="_blank">'+this.esc(f.file_name)+'</a> <button class="sb-btn small" data-del="'+f.id+'">删除</button></div>').join('') : '<div class="sb-sub">还没有上传图纸</div>';
+            list.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ await apiRequest('/api/drawings/'+b.dataset.del,{method:'DELETE'}); close(); this.openDrawings(pid); });
+        } catch(e){}
+        d.querySelector('[data-upload]').onclick = async () => {
+            const files = d.querySelector('#draw-files').files;
+            if(!files.length){if(typeof app!=='undefined'&&app.showToast)app.showToast('请选择文件','error');return;}
+            const fd = new FormData();
+            Array.from(files).forEach(f=>fd.append('files',f));
+            fd.append('description',d.querySelector('#draw-desc').value);
+            try {
+                if(typeof app!=='undefined')app.showLoading();
+                await fetch(window.location.origin+'/api/projects/'+pid+'/drawings',{method:'POST',headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},body:fd});
+                if(typeof app!=='undefined')app.hideLoading();
+                close(); this.openDrawings(pid); await this.load();
+            } catch(e){ if(typeof app!=='undefined')app.hideLoading(); alert(e.message); }
+        };
+    },
+
+    async openBoqExtract(pid) {
+        const d = document.createElement('div'); d.className='sb-overlay';
+        d.innerHTML = '<div class="sb-dialog narrow"><header><h3>📊 上传 BOQ 自动识别项目信息</h3><button data-x>&times;</button></header>' +
+            '<div class="sb-body">' +
+            '<div class="sb-note">上传报价单 Excel（.xlsx），系统自动识别楼层数、套数、卫生间等，帮你填好申请表里的基础信息。</div>' +
+            '<div class="sb-field"><label>选择 BOQ Excel 文件 *</label><input type="file" id="boq-xls" accept=".xlsx" style="font-size:14px;padding:8px 0"></div>' +
+            '<div id="boq-hints" style="margin-top:10px"></div>' +
+            '</div>' +
+            '<footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-analyze>🔍 识别并填入申请表</button></footer></div>';
+        document.body.appendChild(d);
+        const close = () => d.remove();
+        d.querySelector('[data-x]').onclick = d.querySelector('[data-cancel]').onclick = close;
+        d.querySelector('[data-analyze]').onclick = async () => {
+            const file = d.querySelector('#boq-xls').files[0];
+            if(!file){if(typeof app!=='undefined'&&app.showToast)app.showToast('请选择Excel文件','error');return;}
+            const fd = new FormData();
+            fd.append('boq', file);
+            try {
+                if(typeof app!=='undefined')app.showLoading();
+                const r = await fetch(window.location.origin+'/api/projects/'+pid+'/boq/extract-profile',{method:'POST',headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},body:fd});
+                const j = await r.json();
+                if(typeof app!=='undefined')app.hideLoading();
+                if(!j.success){alert(j.message||'识别失败');return;}
+                const {profile,hints} = j.data;
+                d.querySelector('#boq-hints').innerHTML = '<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-top:8px"><b>识别结果：</b><br>' +
+                    (hints.length ? hints.map(h=>'✅ '+h).join('<br>') : '未能识别出关键信息，请手动填写申请表') + '</div>';
+                if(Object.keys(profile).length>0){
+                    // Save extracted profile
+                    const cur = await apiRequest('/api/projects/'+pid+'/profile');
+                    const merged = Object.assign({}, (cur.data&&cur.data.answers)||{}, profile);
+                    await apiRequest('/api/projects/'+pid+'/profile',{method:'PUT',body:JSON.stringify({answers:merged})});
+                    d.querySelector('#boq-hints').innerHTML += '<div style="margin-top:8px;color:#166534;font-weight:700">✅ 已自动填入申请表！请点「填写/确认申请表」核对。</div>';
+                    await this.load();
+                }
+            } catch(e){if(typeof app!=='undefined')app.hideLoading();alert(e.message);}
+        };
+    },
+
     watch() {
         if (this._observer) return;
         const refresh = () => {

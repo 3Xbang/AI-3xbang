@@ -403,23 +403,23 @@ router.get('/projects/:projectId/readiness', authenticate, requireProjectAccess(
     `SELECT count(*)::int AS n, count(*) FILTER (WHERE level = 'skilled')::int AS skilled FROM workers WHERE project_id = $1 AND status = 'active'`, [pid])).rows[0];
   const crewN = (await pool.query(`SELECT count(*)::int AS n FROM project_crews WHERE project_id = $1 AND status = 'active'`, [pid])).rows[0].n;
   const tasks = (await pool.query(
-    `SELECT count(*)::int AS total,
-            count(*) FILTER (WHERE COALESCE(pe.quantity_unit, '') <> '项')::int AS countable,
-            count(*) FILTER (WHERE COALESCE(pe.quantity_unit, '') <> '项' AND pe.planned_quantity > 0)::int AS with_qty
-       FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id = pn.id
+    `SELECT count(*)::int AS total FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id = pn.id
       WHERE pn.project_id = $1 AND pn.master_code IS NOT NULL`, [pid])).rows[0];
   const accounts = (await pool.query('SELECT count(*)::int AS n FROM project_members WHERE project_id = $1', [pid])).rows[0].n;
+  const drawCount = (await pool.query('SELECT count(*)::int AS n FROM project_drawings WHERE project_id = $1', [pid])).rows[0].n;
 
   const a = prof ? prof.answers : {};
   const steps = [
+    { key: 'drawings', required: false, done: drawCount > 0,
+      detail: drawCount > 0 ? `已上传 ${drawCount} 份图纸` : '还没有上传图纸（可以跳过）' },
+    { key: 'boq', required: false, done: !!prof,
+      detail: prof ? `已有申请表数据（${a.floors || '?'} 层）` : '上传 BOQ 可自动填好申请表（可以跳过，手动填）' },
     { key: 'profile', required: true, done: !!prof,
       detail: prof ? `${a.floors || '?'} 层${a.units > 1 ? `，${a.units} 套` : ''}${a.total_area ? `，约 ${a.total_area} 平方米` : ''}` : '还没有填写' },
     { key: 'team', required: true, done: team.n > 0 && team.skilled > 0,
       detail: team.n ? `${crewN} 个班组，大工 ${team.skilled} 人，普工 ${team.n - team.skilled} 人` + (team.skilled ? '' : '（至少要有 1 名大工）') : '还没有录入班组' },
     { key: 'plan', required: true, done: tasks.total > 0,
       detail: tasks.total ? `已生成 ${tasks.total} 道工序${prof && prof.plan_generated_at ? '（' + prof.plan_generated_at + '）' : ''}` : '还没有生成工序' },
-    { key: 'quantities', required: false, done: tasks.countable > 0 && tasks.with_qty >= tasks.countable,
-      detail: tasks.total ? `${tasks.with_qty} / ${tasks.countable} 道工序已有数量（可以先开工，现场再补）` : '先生成工序' },
     { key: 'accounts', required: false, done: accounts > 1,
       detail: `${accounts} 个账号可以访问本项目` }
   ];
@@ -620,6 +620,72 @@ router.put('/daily-assignments/:id', authenticate, wrap(async(req,res)=>{
 router.delete('/daily-assignments/:id', authenticate, requirePermission('manage_projects'), wrap(async(req,res)=>{
   await pool.query('DELETE FROM daily_task_assignments WHERE id=$1',[req.params.id]);
   res.json({success:true});
+}));
+
+
+
+// ============ 项目图纸 ============
+const drawUpload = require('multer')({ storage: require('multer').diskStorage({
+  destination:(req,file,cb)=>cb(null,'uploads/'),
+  filename:(req,file,cb)=>cb(null,'draw_'+Date.now()+'_'+Math.random().toString(36).slice(7)+require('path').extname(file.originalname))
+}), limits:{fileSize:50*1024*1024} });
+
+router.get('/projects/:projectId/drawings', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const rows=(await pool.query('SELECT * FROM project_drawings WHERE project_id=$1 ORDER BY created_at DESC',[req.params.projectId])).rows;
+  res.json({success:true,data:rows});
+}));
+
+router.post('/projects/:projectId/drawings', authenticate, requireProjectAccess(), requirePermission('manage_projects'), drawUpload.array('files',20), wrap(async(req,res)=>{
+  const pid=req.params.projectId;
+  const desc=req.body.description||'';
+  const saved=[];
+  for(const file of (req.files||[])){
+    const r=await pool.query('INSERT INTO project_drawings(project_id,file_name,file_url,file_type,file_size,description,uploaded_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [pid,file.originalname,'/uploads/'+file.filename,file.mimetype.includes('pdf')?'pdf':'image',file.size,desc,req.user.id]);
+    saved.push({id:r.rows[0].id,file_name:file.originalname,file_url:'/uploads/'+file.filename});
+  }
+  res.json({success:true,data:saved});
+}));
+
+router.delete('/drawings/:id', authenticate, requirePermission('manage_projects'), wrap(async(req,res)=>{
+  await pool.query('DELETE FROM project_drawings WHERE id=$1',[req.params.id]);
+  res.json({success:true});
+}));
+
+// BOQ 自动识别项目参数
+router.post('/projects/:projectId/boq/extract-profile', authenticate, requireProjectAccess(), requirePermission('manage_projects'), boqUpload.single('boq'), wrap(async(req,res)=>{
+  if(!req.file) throw new S.HttpError(400,'请上传 Excel 文件(.xlsx)');
+  const boq=BOQ.readBoq(req.file.buffer);
+  const profile={};
+  const hints=[];
+  const floorSecs=boq.items.map(x=>x.section).filter(Boolean);
+  const floors=new Set();
+  floorSecs.forEach(s=>{
+    if(/first.*floor|ground.*floor|beam.*ground/i.test(s)) floors.add(1);
+    if(/second.*floor/i.test(s)) floors.add(2);
+    if(/third.*floor/i.test(s)) floors.add(3);
+    if(/fourth.*floor/i.test(s)) floors.add(4);
+  });
+  const floorCount=[...floors].length||null;
+  if(floorCount){profile.floors=floorCount;hints.push('楼层数: '+floorCount+' 层（BOQ章节推断）');}
+  const toiletItem=boq.items.find(x=>/^toilet$/i.test(x.desc));
+  if(toiletItem&&toiletItem.qty>0){
+    if(floorCount) profile.bathrooms=Math.round(toiletItem.qty/floorCount);
+    hints.push('卫生间: 共 '+toiletItem.qty+' 个（Toilet数量）');
+  }
+  const grease=boq.items.find(x=>/grease.*trap/i.test(x.desc));
+  if(grease&&grease.qty>0){profile.kitchens=grease.qty;hints.push('厨房: '+grease.qty+' 个（Grease trap）');}
+  const hasPool=boq.items.some(x=>/swimming.*pool|pool.*pump/i.test(x.desc)||/swimming/i.test(x.section));
+  if(hasPool){profile.pool=true;hints.push('泳池: 检测到');}
+  const hasPitched=boq.items.some(x=>/metal.*sheet|matal.*sheet|c.*channel/i.test(x.desc)&&/^roof/i.test(x.section));
+  const hasFlat=boq.items.some(x=>/waterproof|polished.*cement/i.test(x.desc)&&/^roof/i.test(x.section));
+  if(hasPitched&&hasFlat) profile.roof='both';
+  else if(hasPitched) profile.roof='pitched';
+  else if(hasFlat) profile.roof='flat';
+  if(profile.roof) hints.push('屋顶类型: '+{pitched:'坡屋面',flat:'平屋面',both:'坡+平'}[profile.roof]);
+  const septic=boq.items.find(x=>/septic.*tank/i.test(x.desc));
+  if(septic&&septic.qty>1){profile.units=septic.qty;hints.push('套数: '+septic.qty+' 套（Septic tank推断）');}
+  res.json({success:true,data:{profile,hints,itemCount:boq.items.length}});
 }));
 
 

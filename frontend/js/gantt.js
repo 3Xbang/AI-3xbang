@@ -1,4 +1,4 @@
-﻿// 甘特图：按9大阶段显示项目进度时间线
+// 甘特图：按9大阶段显示项目进度时间线
 // 老板视角：一眼看懂整体，点行展开细节
 const GanttChart = {
     projectId: null,
@@ -133,7 +133,7 @@ const GanttChart = {
             const floorTag = t.floor != null ? ' &middot; ' + t.floor + '&#23618;' : '';
             const eid = t.execId;
             const acts = eid ? '<div class="gc-task-acts">' +
-                (t.status !== 'completed' ? '<button class="gc-act-btn prog" onclick="GanttChart.updateProgress(' + eid + ')">&#128221; &#25913;&#36827;&#24230;</button>' : '') +
+                '<button class="gc-act-btn prog" onclick="GanttChart.updateProgress(' + eid + ')">&#128221; &#25913;&#36827;&#24230;</button>' +
                 '<button class="gc-act-btn ' + (t.status === 'completed' ? 'done-done' : 'done') + '" onclick="GanttChart.markDone(' + eid + ')">' + (t.status === 'completed' ? '&#10003; &#24050;&#23436;&#25104;' : '&#9989; &#23436;&#25104;') + '</button>' +
                 '</div>' : '';
             return '<div class="gc-row task-row"><div class="gc-label sub"><span>' + icon + '</span><span class="gc-name">' + t.name + floorTag + '</span></div><div class="gc-track">' + bar + acts + '</div></div>';

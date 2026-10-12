@@ -453,3 +453,20 @@ tr.qr-modified { background: #fffde7; }
 .gc-label { gap: 4px !important; flex-wrap: nowrap !important; }
 .gc-name { flex: 1 1 0; min-width: 0; }
 .gc-arrow { flex-shrink: 0; }
+
+/* ========== Gantt complete redesign for readability ========== */
+/* Remove old conflicting rules and set clear sizes */
+.gc-label-head, .gc-label { flex: 0 0 200px !important; min-width: 200px !important; padding: 6px 10px !important; align-items: flex-start !important; gap: 6px !important; }
+.gc-label.sub { flex: 0 0 200px !important; min-width: 200px !important; padding-left: 28px !important; }
+.gc-dot { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.gc-name { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden; }
+.gc-name b { font-size: 15px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.gc-name-th { font-size: 12px !important; color: #475569; font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.gc-label-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto; }
+.gc-cnt { font-size: 11px; color: #64748b; font-weight: 600; white-space: nowrap; background: transparent; border: 0; padding: 0; }
+.gc-weight { font-size: 10px !important; padding: 1px 6px !important; border-radius: 99px; background: #e2e8f0 !important; color: #64748b !important; border: 0 !important; white-space: nowrap !important; }
+.gc-arrow { font-size: 10px; color: #94a3b8; flex-shrink: 0; }
+.gc-row { min-height: 48px !important; cursor: pointer; }
+.gc-row.task-row { min-height: 38px !important; cursor: default; }
+.gc-label-head-txt { font-size: 13px; font-weight: 700; color: #0f172a; }
+.gc-label-head-th { font-size: 11px; color: #64748b; display: block; }

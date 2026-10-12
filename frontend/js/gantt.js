@@ -68,10 +68,10 @@ const GanttChart = {
             if (sp != null && ep != null) {
                 const w = Math.max(1, ep - sp);
                 const fillColor = s.status === 'all_done' ? '#16a34a' : s.color;
-                bar = `<div class="gc-bar" style="left:${sp}%;width:${w}%;background:${fillColor}20;border:2px solid ${fillColor}">
-                    <div class="gc-bar-fill" style="width:${s.pct}%;background:${fillColor}"></div>
-                    <span class="gc-bar-label">${s.pct}%</span>
-                </div>`;
+                bar = `<div class="gc-bar" style="left:${sp}%;width:${w}%;background:${s.light||fillColor+'22'};border:1.5px solid ${fillColor}60"><div class="gc-bar-fill" style="width:${s.pct}%;background:linear-gradient(90deg,${fillColor}cc,${fillColor}ee);"></div><span class="gc-bar-label" style="color:${fillColor};font-weight:800">${s.pct}%</span></div>`;
+
+
+
             }
             const statusDot = s.inProgressCount > 0 ? '🔵' : (s.doneCount === s.totalCount ? '✅' : '⬜');
             const isExpanded = this.expanded.has(s.sec);
@@ -126,8 +126,8 @@ const GanttChart = {
             let bar = '';
             if (sp != null && ep != null) {
                 const w = Math.max(0.5, ep - sp);
-                const col = t.status === 'completed' ? '#16a34a' : t.status === 'in_progress' ? '#2563eb' : '#94a3b8';
-                bar = `<div class="gc-bar task" style="left:${sp}%;width:${w}%;background:${col}20;border:2px solid ${col}"><div class="gc-bar-fill" style="width:${t.pct}%;background:${col}"></div><span class="gc-bar-label" style="font-size:11px">${t.pct > 0 ? t.pct+'%' :''}</span></div>`;
+                const col = t.status === 'completed' ? '#16a34a' : t.status === 'in_progress' ? '#3b82f6' : '#cbd5e1';
+                bar = '<div class="gc-bar task" style="left:'+sp+'%;width:'+w+'%;background:'+(t.status==='not_started'?'#f8fafc':col+'18')+';border:1.5px solid '+(t.status==='not_started'?'#e2e8f0':col+'80')+'"><div class="gc-bar-fill" style="width:'+t.pct+'%;background:linear-gradient(90deg,'+col+'99,'+col+'cc);border-radius:4px;"></div></div>';
             }
             const icon = t.status === 'completed' ? '&#x2705;' : t.status === 'in_progress' ? '&#x1F535;' : '&#x2B1C;';
             const floorTag = t.floor != null ? ' &middot; ' + t.floor + '&#23618;' : '';

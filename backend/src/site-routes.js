@@ -533,7 +533,7 @@ router.delete('/quotas/:code', authenticate, requirePermission('manage_projects'
 
 
 
-const GANTT_SECTIONS={A:{zh:'前期准备',color:'#64748b'},B:{zh:'地基基础',color:'#92400e'},C:{zh:'主体结构',color:'#1e40af'},D:{zh:'屋面工程',color:'#166534'},E:{zh:'机电工程',color:'#9333ea'},F:{zh:'内装修',color:'#b45309'},G:{zh:'外立面',color:'#0e7490'},H:{zh:'室外工程',color:'#065f46'},I:{zh:'竣工验收',color:'#374151'}};
+  const GANTT_SECTIONS={A:{zh:"前期准备",color:"#64748b",light:"#f1f5f9"},B:{zh:"地基基础",color:"#d97706",light:"#fffbeb"},C:{zh:"主体结构",color:"#3b82f6",light:"#eff6ff"},D:{zh:"屋面工程",color:"#22c55e",light:"#f0fdf4"},E:{zh:"机电工程",color:"#a855f7",light:"#faf5ff"},F:{zh:"内装修",color:"#f97316",light:"#fff7ed"},G:{zh:"外立面",color:"#06b6d4",light:"#ecfeff"},H:{zh:"室外工程",color:"#10b981",light:"#ecfdf5"},I:{zh:"竣工验收",color:"#6b7280",light:"#f9fafb"}};
 
 router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap(async(req,res)=>{
   const pid=req.params.projectId;

@@ -399,3 +399,19 @@ tr.qr-modified { background: #fffde7; }
 
 .gc-weight { font-size:11px; color:#fff; background:#94a3b8; border-radius:99px; padding:1px 7px; font-weight:700; margin-left:4px; }
 .gc-overall { background:linear-gradient(135deg,#1d4ed8,#1e40af); color:#fff; border-radius:99px; padding:3px 12px; font-weight:800; font-size:14px; }
+
+/* Gantt chart v2: lighter, cleaner bars */
+.gc-bar { border-radius: 8px !important; height: 22px !important; }
+.gc-bar.task { height: 16px !important; border-radius: 6px !important; }
+.gc-bar-fill { border-radius: 6px; transition: width .3s; }
+.gc-bar-label { font-size: 12px !important; color: inherit !important; text-shadow: none; }
+.gc-row { border-bottom: 1px solid #f1f5f9 !important; }
+.gc-row:hover { background: #f8fafc !important; }
+.gc-task-acts { gap: 4px !important; }
+.gc-act-btn.prog { font-size: 11px !important; padding: 3px 8px !important; border-radius: 6px !important; }
+.gc-act-btn.done { font-size: 11px !important; padding: 3px 8px !important; border-radius: 6px !important; }
+.gc-act-btn.done-done { font-size: 11px !important; padding: 3px 8px !important; border-radius: 6px !important; opacity:.6; }
+.gc-chart { border: 1px solid #e2e8f0 !important; border-radius: 12px !important; }
+.gc-header { background: #f8fafc !important; border-bottom: 2px solid #e2e8f0 !important; }
+.gc-weight { font-size: 10px !important; background: #f1f5f9 !important; color: #64748b !important; border-radius: 99px; padding: 1px 6px; margin-left: 3px; }
+.gc-overall { font-size: 13px !important; padding: 4px 14px !important; }

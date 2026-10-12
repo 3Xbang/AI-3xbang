@@ -70,6 +70,7 @@ const DailyAssign = {
                 <label class="sb-btn small da-photo-btn" title="上传参考图">
                     📷 <input type="file" accept="image/*" multiple style="display:none" onchange="DailyAssign.uploadPhotos(${t.id},this)">
                 </label>
+                
                 <button class="sb-btn small warn" onclick="DailyAssign.remove(${t.id})">🗑</button>
             </div>
         </div>`;
@@ -141,6 +142,27 @@ const DailyAssign = {
         const ov=document.createElement('div'); ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer';
         ov.innerHTML=`<img src="${this.esc(url)}" style="max-width:90vw;max-height:90vh;border-radius:10px">`;
         ov.onclick=()=>ov.remove(); document.body.appendChild(ov);
+    }
+    ,async startNow(id) {
+        const asgn = this.tasks.find(t => t.id === id);
+        if (!asgn) return;
+        try {
+            if (typeof app !== 'undefined') app.showLoading();
+            // 1. Update assignment status to in_progress
+            await apiRequest('/api/daily-assignments/' + id, {method:'PUT', body:JSON.stringify({status:'in_progress'})});
+            // 2. If linked to a process, start it too (move from section 3 to section 2)
+            if (asgn.process_execution_id) {
+                try { await SiteStart.start(asgn.process_execution_id); } catch(_) {}
+            }
+            if (typeof app !== 'undefined') app.hideLoading();
+            if (typeof app !== 'undefined' && app.showToast) app.showToast('已加入正在做 ✅');
+            // Refresh the assignment panel and site board
+            await this.load();
+            if (window.SiteBoard && window.ProjectDetail && ProjectDetail.currentView === 'site') SiteBoard.refresh();
+        } catch(e) {
+            if (typeof app !== 'undefined') app.hideLoading();
+            alert('失败: ' + e.message);
+        }
     }
     ,async updateStatus(id, status) {
         await apiRequest('/api/daily-assignments/'+id, {method:'PUT', body:JSON.stringify({status})});

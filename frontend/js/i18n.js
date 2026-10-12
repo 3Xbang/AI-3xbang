@@ -67,12 +67,15 @@ const translations = {
     },
     projects: {
         title: '项目管理 จัดการโครงการ',
+        add: '新建项目 สร้างโครงการใหม่',
         name: '项目名称 ชื่อโครงการ',
         code: '项目编号 รหัสโครงการ',
         description: '项目描述 คำอธิบาย',
         location: '项目地址 ที่ตั้งโครงการ',
         startDate: '开始日期 วันเริ่ม',
         endDate: '结束日期 วันสิ้นสุด',
+        client: '业主 เจ้าของ',
+        progress: '进度 ความคืบหน้า',
         manager: '项目经理 ผู้จัดการโครงการ',
         create: '创建项目 สร้างโครงการ',
         edit: '编辑项目 แก้ไขโครงการ',
@@ -88,7 +91,13 @@ const translations = {
         addProcess: '添加工序 เพิ่มงาน',
         noProcesses: '暂无工序 ยังไม่มีงาน',
         noProcessesDesc: '开始添加第一个工序 เริ่มต้นเพิ่มงานแรก',
-        addFirst: '添加第一个工序 เพิ่มงานแรก'
+        addFirst: '添加第一个工序 เพิ่มงานแรก',
+        status: {
+            active: '进行中 กำลังดำเนินการ',
+            completed: '已完成 เสร็จแล้ว',
+            paused: '已暂停 หยุดชั่วคราว',
+            planning: '规划中 กำลังวางแผน'
+        }
     },
     processes: {
         title: '工序进度 ความคืบหน้างาน',

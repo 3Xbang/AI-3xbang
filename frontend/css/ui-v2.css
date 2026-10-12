@@ -396,3 +396,6 @@ tr.qr-modified { background: #fffde7; }
 .gc-act-btn.done { border-color:#a7f3d0; background:#f0fdf4; color:#065f46; }
 .gc-act-btn.done:hover { background:#dcfce7; }
 .gc-act-btn.done-done { border-color:#e2e8f0; background:#f8fafc; color:#94a3b8; font-size:11px; }
+
+.gc-weight { font-size:11px; color:#fff; background:#94a3b8; border-radius:99px; padding:1px 7px; font-weight:700; margin-left:4px; }
+.gc-overall { background:linear-gradient(135deg,#1d4ed8,#1e40af); color:#fff; border-radius:99px; padding:3px 12px; font-weight:800; font-size:14px; }

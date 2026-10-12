@@ -1,4 +1,4 @@
-﻿// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
 const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
@@ -552,11 +552,14 @@ router.get('/projects/:projectId/gantt',authenticate,requireProjectAccess(),wrap
     if(r.status==='in_progress')s.inProgressCount++;
     s.tasks.push({key,code:r.code,floor:r.floor,name:(LIB[r.code]||{}).zh||r.code,status:r.status,pct:Number(r.pct)||0,startDate:r.astart||e.startDate||null,endDate:r.aend||e.finishDate||null,execId:e.execId||null});
   });
+  const BOQ_WEIGHTS={A:2,B:8,C:20,D:5,E:9,F:40,G:9,H:5,I:2};
   const list=Object.values(secs).map(s=>{
     const dd=s.tasks.flatMap(t=>[t.startDate,t.endDate]).filter(Boolean).sort();
-    return{...s,startDate:dd[0]||null,endDate:dd[dd.length-1]||null,pct:s.tasks.length?Math.round(s.tasks.reduce((sum,t)=>sum+(t.status==='completed'?100:t.pct),0)/s.tasks.length):0};
+    const pct=s.tasks.length?Math.round(s.tasks.reduce((sum,t)=>sum+(t.status==='completed'?100:t.pct),0)/s.tasks.length):0;
+    return{...s,startDate:dd[0]||null,endDate:dd[dd.length-1]||null,pct,weight:BOQ_WEIGHTS[s.sec]||0};
   });
-  res.json({success:true,data:{projectStart:p.s,plannedEnd:p.e,estimatedEnd:est?est.finishDate:null,sections:list}});
+  const overallPct=Math.round(list.reduce((sum,s)=>sum+s.pct*(BOQ_WEIGHTS[s.sec]||0),0)/100);
+  res.json({success:true,data:{projectStart:p.s,plannedEnd:p.e,estimatedEnd:est?est.finishDate:null,overallPct,sections:list}});
 }));
 
 module.exports = router;

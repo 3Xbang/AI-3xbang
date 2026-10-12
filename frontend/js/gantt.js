@@ -82,7 +82,7 @@ const GanttChart = {
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
                             <span class="gc-name"><b>${s.zh}</b></span>
-                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span>
+                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span><span class="gc-weight">${s.weight}%</span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
                         <div class="gc-track">${bar}</div>
@@ -94,7 +94,7 @@ const GanttChart = {
         c.innerHTML = `
             <div class="gc-wrap">
                 <div class="gc-legend">
-                    <span>📅 开工 ${d.projectStart}</span>
+                    <span>📅 开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% 实际完工(按造价)</span>` : ""}
                     <span class="gc-plan-tag">计划完工 ${d.plannedEnd}</span>
                     <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">预计完工 ${d.estimatedEnd}</span>
                     <button class="sb-btn small" onclick="GanttChart.load()">🔄 刷新</button>

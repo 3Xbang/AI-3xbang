@@ -470,3 +470,18 @@ tr.qr-modified { background: #fffde7; }
 .gc-row.task-row { min-height: 38px !important; cursor: default; }
 .gc-label-head-txt { font-size: 13px; font-weight: 700; color: #0f172a; }
 .gc-label-head-th { font-size: 11px; color: #64748b; display: block; }
+
+/* Weight in track area, not label area - free up space for names */
+.gc-track-weight {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; font-weight: 600; color: #94a3b8;
+    background: #f1f5f9; border-radius: 99px; padding: 1px 6px;
+    pointer-events: none;
+}
+/* Name column now has full space */
+.gc-name b { font-size: 14px !important; }
+.gc-name-th { font-size: 11px !important; color: #64748b !important; }
+/* Wider column since weight badge removed */
+.gc-label-head, .gc-label { flex: 0 0 185px !important; min-width: 185px !important; }
+.gc-label.sub { flex: 0 0 185px !important; min-width: 185px !important; }
+.gc-name { max-width: 130px !important; }

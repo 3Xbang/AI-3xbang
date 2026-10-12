@@ -82,10 +82,10 @@ const GanttChart = {
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
                             <span class="gc-name"><b>${s.zh}</b><span class="gc-name-th">${s.th||""}</span></span>
-                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span><span class="gc-weight">${s.weight}%</span>
+                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
-                        <div class="gc-track">${bar}</div>
+                        <div class="gc-track">${bar}<span class="gc-track-weight" title="造价占比 ราคาคิดเป็น ${s.weight}% ของโครงการ">${s.weight}%</span></div>
                     </div>
                     ${taskRows}
                 </div>`;

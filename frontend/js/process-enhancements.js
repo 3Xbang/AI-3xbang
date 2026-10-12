@@ -792,31 +792,50 @@ if (typeof app !== 'undefined') {
     
     // 完成工序
     app.completeProcess = async function(processExecutionId) {
-        if (!confirm(t('processes.confirmComplete'))) return;
-        
+        // 弹窗：选实际完成日期，历史任务用过去的日期
+        const today = new Date(Date.now() + 7*3600000).toISOString().split('T')[0];
+        const dlg = await new Promise(resolve => {
+            const el = document.createElement('div');
+            el.className = 'sb-overlay';
+            el.innerHTML = `<div class="sb-dialog narrow"><header><h3>标记完成 บันทึกเสร็จสิ้น</h3><button data-x>&times;</button></header>
+                <div class="sb-body">
+                    <div class="sb-note" style="margin-bottom:12px">是今天刚完成，还是之前已经完成了？</div>
+                    <div class="sb-field"><label>实际完成日期 *</label><input type="date" id="cp-date" value="${today}" max="${today}" style="font-size:16px;padding:10px;width:100%;border:2px solid #bfdbfe;border-radius:10px"></div>
+                    <div class="sb-sub" style="margin-top:6px">如果这道工序之前就完成了，请改成实际完成的日期。日期越早，后面依赖它的工序等待期越快满足。</div>
+                </div>
+                <footer><button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok>✅ 确认完成 ยืนยัน</button></footer></div>`;
+            document.body.appendChild(el);
+            el.querySelector('[data-x]').onclick = () => { el.remove(); resolve(null); };
+            el.querySelector('[data-cancel]').onclick = () => { el.remove(); resolve(null); };
+            el.querySelector('[data-ok]').onclick = () => { const v = el.querySelector('#cp-date').value; el.remove(); resolve(v || today); };
+        });
+        if (!dlg) return;
         try {
             this.showLoading();
             const result = await api.processes.update(processExecutionId, {
                 status: 'completed',
-                actual_end_date: new Date().toISOString().split('T')[0],
+                actual_end_date: dlg,
+                actual_start_date: dlg,   // 如果没有开始日期，一并补上
                 completion_percentage: 100
             });
-            
             if (result.success) {
-                this.showToast(t('processes.completeSuccess'));
-                // 重新加载工序列表
+                this.showToast('已完成 ✅ เสร็จสิ้นแล้ว');
                 if (typeof ProjectDetail !== 'undefined' && ProjectDetail.projectId) {
                     await ProjectDetail.loadProcesses();
+                    // 完成后刷新今日现场（如果已加载）
+                    if (window.SiteBoard && SiteBoard.projectId === ProjectDetail.projectId) {
+                        SiteEstimate && (SiteEstimate.cache = {});
+                        SiteBoard.refresh().catch(() => {});
+                    }
                 }
             }
         } catch (error) {
             console.error('Complete process error:', error);
-            this.showToast(t('common.error'), 'error');
+            this.showToast(typeof t !== 'undefined' ? t('common.error') : '操作失败', 'error');
         } finally {
             this.hideLoading();
         }
     };
-    
     // 记录子任务进度
     app.recordSubtaskProgress = function(subtaskId, processExecutionId) {
         // 调用已有的更新子任务表单

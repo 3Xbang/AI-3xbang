@@ -588,41 +588,6 @@
                 `<a href="#" class="td-link" data-force="${x.execId}">提前开始…</a>` + `</div>`;
         },
 
-        cardDoing(x, planned) {
-            const pct = pctOf(x), paused = x.workStatus === 'waiting_material' || x.workStatus === 'weather_stop';
-            const hasPeople = planned && (this.assign[x.execId] || []).length > 0;
-            return `<div class="td-card doing ${paused ? 'paused' : ''}"><div class="td-top"><div class="td-grow"><b class="td-name">${nm(x)}</b> ${this.floorTag(x)} ${STATUS_TAG[x.workStatus] || ''}` +
-                `${x.quantityMissing ? '<span class="td-tag warn">工程量未录入</span>' : ''}</div><div class="td-pct">${pct}%</div></div>` +
-                `<div class="td-bar"><i style="width:${pct}%"></i></div>` +
-                (planned ? SiteEstimate.line(this.estMap && this.estMap[x.execId]) : '') +
-                (planned ? `<div class="td-people">${hasPeople ? this.peopleChips(x.execId, true) : '<span class="td-sub">还没派人</span>'}</div>` : '') +
-                `<div class="td-actions">` +
-                (paused ? `<button class="sb-btn primary" data-resume="${x.execId}">恢复施工 ทำต่อ</button>`
-                    : `<button class="sb-btn primary" data-prog="${x.execId}">记录进度 บันทึกความคืบหน้า</button>`) +
-                (planned && !paused ? `<button class="sb-btn" data-pick="${x.execId}">派人 มอบหมาย</button>` : '') +
-                `<button class="sb-btn" data-done="${x.execId}">完成 เสร็จ</button>` +
-                `<details class="td-menu inline"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
-                (!paused ? `<a href="#" data-stat="waiting_material:${x.execId}">🟡 缺材料 ขาดวัสดุ</a><a href="#" data-stat="weather_stop:${x.execId}">⛅ 天气停工 หยุดเพราะอากาศ</a>` : '') +
-                `<a href="#" data-qty="${x.execId}">📐 录入工程量 ใส่ปริมาณงาน</a>` +
-                `<a href="#" data-subtasks="${x.execId}">📑 子任务 งานย่อย</a>` +
-                `<a href="#" data-hist="${x.execId}">📊 进度历史 ประวัติ</a></div></details>` +
-                `</div></div>`;
-        },
-
-        cardReady(x, sug, planned) {
-            const why = sug ? sug.reasons.filter(r => !/^已经开工/.test(r)).slice(0, 1).map(esc).join('') : (x.unlocks > 0 ? `做完后可以解锁 ${x.unlocks} 个任务` : '');
-            return `<div class="td-card ready"><div class="td-top"><div class="td-grow"><b class="td-name">${nm(x)}</b> ${this.floorTag(x)}` +
-                `${x.quantityMissing ? '<span class="td-tag warn">工程量未录入</span>' : ''}</div></div>` +
-                (planned ? SiteEstimate.line(this.estMap && this.estMap[x.execId]) : '') +
-                (sug ? `<div class="td-suggest">💡 建议派：${sug.members.map(m => `<span class="td-chip ${m.level === 'skilled' ? 'skilled' : ''}">${esc(m.name)}</span>`).join('')}<span class="td-sub">（${sug.crews} 组）</span></div>` : '') +
-                (why ? `<div class="td-sub">${why}</div>` : '') +
-                `<div class="td-actions">` +
-                (sug && planned ? `<button class="sb-btn primary" data-go="${x.execId}">按建议开工 เริ่มตามคำแนะนำ</button><button class="sb-btn" data-start="${x.execId}">只开始，不派人</button>`
-                    : `<button class="sb-btn primary" data-start="${x.execId}">开始 เริ่ม</button>`) +
-                (planned ? `<button class="sb-btn" data-pick="${x.execId}">自己选人 เลือกเอง</button>` : '') +
-                `</div></div>`;
-        },
-
         // ---------- 事件 ----------
         bind() {
             const c = document.getElementById('site-board-container');

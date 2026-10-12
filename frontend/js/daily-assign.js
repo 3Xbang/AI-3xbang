@@ -153,7 +153,7 @@ const DailyAssign = {
             await apiRequest('/api/daily-assignments/' + id, {method:'PUT', body:JSON.stringify({status:'in_progress'})});
             // 2. If linked to a process, start it too (move from section 3 to section 2)
             if (asgn.process_execution_id) {
-                try { await SiteStart.start(asgn.process_execution_id); } catch(_) {}
+                try { const _r=await apiRequest('/api/processes/'+asgn.process_execution_id+'/start',{method:'POST',body:'{}'}); } catch(_) { /* blocked is ok */ }
             }
             if (typeof app !== 'undefined') app.hideLoading();
             if (typeof app !== 'undefined' && app.showToast) app.showToast('已加入正在做 ✅');

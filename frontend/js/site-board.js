@@ -361,6 +361,8 @@
                 this.data = r.data;
                 this.legacyRows = null;
                 this.estMap = {};
+                this._assignedTasks=[];
+                try{const _ar=await call('GET','/projects/'+this.projectId+'/daily-assignments?date='+(r.data.date||new Date(Date.now()+7*3600000).toISOString().slice(0,10)));this._assignedTasks=_ar.data||[];}catch(_){}
                 if (r.data.planned) {
                     try { const e = await SiteEstimate.get(this.projectId, true); (e.tasks || []).forEach(x => { this.estMap[x.execId] = x; }); } catch (_) { /* 预计天数失败不影响看板 */ }
                     this.date = r.data.date;
@@ -606,6 +608,10 @@
                 else if (k === 'notify') SiteNotify.open(pid);
                 else this.refresh();
             });
+            on('[data-da-start]',el=>{const id=Number(el.dataset.daStart);this.run(()=>apiRequest('/api/daily-assignments/'+id,{method:'PUT',body:JSON.stringify({status:'in_progress'})}),'已开始');});
+            on('[data-da-done]',el=>{const id=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+id,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成');});
+            on('[data-da-start]',el=>{const did=Number(el.dataset.daStart);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'in_progress'})}),'已开始 เริ่มแล้ว');});
+            on('[data-da-done]',el=>{const did=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成 เสร็จ');});
             on('[data-att]', el => this.toggleAbsent(Number(el.dataset.att)));
             on('[data-rm]', el => { const [k, i] = el.dataset.rm.split(':'); this.assign[k] = (this.assign[k] || []).filter(x => x !== Number(i)); this.commit(); });
             on('[data-pick]', el => this.pickPeople(Number(el.dataset.pick)));

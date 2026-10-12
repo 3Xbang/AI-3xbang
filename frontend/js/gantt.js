@@ -141,22 +141,39 @@ const GanttChart = {
     },
 
     async updateProgress(execId) {
-        if (typeof app !== 'undefined' && app.showUpdateProgress) {
-            const procs = this.data && this.data.sections ? this.data.sections.flatMap(s => s.tasks) : [];
-            const task = procs.find(t => t.execId === execId);
-            const cur = task ? task.pct : 0;
-            app.showUpdateProgress(execId, cur);
-            // After modal closes, reload
-            const observer = new MutationObserver(() => {
-                if (!document.getElementById('modal-container').innerHTML.trim()) {
-                    observer.disconnect();
-                    setTimeout(() => { SiteEstimate && (SiteEstimate.cache = {}); this.load(); }, 500);
-                }
-            });
-            observer.observe(document.getElementById('modal-container'), { childList: true });
-        }
+        const procs = this.data ? this.data.sections.flatMap(s => s.tasks) : [];
+        const task = procs.find(t => t.execId === execId);
+        const cur = task ? task.pct : 0;
+        const name = task ? task.name + (task.floor != null ? ' ' + task.floor + '层' : '') : '';
+        const today = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+        const val = await new Promise(resolve => {
+            const el = document.createElement('div'); el.className = 'sb-overlay';
+            el.innerHTML = '<div class="sb-dialog narrow"><header><h3>📝 更新进度</h3><button data-x>&times;</button></header><div class="sb-body"><b style="display:block;margin-bottom:12px">' + name + '</b><div id="gup-n" style="font-size:52px;font-weight:900;color:#2563eb;text-align:center">' + cur + '%</div><input type="range" id="gup-s" min="0" max="100" value="' + cur + '" style="width:100%;height:28px;cursor:pointer;accent-color:#2563eb;margin:10px 0"><div style="display:flex;gap:8px;margin-bottom:10px">' +
+                [25,50,75,100].map(v => '<button type="button" onclick="document.getElementById(\'gup-s\').value=' + v + ';document.getElementById(\'gup-n\').textContent=\'' + v + '%\'" style="flex:1;padding:10px;border-radius:8px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;cursor:pointer">' + v + '%</button>').join('') +
+                '</div><div class="sb-field"><label style="font-size:13px">实际完成日期（可不填）</label><input type="date" id="gup-d" max="' + today + '" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px"></div></div><footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>✅ 保存</button></footer></div>';
+            document.body.appendChild(el);
+            el.querySelector('#gup-s').oninput = () => { el.querySelector('#gup-n').textContent = el.querySelector('#gup-s').value + '%'; };
+            el.querySelector('[data-x]').onclick = () => { el.remove(); resolve(null); };
+            el.querySelector('[data-cancel]').onclick = () => { el.remove(); resolve(null); };
+            el.querySelector('[data-ok]').onclick = () => { const v = { pct: +el.querySelector('#gup-s').value, date: el.querySelector('#gup-d').value }; el.remove(); resolve(v); };
+        });
+        if (!val) return;
+        try {
+            if (typeof app !== 'undefined') app.showLoading();
+            const body = { completion_percentage: val.pct };
+            if (val.pct >= 100) { body.status = 'completed'; body.actual_end_date = val.date || today; }
+            else if (val.pct > 0) { body.status = 'in_progress'; if (val.date) body.actual_start_date = val.date; }
+            if (typeof api !== 'undefined' && api.processes && api.processes.update) {
+                await api.processes.update(execId, body);
+            } else {
+                await apiRequest('/api/processes/' + execId, { method: 'PUT', body: JSON.stringify(body) });
+            }
+            if (typeof app !== 'undefined') app.hideLoading();
+            if (typeof app !== 'undefined' && app.showToast) app.showToast('进度已保存 ✅ — 正在重新计算...');
+            SiteEstimate && (SiteEstimate.cache = {});
+            await this.load();
+        } catch(e) { if (typeof app !== 'undefined') app.hideLoading(); alert('保存失败: ' + e.message); }
     },
-
     async markDone(execId) {
         if (typeof app !== 'undefined' && app.completeProcess) {
             await app.completeProcess(execId);

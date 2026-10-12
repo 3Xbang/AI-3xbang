@@ -338,6 +338,7 @@
 
     // ================= 今日现场安排（合并了原来的「今日任务」和「现场安排」） =================
     const bi = (zh, th) => `${esc(zh)}<small class="td-th">${esc(th)}</small>`;
+    const bi_th = (th, zh) => `<span class="td-th-main">${esc(th)}</span><small class="td-zh-sub"> ${esc(zh)}</small>`;
     const STATUS_TAG = {
         waiting_material: '<span class="td-tag warn">等材料 รอวัสดุ</span>',
         weather_stop: '<span class="td-tag gray">天气停工 หยุดเพราะอากาศ</span>'
@@ -443,11 +444,11 @@
             // ═══ 今天到场几个人（顶部简单一行）═══
             if (hasTeam) {
                 const absent = new Set(d.absent);
-                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} 个任务进行中 · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} 人到场</span></div>`;
+                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} งานกำลังทำ · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} คนมา</span></div>`;
             }
 
             // ═══ 第 1 步：点名 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b>点名 บันทึกเข้างาน</b></div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b class="fc-th-label">บันทึกเข้างาน</b><small class="fc-zh-sub">点名</small></div>`;
             if (!hasTeam) {
                 html += `<div class="fc-empty">先录入团队再点名</div>`;
             } else {
@@ -465,7 +466,7 @@
             html += `</div>`;
 
             // ═══ 第 2 步：正在做的任务 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">2</span><b>正在做 กำลังทำ</b>${doing.length ? `<span class="fc-badge">${doing.length}</span>` : ''}</div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">2</span><b class="fc-th-label">กำลังทำ</b><small class="fc-zh-sub">正在做</small>${doing.length ? `<span class="fc-badge">${doing.length}</span>` : ''}</div>`;
             if (doing.length) {
                 html += doing.map(x => this.cardDoing(x, true)).join('');
             } else {
@@ -474,7 +475,7 @@
             html += `</div>`;
 
             // ═══ 第 3 步：可以开工的任务 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num fc-num-green">3</span><b>可以开工 เริ่มได้เลย</b>${readyN ? `<span class="fc-badge green">${readyN}</span>` : ''}</div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num fc-num-green">3</span><b class="fc-th-label">เริ่มได้เลย</b><small class="fc-zh-sub">可以开工</small>${readyN ? `<span class="fc-badge green">${readyN}</span>` : ''}</div>`;
             if (readyN) {
                 html += d.ready.map(x => this.cardReady(x, d.suggestions.find(s => s.execId === x.execId), true)).join('');
             } else {
@@ -488,7 +489,7 @@
             near.sort((a, b) => a.reasons.length - b.reasons.length || a.key.localeCompare(b.key));
             const nearTop = near.slice(0, 8), nearSet = new Set(nearTop.map(x => x.key));
             if (nearTop.length) {
-                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">4</span><b>快要能开工 ใกล้เริ่มได้</b><span class="fc-badge gray">${nearTop.length}</span></summary>` +
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">4</span><b class="fc-th-label">ใกล้เริ่มได้</b><small class="fc-zh-sub">快要开工</small><span class="fc-badge gray">${nearTop.length}</span></summary>` +
                     nearTop.map(x => this.rowWaiting(x)).join('') + `</details></div>`;
             }
 
@@ -534,8 +535,8 @@
                 ${hasPeople ? `<div class="fc-people">${this.peopleChips(x.execId, true)}</div>` : ''}
 
                 ${paused
-                    ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ 恢复施工 กลับมาทำต่อ</button>`
-                    : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 填今天进度 บันทึกความคืบหน้า</button>`
+                    ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ กลับมาทำต่อ</button>`
+                    : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 บันทึกความคืบหน้า</button>`
                 }
 
                 ${!paused ? `
@@ -578,9 +579,9 @@
                 ${estLine ? `<div class="fc-card-meta">${estLine}</div>` : ''}
                 ${sugPeople ? `<div class="fc-sug">💡 建议派：${sugPeople}</div>` : ''}
                 ${sug && planned
-                    ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ 按建议开工 เริ่มตามคำแนะนำ</button>
-                       <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">只开始不派人</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
-                    : `<button class="fc-main-btn start" data-start="${x.execId}">▶ 开工 เริ่มงาน</button>
+                    ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ เริ่มตามคำแนะนำ</button>
+                       <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">เริ่มงาน</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
+                    : `<button class="fc-main-btn start" data-start="${x.execId}">▶ เริ่มงาน</button>
                        ${planned ? `<div class="fc-secondary"><button class="fc-sec-btn" data-pick="${x.execId}">👷 选人再开工</button></div>` : ''}`
                 }
             </div>`;

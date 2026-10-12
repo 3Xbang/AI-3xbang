@@ -527,3 +527,22 @@ tr.qr-modified { background: #fffde7; }
 .da-site-desc { font-size: 13px; color: #64748b; margin-top: 3px; }
 .da-site-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .da-site-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Thai-first bilingual: Thai large, Chinese small secondary */
+.td-th-main { font-size: 18px; font-weight: 800; color: var(--navy); }
+.td-zh-sub { font-size: 11px; font-weight: 500; color: #94a3b8; margin-left: 5px; }
+.fc-th-label { font-size: 18px !important; font-weight: 800 !important; }
+.fc-zh-sub { font-size: 11px !important; font-weight: 500 !important; color: #94a3b8 !important; margin-left: 5px; }
+
+/* fc-stat Thai text */
+.fc-stat { font-size: 13px; color: var(--muted); }
+
+/* Foreman attendance: Thai "??????" / "?????" */
+.fc-att-status { font-size: 13px !important; font-weight: 700 !important; }
+.fc-att.skilled .fc-att-status { color: var(--blue); }
+.fc-att.helper .fc-att-status { color: var(--green); }
+.fc-att.absent .fc-att-status { color: var(--red); }
+
+/* Main action buttons: Thai text bigger */
+.fc-main-btn { font-size: 18px !important; font-weight: 800 !important; }
+.fc-sec-btn { font-size: 13px !important; }

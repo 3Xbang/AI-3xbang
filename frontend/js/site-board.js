@@ -362,7 +362,7 @@
                 this.legacyRows = null;
                 this.estMap = {};
                 this._assignedTasks=[];
-                try{const _ar=await call('GET','/projects/'+this.projectId+'/daily-assignments?date='+(r.data.date||new Date(Date.now()+7*3600000).toISOString().slice(0,10)));this._assignedTasks=_ar.data||[];}catch(_){}
+                try{const _ar=await call('GET','/projects/'+this.projectId+'/daily-assignments?date='+new Date(Date.now()+7*3600000).toISOString().slice(0,10));this._assignedTasks=_ar.data||[];}catch(_){}
                 if (r.data.planned) {
                     try { const e = await SiteEstimate.get(this.projectId, true); (e.tasks || []).forEach(x => { this.estMap[x.execId] = x; }); } catch (_) { /* 预计天数失败不影响看板 */ }
                     this.date = r.data.date;

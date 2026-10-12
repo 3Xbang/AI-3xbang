@@ -652,40 +652,96 @@ router.delete('/drawings/:id', authenticate, requirePermission('manage_projects'
   res.json({success:true});
 }));
 
-// BOQ 自动识别项目参数
-router.post('/projects/:projectId/boq/extract-profile', authenticate, requireProjectAccess(), requirePermission('manage_projects'), boqUpload.single('boq'), wrap(async(req,res)=>{
-  if(!req.file) throw new S.HttpError(400,'请上传 Excel 文件(.xlsx)');
-  const boq=BOQ.readBoq(req.file.buffer);
-  const profile={};
-  const hints=[];
-  const floorSecs=boq.items.map(x=>x.section).filter(Boolean);
-  const floors=new Set();
-  floorSecs.forEach(s=>{
-    if(/first.*floor|ground.*floor|beam.*ground/i.test(s)) floors.add(1);
-    if(/second.*floor/i.test(s)) floors.add(2);
-    if(/third.*floor/i.test(s)) floors.add(3);
-    if(/fourth.*floor/i.test(s)) floors.add(4);
+// BOQ 自动识别项目参数 — 支持 Excel (.xlsx) 和 PDF
+const boqExtractUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
+
+// 从 BOQ 条目列表中识别项目参数（Excel 和 PDF 共用）
+function extractProfileFromItems(items) {
+  const profile = {};
+  const hints = [];
+  const floorSecs = items.map(x => x.section).filter(Boolean);
+  const floors = new Set();
+  floorSecs.forEach(s => {
+    if (/first.*floor|ground.*floor|beam.*ground/i.test(s)) floors.add(1);
+    if (/second.*floor/i.test(s)) floors.add(2);
+    if (/third.*floor/i.test(s)) floors.add(3);
+    if (/fourth.*floor/i.test(s)) floors.add(4);
   });
-  const floorCount=[...floors].length||null;
-  if(floorCount){profile.floors=floorCount;hints.push('楼层数: '+floorCount+' 层（BOQ章节推断）');}
-  const toiletItem=boq.items.find(x=>/^toilet$/i.test(x.desc));
-  if(toiletItem&&toiletItem.qty>0){
-    if(floorCount) profile.bathrooms=Math.round(toiletItem.qty/floorCount);
-    hints.push('卫生间: 共 '+toiletItem.qty+' 个（Toilet数量）');
+  const floorCount = [...floors].length || null;
+  if (floorCount) { profile.floors = floorCount; hints.push('楼层数: ' + floorCount + ' 层（BOQ章节推断）'); }
+  const toiletItem = items.find(x => /^toilet$/i.test(x.desc));
+  if (toiletItem && toiletItem.qty > 0) {
+    if (floorCount) profile.bathrooms = Math.round(toiletItem.qty / floorCount);
+    hints.push('卫生间: 共 ' + toiletItem.qty + ' 个（Toilet数量）');
   }
-  const grease=boq.items.find(x=>/grease.*trap/i.test(x.desc));
-  if(grease&&grease.qty>0){profile.kitchens=grease.qty;hints.push('厨房: '+grease.qty+' 个（Grease trap）');}
-  const hasPool=boq.items.some(x=>/swimming.*pool|pool.*pump/i.test(x.desc)||/swimming/i.test(x.section));
-  if(hasPool){profile.pool=true;hints.push('泳池: 检测到');}
-  const hasPitched=boq.items.some(x=>/metal.*sheet|matal.*sheet|c.*channel/i.test(x.desc)&&/^roof/i.test(x.section));
-  const hasFlat=boq.items.some(x=>/waterproof|polished.*cement/i.test(x.desc)&&/^roof/i.test(x.section));
-  if(hasPitched&&hasFlat) profile.roof='both';
-  else if(hasPitched) profile.roof='pitched';
-  else if(hasFlat) profile.roof='flat';
-  if(profile.roof) hints.push('屋顶类型: '+{pitched:'坡屋面',flat:'平屋面',both:'坡+平'}[profile.roof]);
-  const septic=boq.items.find(x=>/septic.*tank/i.test(x.desc));
-  if(septic&&septic.qty>1){profile.units=septic.qty;hints.push('套数: '+septic.qty+' 套（Septic tank推断）');}
-  res.json({success:true,data:{profile,hints,itemCount:boq.items.length}});
+  const grease = items.find(x => /grease.*trap/i.test(x.desc));
+  if (grease && grease.qty > 0) { profile.kitchens = grease.qty; hints.push('厨房: ' + grease.qty + ' 个（Grease trap）'); }
+  const hasPool = items.some(x => /swimming.*pool|pool.*pump/i.test(x.desc) || /swimming/i.test(x.section));
+  if (hasPool) { profile.pool = true; hints.push('泳池: 检测到'); }
+  const hasPitched = items.some(x => /metal.*sheet|matal.*sheet|c.*channel/i.test(x.desc) && /^roof/i.test(x.section));
+  const hasFlat = items.some(x => /waterproof|polished.*cement/i.test(x.desc) && /^roof/i.test(x.section));
+  if (hasPitched && hasFlat) profile.roof = 'both';
+  else if (hasPitched) profile.roof = 'pitched';
+  else if (hasFlat) profile.roof = 'flat';
+  if (profile.roof) hints.push('屋顶类型: ' + { pitched: '坡屋面', flat: '平屋面', both: '坡+平' }[profile.roof]);
+  const septic = items.find(x => /septic.*tank/i.test(x.desc));
+  if (septic && septic.qty > 1) { profile.units = septic.qty; hints.push('套数: ' + septic.qty + ' 套（Septic tank推断）'); }
+  return { profile, hints };
+}
+
+// 从 PDF 文本中解析 BOQ 条目（section + desc + qty）
+function parsePdfBoqText(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const items = [];
+  let section = '';
+  for (const line of lines) {
+    // 章节标题：全大写且不含数字列，或以 CHAPTER/SECTION/WORK 开头
+    if (/^[A-Z][A-Z\s\/\-&,]{4,}$/.test(line) || /^(chapter|section|part|work|งาน)/i.test(line)) {
+      section = line;
+      continue;
+    }
+    // 尝试从行末提取数量：最后一个纯数字（可带小数）
+    const m = line.match(/^(.+?)\s+([\d,]+(?:\.\d+)?)\s*(?:nos?|pcs?|sets?|rolls?|m[\d\s]|lm|ea|lot|sum|kg)?\.?\s*$/i);
+    if (m) {
+      const desc = m[1].replace(/^\d+[\.\)]\s*/, '').trim(); // 去掉行号
+      const qty = parseFloat(m[2].replace(/,/g, ''));
+      if (desc.length > 2) items.push({ section, desc, qty });
+    } else {
+      // 无数量的行也作为描述记录（section 可能含关键词）
+      const desc = line.replace(/^\d+[\.\)]\s*/, '').trim();
+      if (desc.length > 3) items.push({ section, desc, qty: 0 });
+    }
+  }
+  return items;
+}
+
+router.post('/projects/:projectId/boq/extract-profile', authenticate, requireProjectAccess(), requirePermission('manage_projects'), boqExtractUpload.single('boq'), wrap(async(req, res) => {
+  if (!req.file) throw new S.HttpError(400, '请上传 BOQ 文件（Excel .xlsx 或 PDF）');
+  const fname = (req.file.originalname || '').toLowerCase();
+  let items = [];
+  let fileDesc = '';
+
+  if (fname.endsWith('.xlsx')) {
+    // Excel 路径：使用现有 BOQ 解析器
+    const boq = BOQ.readBoq(req.file.buffer);
+    items = boq.items;
+    fileDesc = 'Excel，' + items.length + ' 行';
+  } else if (fname.endsWith('.pdf')) {
+    // PDF 路径：用 pdf-parse 提取文本
+    try {
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(req.file.buffer);
+      items = parsePdfBoqText(data.text);
+      fileDesc = 'PDF，' + data.numpages + ' 页，解析出 ' + items.length + ' 行';
+    } catch (e) {
+      throw new S.HttpError(400, 'PDF 解析失败：' + e.message);
+    }
+  } else {
+    throw new S.HttpError(400, '只支持 Excel（.xlsx）或 PDF 文件');
+  }
+
+  const { profile, hints } = extractProfileFromItems(items);
+  res.json({ success: true, data: { profile, hints, itemCount: items.length, fileDesc } });
 }));
 
 

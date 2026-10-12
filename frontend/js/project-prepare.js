@@ -13,7 +13,7 @@ const ProjectPrepare = {
         },
         boq: {
             zh: '工程量清单 BOQ', th: 'ปริมาณงาน (BOQ)', optional: true,
-            why: '有报价单 Excel 就上传，系统自动识别楼层、套数、卫生间等，帮你填好申请表。没有就跳过，手动填。',
+            why: '有报价单就上传（Excel .xlsx 或 PDF），系统自动识别楼层、套数、卫生间等，帮你填好申请表。没有就跳过，手动填。',
             btn: '上传 BOQ（自动识别）', run: pid => ProjectPrepare.openBoqExtract(pid)
         },
         profile: {
@@ -144,8 +144,8 @@ const ProjectPrepare = {
         const d = document.createElement('div'); d.className='sb-overlay';
         d.innerHTML = '<div class="sb-dialog narrow"><header><h3>📊 上传 BOQ 自动识别项目信息</h3><button data-x>&times;</button></header>' +
             '<div class="sb-body">' +
-            '<div class="sb-note">上传报价单 Excel（.xlsx），系统自动识别楼层数、套数、卫生间等，帮你填好申请表里的基础信息。</div>' +
-            '<div class="sb-field"><label>选择 BOQ Excel 文件 *</label><input type="file" id="boq-xls" accept=".xlsx" style="font-size:14px;padding:8px 0"></div>' +
+            '<div class="sb-note">上传报价单文件（Excel .xlsx 或 PDF），系统自动识别楼层数、套数、卫生间等，帮你填好申请表里的基础信息。</div>' +
+            '<div class="sb-field"><label>选择 BOQ 文件（Excel .xlsx 或 PDF）*</label><input type="file" id="boq-xls" accept=".xlsx,.pdf" style="font-size:14px;padding:8px 0"></div>' +
             '<div id="boq-hints" style="margin-top:10px"></div>' +
             '</div>' +
             '<footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-analyze>🔍 识别并填入申请表</button></footer></div>';

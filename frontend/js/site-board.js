@@ -1,4 +1,4 @@
-﻿// 现场安排：项目申请表、团队名册、现场看板、提前开始确认、通知
+// 现场安排：项目申请表、团队名册、现场看板、提前开始确认、通知
 // 对应后端接口见 backend/src/site-routes.js。泰文请当地同事核对。
 (function () {
     'use strict';
@@ -515,11 +515,11 @@
             const hasPeople = planned && (this.assign[x.execId] || []).length > 0;
             const est = this.estMap && this.estMap[x.execId];
             const estLine = est && est.kind === 'work' && est.estDays
-                ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
+                ? `<span class="fc-est-pill">~${est.estDays}วัน/${est.estDays}天 · ${est.crewsUsed}กลุ่ม/${est.crewsUsed}班 ${est.people.skilled}ช่าง+${est.people.helper}ผู้ช่วย</span>`
                 : '';
             const dailyTarget = est && est.kind === 'work' && est.output && est.crewsUsed ? (est.output * est.crewsUsed) : null;
-            const quotaLine = dailyTarget && !paused ? `<div class="fc-quota">🎯 今日定额：<b>${dailyTarget} ${esc(est.unit||'')}</b></div>` : '';
-            const statusLabel = { waiting_material: '🟡 缺材料 — 等待补料', weather_stop: '⛅ 天气停工 — 等待天气好转' }[x.workStatus] || '';
+            const quotaLine = dailyTarget && !paused ? `<div class="fc-quota">🎯 ปริมาณงานต่อวัน/今日定额：<b>${dailyTarget} ${esc(est.unit||"")}</b></div>` : "";
+            const statusLabel = { waiting_material: '🟡 ขาดวัสดุ / 缺材料', weather_stop: '⛅ หยุดเพราะอากาศ / 天气停工' }[x.workStatus] || '';
 
             return `<div class="fc-card doing ${paused ? 'paused' : ''}">
                 <div class="fc-card-top">
@@ -565,7 +565,7 @@
         cardReady(x, sug, planned) {
             const est = this.estMap && this.estMap[x.execId];
             const estLine = est && est.kind === 'work' && est.estDays
-                ? `<span class="fc-est-pill">约${est.estDays}天 · ${est.crewsUsed}班${est.people.skilled}大工${est.people.helper > 0 ? '+' + est.people.helper + '普工' : ''}</span>`
+                ? `<span class="fc-est-pill">~${est.estDays}วัน/${est.estDays}天 · ${est.crewsUsed}กลุ่ม/${est.crewsUsed}班 ${est.people.skilled}ช่าง+${est.people.helper}ผู้ช่วย</span>`
                 : '';
             const sugPeople = sug ? sug.members.map(m => `<span class="fc-sug-chip">${esc(m.name)}</span>`).join('') : '';
             return `<div class="fc-card ready">
@@ -708,7 +708,7 @@
             const name = nm(x);
 
             const targetHtml = dailyTarget
-                ? `<div class="pg-target">🎯 今日定额：<b>${dailyTarget} ${esc(unit)}</b>（${crews} 班标准量）</div>`
+                ? `<div class="pg-target">🎯 ปริมาณงาน/今日定额：<b>${dailyTarget} ${esc(unit)}</b>（${crews} กลุ่ม/班）</div>`
                 : '';
 
             const body = `

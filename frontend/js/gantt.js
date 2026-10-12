@@ -81,7 +81,7 @@ const GanttChart = {
                     <div class="gc-row" onclick="GanttChart.toggle('${s.sec}')">
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
-                            <span class="gc-name"><b>${s.zh}</b></span>
+                            <span class="gc-name"><b>${s.zh}</b><span class="gc-name-th">${s.th||""}</span></span>
                             <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span><span class="gc-weight">${s.weight}%</span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
@@ -94,9 +94,9 @@ const GanttChart = {
         c.innerHTML = `
             <div class="gc-wrap">
                 <div class="gc-legend">
-                    <span>📅 开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% 实际完工(按造价)</span>` : ""}
-                    <span class="gc-plan-tag">计划完工 ${d.plannedEnd}</span>
-                    <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">预计完工 ${d.estimatedEnd}</span>
+                    <span>📅 เปิดงาน/开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% งานเสร็จจริง(ตามต้นทุน)</span>` : ""}
+                    <span class="gc-plan-tag">กำหนดเสร็จ/计划完工 ${d.plannedEnd}</span>
+                    <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">คาดว่าเสร็จ/预计完工 ${d.estimatedEnd}</span>
                     <button class="sb-btn small" onclick="GanttChart.load()">🔄 刷新</button>
                 </div>
                 <div class="gc-chart">

@@ -72,10 +72,23 @@ const ProjectDashboard = {
         const progress = Math.round(project.progress || 0);
         const progressColor = this.getProgressColor(progress);
         const statusClass = project.status || 'active';
+        // Format date cleanly
+        const startDate = project.start_date ? project.start_date.toString().substring(0, 10) : '-';
+
+        const coverHtml = project.cover_photo
+            ? `<div class="project-card-cover" style="background-image:url('${project.cover_photo}')">
+                   ${PermissionManager.canManageProjects() ? `<label class="cover-upload-btn" title="更换封面" onclick="event.stopPropagation()">📷<input type="file" accept="image/*" style="display:none" onchange="ProjectDashboard.uploadCover(${project.id},this)"></label>` : ''}
+               </div>`
+            : (PermissionManager.canManageProjects()
+                ? `<div class="project-card-cover project-card-cover--empty">
+                       <label class="cover-upload-btn cover-upload-btn--add" title="添加封面照片" onclick="event.stopPropagation()">📷 添加封面照片<input type="file" accept="image/*" style="display:none" onchange="ProjectDashboard.uploadCover(${project.id},this)"></label>
+                   </div>`
+                : '');
 
         return `
             <div class="project-card">
                 <div class="project-card-main" onclick="ProjectDashboard.enterProject(${project.id})">
+                    ${coverHtml}
                     <div class="project-card-header">
                         <h3>${getI18nField(project, 'name')}</h3>
                         <span class="project-status status-${statusClass}">${t('projects.status.' + statusClass)}</span>
@@ -91,7 +104,7 @@ const ProjectDashboard = {
                         </div>
                         <div class="project-info-row">
                             <span class="info-label">${t('projects.startDate')}:</span>
-                            <span class="info-value">${project.start_date || '-'}</span>
+                            <span class="info-value">${startDate}</span>
                         </div>
                     </div>
                     <div class="project-card-footer">
@@ -143,10 +156,33 @@ const ProjectDashboard = {
 
     // 获取进度颜色
     getProgressColor(progress) {
-        if (progress >= 80) return '#10b981'; // 绿色
-        if (progress >= 50) return '#3b82f6'; // 蓝色
-        if (progress >= 20) return '#f59e0b'; // 橙色
-        return '#ef4444'; // 红色
+        if (progress >= 80) return '#10b981';
+        if (progress >= 50) return '#3b82f6';
+        if (progress >= 20) return '#f59e0b';
+        return '#ef4444';
+    },
+
+    // 上传封面照片
+    async uploadCover(projectId, input) {
+        const file = input.files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('cover', file);
+        try {
+            if (typeof app !== 'undefined') app.showLoading();
+            const r = await fetch(window.location.origin + '/api/projects/' + projectId + '/cover', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') },
+                body: fd
+            });
+            const j = await r.json();
+            if (typeof app !== 'undefined') app.hideLoading();
+            if (j.success) { await this.load(); }
+            else alert(j.message || '上传失败');
+        } catch (e) {
+            if (typeof app !== 'undefined') app.hideLoading();
+            alert(e.message);
+        }
     },
 
     // 进入项目详情

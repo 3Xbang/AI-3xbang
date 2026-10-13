@@ -70,31 +70,38 @@ router.get('/projects', authenticate, async (req, res) => {
   try {
     let query;
     const params = [];
-    
-    // 管理者可以看到所有项目
+    // BOQ-weighted progress: matches the Gantt formula
+    // For each section, avg completion, weighted by A:2,B:8,C:20,D:5,E:9,F:40,G:9,H:5,I:2
+    const progressSubquery = `
+      COALESCE((
+        SELECT ROUND(SUM(sec_avg * sec_weight) / 100.0)
+        FROM (
+          SELECT
+            LEFT(pn2.master_code, 1) AS sec,
+            AVG(CASE WHEN pe2.status = 'completed' THEN 100
+                     ELSE COALESCE(pe2.completion_percentage, 0) END) AS sec_avg,
+            CASE LEFT(pn2.master_code, 1)
+              WHEN 'A' THEN 2 WHEN 'B' THEN 8 WHEN 'C' THEN 20 WHEN 'D' THEN 5
+              WHEN 'E' THEN 9 WHEN 'F' THEN 40 WHEN 'G' THEN 9 WHEN 'H' THEN 5
+              WHEN 'I' THEN 2 ELSE 0 END AS sec_weight
+          FROM process_nodes pn2
+          JOIN process_execution pe2 ON pe2.process_node_id = pn2.id
+          WHERE pn2.project_id = p.id
+            AND pn2.master_code IS NOT NULL
+            AND LEFT(pn2.master_code, 1) IN ('A','B','C','D','E','F','G','H','I')
+          GROUP BY LEFT(pn2.master_code, 1)
+        ) sec_data
+      ), 0)`;
+
     if (req.user.role === 'manager') {
-      query = `
-        SELECT p.*,
-          COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
-        FROM projects p
-        LEFT JOIN process_nodes pn ON p.id = pn.project_id
-        LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
-        GROUP BY p.id
-        ORDER BY p.created_at DESC
-      `;
+      query = `SELECT p.*, ${progressSubquery} AS progress
+               FROM projects p ORDER BY p.created_at DESC`;
     } else {
-      // 采购者和执行者只能看到分配给自己的项目
-      query = `
-        SELECT p.*,
-          COALESCE(ROUND(AVG(CASE WHEN pe.status = 'completed' THEN 100 ELSE 0 END)), 0) as progress
-        FROM projects p
-        INNER JOIN project_members pm ON p.id = pm.project_id
-        LEFT JOIN process_nodes pn ON p.id = pn.project_id
-        LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
-        WHERE pm.user_id = $1
-        GROUP BY p.id
-        ORDER BY p.created_at DESC
-      `;
+      query = `SELECT p.*, ${progressSubquery} AS progress
+               FROM projects p
+               INNER JOIN project_members pm ON p.id = pm.project_id
+               WHERE pm.user_id = $1
+               ORDER BY p.created_at DESC`;
       params.push(req.user.id);
     }
     

@@ -1590,47 +1590,27 @@ router.get('/users/:userId/projects', authenticate, requirePermission('manage_us
 
 // 批量分配用户到项目
 router.post('/users/:userId/assign-projects', authenticate, requirePermission('manage_users'), async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
     const { project_ids } = req.body;
-    const userId = req.params.userId;
-    
+    const userId = Number(req.params.userId);
+
     // 先删除该用户的所有项目分配
-    await client.query('DELETE FROM project_members WHERE user_id = $1', [userId]);
-    
-    // 重新分配选中的项目
-    if (project_ids && project_ids.length > 0) {
+    await pool.query('DELETE FROM project_members WHERE user_id = $1', [userId]);
+
+    // 插入新的分配
+    if (Array.isArray(project_ids) && project_ids.length > 0) {
       for (const projectId of project_ids) {
-        // 获取用户角色
-        const userResult = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
-        if (userResult.rows.length === 0) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({ success: false, message: '用户不存在' });
-        }
-        
-        const userRole = userResult.rows[0].role;
-        
-        await client.query(
-          `INSERT INTO project_members (project_id, user_id, assigned_by) 
-           VALUES ($1, $2, $3)`,
-          [projectId, userId, req.user.id]
+        await pool.query(
+          'INSERT INTO project_members (project_id, user_id, assigned_by) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [Number(projectId), userId, req.user.id]
         );
       }
     }
-    
-    // 记录日志
-    await logActivity(client, req.user.id, 'assign_projects', 'users', userId,
-      `分配 ${project_ids.length} 个项目`);
-    
-    await client.query('COMMIT');
-    res.json({ success: true, message: '项目分配成功' });
+
+    res.json({ success: true, message: `分配成功，共 ${(project_ids||[]).length} 个项目` });
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('assign-projects error:', error);
     res.status(500).json({ success: false, message: error.message });
-  } finally {
-    client.release();
   }
 });
 

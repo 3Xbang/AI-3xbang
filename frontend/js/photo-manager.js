@@ -1,261 +1,147 @@
-﻿// 照片管理模块
+﻿// photo-manager.js — 现场照片：所有角色可上传，显示上传人+时间+理由
 const photoManager = {
     currentProjectId: null,
-    selectedFiles: [],
-    
-    // 初始化
+
     init(projectId) {
         this.currentProjectId = projectId;
         this.loadPhotos();
     },
-    
-    // 加载照片列表
+
+    esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+
     async loadPhotos() {
-        if (!this.currentProjectId) {
-            console.warn('No project selected');
-            return;
-        }
-        
+        const grid = document.getElementById('photos-grid');
+        if (!grid) return;
+        grid.innerHTML = '<div class="td-empty">กำลังโหลด... 加载中</div>';
         try {
-            app.showLoading();
-            const result = await api.getPhotos(this.currentProjectId);
-            
-            if (result.success) {
-                this.renderPhotos(result.data);
-            }
-        } catch (error) {
-            console.error('Failed to load photos:', error);
-            app.showToast('加载失败', 'error');
-        } finally {
-            app.hideLoading();
+            const r = await apiRequest('/api/photos/project/' + this.currentProjectId);
+            this.renderPhotos(r.data || []);
+        } catch(e) {
+            grid.innerHTML = '<div class="td-empty">โหลดไม่สำเร็จ 加载失败</div>';
         }
     },
-    
-    // 渲染照片网格
+
     renderPhotos(photos) {
-        const container = document.getElementById('photos-grid');
-        if (!container) return;
-        
-        if (photos.length === 0) {
-            container.innerHTML = '<p class="empty-hint">暂无照片</p>';
+        const grid = document.getElementById('photos-grid');
+        if (!grid) return;
+        if (!photos.length) {
+            grid.innerHTML = '<div class="ph-empty"><div style="font-size:48px">📷</div><div><b>ยังไม่มีรูปถ่าย</b></div><div style="font-size:13px;color:#94a3b8">还没有上传照片</div></div>';
             return;
         }
-        
-        container.innerHTML = photos.map(photo => this.renderPhotoCard(photo)).join('');
+        grid.innerHTML = photos.map(p => this.renderCard(p)).join('');
     },
-    
-    // 渲染单个照片卡片
-    renderPhotoCard(photo) {
-        const uploadTime = new Date(photo.upload_time).toLocaleString('zh-CN');
-        const fileSize = this.formatFileSize(photo.file_size || 0);
-        
-        return `
-            <div class="photo-card" onclick="photoManager.viewPhoto(${photo.id})">
-                <div class="photo-image" style="background-image: url('${photo.photo_url}')"></div>
-                <div class="photo-info">
-                    <div class="photo-type">${this.getPhotoTypeText(photo.photo_type)}</div>
-                    <div class="photo-time">${uploadTime}</div>
-                    <div class="photo-size">${fileSize}</div>
-                </div>
+
+    renderCard(p) {
+        const dt = p.upload_time ? new Date(p.upload_time) : null;
+        const dateStr = dt ? dt.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'}) + ' ' + dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+        const uploader = this.esc(p.uploader_name || p.uploaded_by || '?');
+        const reason = p.reason ? `<div class="ph-reason">📝 ${this.esc(p.reason)}</div>` : '';
+        return `<div class="ph-card">
+            <div class="ph-img" style="background-image:url('${p.photo_url}')" onclick="photoManager.viewPhoto('${p.photo_url}')">
+                <div class="ph-overlay"></div>
             </div>
-        `;
+            <div class="ph-meta">
+                <div class="ph-who">👤 <b>${uploader}</b></div>
+                <div class="ph-time">🕐 ${dateStr}</div>
+                ${reason}
+            </div>
+        </div>`;
     },
-    
-    // 显示上传表单
+
+    viewPhoto(url) {
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer';
+        ov.innerHTML = `<img src="${this.esc(url)}" style="max-width:95vw;max-height:93vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+            <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:28px;cursor:pointer;border-radius:50%;width:44px;height:44px">✕</button>`;
+        document.body.appendChild(ov);
+        ov.onclick = () => ov.remove();
+    },
+
+    // 上传表单 — 所有角色可见，泰语优先
     showUploadForm(processExecutionId = null) {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>上传照片</h3>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = user.full_name || user.username || '?';
+
+        const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
+        dlg.innerHTML = `<div class="sb-dialog" style="max-width:500px">
+            <header style="background:#1e3a8a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+                <div><b style="font-size:18px">📷 อัปโหลดรูปถ่าย</b><small style="display:block;opacity:.8;font-size:12px">上传现场照片</small></div>
+                <button data-x style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer">&times;</button>
+            </header>
+            <div class="sb-body" style="display:flex;flex-direction:column;gap:14px">
+
+                <div style="background:#f0f9ff;border:1.5px dashed #7dd3fc;border-radius:10px;padding:12px;text-align:center">
+                    <div style="font-size:13px;color:#0369a1;margin-bottom:8px">เลือกรูปภาพ 选择照片 *</div>
+                    <input type="file" id="ph-files" accept="image/*" multiple style="font-size:15px;padding:4px 0">
+                    <div id="ph-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
                 </div>
-                <form id="photo-upload-form" class="modal-body">
-                    <div class="form-group">
-                        <label>选择照片 *</label>
-                        <input type="file" id="photo-file" accept="image/jpeg,image/png,image/jpg" multiple required>
-                        <small>支持 JPG、PNG 格式，最大 5MB</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>照片类型</label>
-                        <select id="photo-type">
-                            <option value="process">工序照片</option>
-                            <option value="material">材料照片</option>
-                            <option value="issue">问题照片</option>
-                            <option value="other">其他</option>
-                        </select>
-                    </div>
-                    
-                    ${processExecutionId ? `
-                        <input type="hidden" id="process-execution-id" value="${processExecutionId}">
-                    ` : `
-                        <div class="form-group">
-                            <label>关联工序（可选）</label>
-                            <select id="process-execution-id">
-                                <option value="">无</option>
-                            </select>
-                        </div>
-                    `}
-                    
-                    <div id="preview-container" class="preview-container"></div>
-                    
-                    <div class="modal-footer">
-                        <button type="button" class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
-                        <button type="submit" class="btn-primary">上传</button>
-                    </div>
-                </form>
+
+                <div>
+                    <div style="font-size:13px;color:#475569;margin-bottom:4px"><b>เหตุผลที่ถ่าย</b> <small>上传理由 *</small></div>
+                    <input type="text" id="ph-reason" placeholder="เช่น ความคืบหน้างานฉาบ / 例如：记录墙面抹灰进度" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
+                </div>
+
+                <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;color:#475569">
+                    <b>ผู้อัปโหลด 上传人：</b><b style="color:#1e3a8a">${this.esc(userName)}</b>
+                    &nbsp;&nbsp; <b>วันที่ 时间：</b>${new Date().toLocaleDateString('th-TH')} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}
+                </div>
+
             </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // 绑定文件选择事件
-        document.getElementById('photo-file').addEventListener('change', (e) => {
-            this.selectedFiles = Array.from(e.target.files);
-            this.previewFiles(this.selectedFiles);
-        });
-        
-        // 绑定表单提交
-        document.getElementById('photo-upload-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.uploadPhotos(modal);
-        });
-        
-        // 如果没有指定工序，加载工序列表
-        if (!processExecutionId) {
-            this.loadProcessesForSelect();
-        }
-    },
-    
-    // 预览选择的文件
-    previewFiles(files) {
-        const container = document.getElementById('preview-container');
-        container.innerHTML = '';
-        
-        files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const preview = document.createElement('div');
-                preview.className = 'photo-preview';
-                preview.innerHTML = `
-                    <img src="${e.target.result}" alt="${file.name}">
-                    <button type="button" class="remove-photo" onclick="photoManager.removeFile(${index})">✕</button>
-                    <div class="file-name">${file.name}</div>
-                `;
-                container.appendChild(preview);
-            };
-            reader.readAsDataURL(file);
-        });
-    },
-    
-    // 移除文件
-    removeFile(index) {
-        this.selectedFiles.splice(index, 1);
-        this.previewFiles(this.selectedFiles);
-    },
-    
-    // 上传照片
-    async uploadPhotos(modal) {
-        if (this.selectedFiles.length === 0) {
-            app.showToast('请选择照片', 'warning');
-            return;
-        }
-        
-        const photoType = document.getElementById('photo-type').value;
-        const processExecutionId = document.getElementById('process-execution-id')?.value || null;
-        
-        try {
-            app.showLoading('上传中...');
-            
-            // 逐个上传
-            for (let i = 0; i < this.selectedFiles.length; i++) {
-                const file = this.selectedFiles[i];
-                const formData = new FormData();
-                formData.append('photo', file);
-                formData.append('project_id', this.currentProjectId);
-                formData.append('photo_type', photoType);
-                if (processExecutionId) {
-                    formData.append('process_execution_id', processExecutionId);
-                }
-                
-                const up = await api.uploadPhoto(formData);
-                if (!up || !up.success) {
-                    throw new Error((up && up.message) || '服务器拒绝');
-                }
-            }
-            
-            app.showToast(`成功上传 ${this.selectedFiles.length} 张照片`, 'success');
-            modal.remove();
-            this.loadPhotos();
-            
-        } catch (error) {
-            app.showToast('上传失败: ' + (error.message || '未知错误'), 'error');
-        } finally {
-            app.hideLoading();
-        }
-    },
-    
-    // 加载工序列表用于选择
-    async loadProcessesForSelect() {
-        try {
-            const result = await api.processes.getList(this.currentProjectId);
-            if (result.success) {
-                const select = document.getElementById('process-execution-id');
-                select.innerHTML = '<option value="">无</option>' +
-                    result.data.map(p => {
-                        const name = typeof p.process_name === 'string' 
-                            ? JSON.parse(p.process_name)[currentLang]
-                            : p.process_name[currentLang];
-                        return `<option value="${p.id}">${p.process_code} - ${name}</option>`;
-                    }).join('');
-            }
-        } catch (error) {
-            console.error('Failed to load processes:', error);
-        }
-    },
-    
-    // 查看照片
-    viewPhoto(photoId) {
-        // 创建全屏查看器
-        const modal = document.createElement('div');
-        modal.className = 'photo-viewer-overlay';
-        modal.onclick = () => modal.remove();
-        
-        // 这里应该获取照片详情，简化版本直接从DOM获取
-        const photoCard = event.currentTarget;
-        const photoUrl = photoCard.querySelector('.photo-image').style.backgroundImage
-            .replace('url("', '').replace('")', '');
-        
-        modal.innerHTML = `
-            <div class="photo-viewer-content" onclick="event.stopPropagation()">
-                <button class="photo-viewer-close" onclick="this.closest('.photo-viewer-overlay').remove()">✕</button>
-                <img src="${photoUrl}" alt="照片">
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-    },
-    
-    // 格式化文件大小
-    formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    },
-    
-    // 获取照片类型文本
-    getPhotoTypeText(type) {
-        const types = {
-            'process': '工序照片',
-            'material': '材料照片',
-            'issue': '问题照片',
-            'other': '其他'
+            <footer>
+                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
+                <button class="sb-btn primary" data-ok>📤 อัปโหลด 上传</button>
+            </footer></div>`;
+        document.body.appendChild(dlg);
+
+        // Preview
+        dlg.querySelector('#ph-files').onchange = (e) => {
+            const prev = dlg.querySelector('#ph-preview');
+            prev.innerHTML = Array.from(e.target.files).map(f => {
+                const url = URL.createObjectURL(f);
+                return `<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:2px solid #e2e8f0">`;
+            }).join('');
         };
-        return types[type] || type;
+
+        const close = () => dlg.remove();
+        dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
+
+        dlg.querySelector('[data-ok]').onclick = async () => {
+            const files = dlg.querySelector('#ph-files').files;
+            const reason = dlg.querySelector('#ph-reason').value.trim();
+            if (!files.length) { alert('กรุณาเลือกรูปภาพ / 请选择照片'); return; }
+            if (!reason) { alert('กรุณาระบุเหตุผล / 请填写上传理由'); return; }
+
+            try {
+                if (typeof app !== 'undefined') app.showLoading();
+                for (const file of files) {
+                    const fd = new FormData();
+                    fd.append('photo', file);
+                    fd.append('project_id', this.currentProjectId);
+                    fd.append('photo_type', 'progress');
+                    fd.append('reason', reason);
+                    if (processExecutionId) fd.append('process_execution_id', processExecutionId);
+                    await fetch(window.location.origin + '/api/photos/upload', {
+                        method: 'POST',
+                        headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') },
+                        body: fd
+                    });
+                }
+                if (typeof app !== 'undefined') app.hideLoading();
+                close();
+                await this.loadPhotos();
+            } catch(e) {
+                if (typeof app !== 'undefined') app.hideLoading();
+                alert('อัปโหลดไม่สำเร็จ / 上传失败：' + e.message);
+            }
+        };
+    },
+
+    formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + 'B';
+        if (bytes < 1048576) return (bytes/1024).toFixed(1) + 'KB';
+        return (bytes/1048576).toFixed(1) + 'MB';
     }
 };
 
-// 导出到全局
 window.photoManager = photoManager;

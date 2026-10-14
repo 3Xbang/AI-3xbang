@@ -123,7 +123,7 @@ const userManager = {
         const checks = this.projects.map(p=>`
             <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:15px">
                 <input type="checkbox" value="${p.id}" ${assigned.includes(p.id)?'checked':''} style="width:20px;height:20px;cursor:pointer">
-                ${this.esc(p.name||p.name_zh||'项目'+p.id)}
+                ${this.esc(getI18nField(p,'name')||p.name_zh||p.name_th||'项目'+p.id)}
             </label>`).join('') || '<div class="td-empty">还没有项目</div>';
         this._dialog(`
             <h3>📋 为「${this.esc(u.full_name||u.username)}」分配项目</h3>

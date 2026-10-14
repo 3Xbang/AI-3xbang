@@ -1390,24 +1390,25 @@ router.post('/projects/:projectId/ai-analyze', authenticate, requireProjectAcces
     const pbR = await pool.query('SELECT item_name_cn, unit, avg_price, min_price, max_price FROM price_benchmarks ORDER BY sample_count DESC');
     const prices = pbR.rows;
 
-    // Build AI prompt
-    const defaultRules = `
-=== กฎการตรวจสอบ / 核实规则 ===
+    // Build AI prompt — strict mode: only flag deduct if contract rules explicitly say so
+    const hasContractRules = customRules && customRules.trim().length > 20;
 
-กฎ A — สิ่งที่ผู้รับเหมาต้องรับผิดชอบเอง (ไม่ควรเบิกจากเจ้าของ) / 乙方（承包方）自负项目（不应向甲方报销）:
-- ค่าเช่าเครื่องจักร: รถแบคโฮ, รถเครน, รถบรรทุก / 机械租赁：挖机、吊车、卡车
-- วัสดุสิ้นเปลือง: ใบตัดเหล็ก, ลวดเชื่อม, น้ำยาถอดแบบ, ดอกสว่าน / 消耗品：切割片、焊条、脱模剂
-- บริการกำจัดแมลง / 灭虫服务
-- อื่นๆ ที่เป็นต้นทุนการดำเนินงานของผู้รับเหมา / 其他承包方运营成本
+    const prompt = `
+${hasContractRules
+  ? `=== กฎจากสัญญา / 合同规定的责任条款 ===
+${customRules}
 
-กฎ B — ตรวจหาใบเสร็จซ้ำ: ถ้า Invoice_No เหมือนกันหลายรายการ ให้แจ้งเตือน / 重复发票检测
-
-กฎ C — ราคาผิดปกติ: ถ้าราคาสูงกว่าราคาเฉลี่ยมากกว่า 10% / 价格超均价10%以上需标记
-`;
-
-    const prompt = `${defaultRules}
-
-${customRules ? '=== กฎเพิ่มเติมของโครงการ / 项目自定义规则 ===\n' + customRules : ''}
+⚠️ กฎเหล็ก / 铁律:
+- ให้ flag "deduct" เฉพาะรายการที่กฎข้างต้นระบุชัดเจนว่าเป็นความรับผิดชอบของผู้รับเหมาเท่านั้น
+- ถ้าไม่แน่ใจ = "normal" (ข้อสงสัยไม่ใช่ deduct)
+- ต้องระบุ contract_clause ที่อ้างอิงได้ทุกครั้งที่ flag deduct
+- 只有合同明确规定由乙方承担的项目，才标记 deduct
+- 有疑问 = normal，不是 deduct`
+  : `⚠️ ยังไม่มีกฎจากสัญญา / 尚未上传合同规则
+- ห้าม flag รายการใดเป็น "deduct" เด็ดขาด
+- 严禁标记任何 deduct，合同未上传时无法判断乙方责任
+- เฉพาะตรวจสอบ: ใบซ้ำ (duplicate) และราคาผิดปกติ (price_high/price_low) เท่านั้น`
+}
 
 === ราคาอ้างอิง / 参考价格 ===
 ${prices.slice(0, 20).map(p => `${p.item_name_cn} (${p.unit}): เฉลี่ย/均价 ฿${p.avg_price}, ต่ำสุด/最低 ฿${p.min_price}, สูงสุด/最高 ฿${p.max_price}`).join('\n')}
@@ -1419,21 +1420,21 @@ ${boqRows.slice(0, 50).map(b => `${b.Description} (${b.Category}): ${b.Quantity}
 ${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||'-'} | ผู้ขาย: ${r.supplier_name||''} | รายการ: ${r.item_name_th||''} ${r.item_name_cn||''} | ${r.qty} ${r.unit} | ฿${r.unit_price}/หน่วย | รวม: ฿${r.total_price}`).join('\n')}
 
 === คำสั่ง / 指令 ===
-วิเคราะห์ทุกรายการข้างต้น ตอบเป็น JSON array เท่านั้น ห้ามมีข้อความอื่น:
+วิเคราะห์ทุกรายการ ตอบเป็น JSON array เท่านั้น ห้ามมีข้อความอื่น:
 [
   {
-    "id": <id จากรายการ>,
+    "id": <id>,
     "status": "normal" | "deduct" | "duplicate" | "price_high" | "price_low",
-    "flags": ["deduct", "duplicate", ...],  
-    "boq_match": "ชื่อรายการ BOQ ที่ตรงกัน หรือ null",
+    "flags": [],
+    "boq_match": "ชื่อ BOQ หรือ null",
     "boq_confidence": 0-100,
-    "reason_th": "เหตุผลสั้นๆ เป็นภาษาไทย",
-    "reason_cn": "简短理由（中文）",
-    "deduct_reason": "เหตุผลหักคืน (ถ้ามี) / 扣回原因（如有）",
-    "contract_clause": "อ้างอิงสัญญาข้อ / 合同条款引用 (เฉพาะ deduct เท่านั้น / 仅deduct项填写)",
-    "clause_text": "ข้อความสัญญาโดยย่อ / 合同原文摘录",
-    "explanation_th": "คำอธิบายให้ผู้รับเหมาเข้าใจ ว่าทำไมต้องหักคืน",
-    "explanation_cn": "向乙方解释为何需要扣回（说明性文字，非指责）"
+    "reason_th": "เหตุผลสั้นๆ",
+    "reason_cn": "简短理由",
+    "deduct_reason": "เหตุผลหักคืน (เฉพาะ deduct)",
+    "contract_clause": "ข้อสัญญา (เฉพาะ deduct ที่มีกฎอ้างอิงได้)",
+    "clause_text": "ข้อความสัญญาโดยย่อ",
+    "explanation_th": "คำอธิบายให้ผู้รับเหมาเข้าใจ",
+    "explanation_cn": "向乙方解释原因"
   }
 ]
 ตอบ JSON เท่านั้น ไม่ต้องมี markdown code block`;

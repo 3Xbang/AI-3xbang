@@ -198,6 +198,7 @@ const PurchaseAudit = {
     _renderAnalyze() {
         const box=document.getElementById('pab-analyze-panel');
         if(!box) return;
+        const isAdmin = PermissionManager.isManager();
         box.innerHTML=`
           <div class="pa-sec" style="background:#eff6ff;border:1.5px solid #93c5fd">
             <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:4px">
@@ -208,6 +209,7 @@ const PurchaseAudit = {
               不需要重复上传，「收据材料」里已上传的数据会自动用于分析
             </div>
           </div>
+          <div id="pa-rules-warning"></div>
           <div id="pa-data-summary"></div>
           <div id="pa-analyze-bar" style="display:none;margin-bottom:14px">
             <button id="pa-analyze-btn" onclick="PurchaseAudit.runAnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
@@ -216,6 +218,28 @@ const PurchaseAudit = {
           </div>
           <div id="pa-report"></div>`;
         this._loadFromDB();
+        this._checkRulesWarning();
+    },
+
+    async _checkRulesWarning() {
+        try {
+            const r = await apiRequest('/api/projects/'+this.projectId+'/ai-rules');
+            const rules = r.data && r.data.rules;
+            const warn = document.getElementById('pa-rules-warning');
+            if (!warn) return;
+            if (!rules || rules.trim().length < 20) {
+                warn.innerHTML = `<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px">
+                    <b style="color:#92400e">⚠️ ยังไม่มีกฎจากสัญญา / 尚未上传合同规则</b><br>
+                    <span style="color:#78350f">ถ้าวิเคราะห์ตอนนี้ ระบบจะ<b>ไม่ flag รายการหักคืนใดๆ</b> (ป้องกันการแจ้งเตือนผิดพลาด)<br>
+                    现在分析，系统将<b>不标记任何应扣回项</b>（防止误判）<br>
+                    ${PermissionManager.isManager() ? '→ ไปที่ ⚙️ ตั้งค่า เพื่ออัปโหลดสัญญาก่อน / 请先到 ⚙️ 设置 上传合同' : '→ กรุณาให้ผู้จัดการอัปโหลดสัญญาก่อน / 请联系管理员上传合同'}</span>
+                </div>`;
+            } else {
+                warn.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#166534">
+                    ✅ มีกฎจากสัญญาแล้ว / 合同规则已配置 — การวิเคราะห์จะอ้างอิงสัญญาเท่านั้น
+                </div>`;
+            }
+        } catch(_) {}
     },
 
     async _loadFromDB() {

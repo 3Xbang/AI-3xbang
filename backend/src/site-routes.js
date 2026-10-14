@@ -1281,7 +1281,7 @@ ${customRules ? '\n=== กฎเพิ่มเติม / 附加规则 ===\n' +
       `\n=== BOQ งบประมาณ / 预算 (${boqRows.length} รายการ) ===\n${boqRows.slice(0,60).map(b=>`${b.Description} | ${b.Category} | ${b.Quantity} ${b.Unit} | ฿${b.Supply_Unit_Price}/unit | Total ฿${b.Total_Amount}`).join('\n')}` : '';
 
     const RECORDS_TEXT = records.map(r =>
-      `[${r.id}] ${(r.purchase_date||'').slice(0,10)} | INV:${r.invoice_no||'-'} | ${r.supplier_name||''} | ${r.item_name_th||''} ${r.item_name_cn||''} | Qty:${r.qty} ${r.unit} | Unit:฿${r.unit_price} | Total:฿${r.total_price}`
+      `[${r.id}] ${r.purchase_date ? String(r.purchase_date).slice(0,10) : ''} | INV:${r.invoice_no||'-'} | ${r.supplier_name||''} | ${r.item_name_th||''} ${r.item_name_cn||''} | Qty:${r.qty} ${r.unit} | Unit:฿${r.unit_price} | Total:฿${r.total_price}`
     ).join('\n');
 
     const prompt = `${SYSTEM_RULES}${PRICE_CONTEXT}${BOQ_CONTEXT}

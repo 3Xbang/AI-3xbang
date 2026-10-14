@@ -218,19 +218,16 @@ const PurchaseAudit = {
         const box = document.getElementById('pab-analyze-panel');
         if (!box) return;
         box.innerHTML = `
-          <div class="pa-sec">
-            <div style="font-size:16px;font-weight:700;color:#1e3a8a;margin-bottom:4px">
-              📤 อัปโหลดใบเสร็จ <small style="color:#64748b;font-weight:400">上传收据CSV（可多次上传）</small>
+          <div class="pa-sec" style="background:#eff6ff;border:1.5px solid #93c5fd">
+            <div style="font-size:15px;font-weight:700;color:#1e40af;margin-bottom:6px">
+              ℹ️ ข้อมูลใบเสร็จมาจากแท็บ "วัสดุ 收据材料"
             </div>
-            <div style="font-size:13px;color:#64748b;margin-bottom:12px">
-              ระบบจะใช้กฎสัญญาที่บันทึกไว้วิเคราะห์โดยอัตโนมัติ · 自动使用已保存的合同规则分析每笔单据
+            <div style="font-size:13px;color:#1e40af">
+              ไม่ต้องอัปโหลดใหม่ · <b>ข้อมูลทั้งหมดที่อัปโหลดในแท็บวัสดุจะถูกใช้โดยอัตโนมัติ</b><br>
+              不需要重复上传，「收据材料」里已上传的数据会自动用于分析
             </div>
-            <label style="display:inline-flex;align-items:center;gap:8px;background:#2563eb;color:#fff;border-radius:10px;padding:11px 20px;cursor:pointer;font-size:15px;font-weight:600">
-              📤 <span>เลือกไฟล์ CSV 选择CSV文件</span>
-              <input type="file" accept=".csv" style="display:none" onchange="PurchaseAudit.uploadCSV(this)">
-            </label>
           </div>
-          <div id="pa-upload-status"></div>
+          <div id="pa-data-summary"></div>
           <div id="pa-analyze-bar" style="display:none;margin-bottom:14px">
             <button id="pa-analyze-btn" onclick="PurchaseAudit.runAnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
               🤖 เริ่มวิเคราะห์ / 开始AI分析（根据合同规则）
@@ -276,8 +273,21 @@ const PurchaseAudit = {
             }));
             const bar = document.getElementById('pa-analyze-bar');
             if (bar) bar.style.display = this.purchases.length ? '' : 'none';
-            if (!this.purchases.length && document.getElementById('pa-report')) {
-                document.getElementById('pa-report').innerHTML=`<div style="text-align:center;padding:32px;color:#94a3b8"><div style="font-size:40px">📋</div><div>อัปโหลด CSV ด้านบนก่อน<br>请先上传CSV收据文件</div></div>`;
+
+            // Show summary
+            const summary = document.getElementById('pa-data-summary');
+            if (summary && this.purchases.length) {
+                const total = this.purchases.reduce((s,r)=>s+Number(r.Total_Price||0),0);
+                summary.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:#166534">
+                    <span>📋 <b>${this.purchases.length}</b> รายการ 条记录</span>
+                    <span>💰 รวม <b>฿${Number(total).toLocaleString('th-TH',{minimumFractionDigits:0})}</b></span>
+                    <span>✅ พร้อมวิเคราะห์ 准备就绪，可以分析</span>
+                </div>`;
+            } else if (summary) {
+                summary.innerHTML = `<div style="text-align:center;padding:24px;color:#94a3b8">
+                    <div style="font-size:32px">📋</div>
+                    <div>ไปอัปโหลดใบเสร็จที่แท็บ "วัสดุ 收据材料" ก่อน<br>请先在「收据材料」标签上传CSV</div>
+                </div>`;
             }
         } catch(_) {}
     },

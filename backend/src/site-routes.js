@@ -1043,11 +1043,37 @@ router.post('/purchase-records', authenticate, requirePermission('purchase_mater
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const multerAI = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 20*1024*1024 } });
 
-function getGemini() {
+function getGemini(modelOverride) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' });
+  const model = modelOverride || process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  return genAI.getGenerativeModel({ model });
+}
+
+// 自动轮换模型，处理 503/429 过载
+async function callGemini(prompt, imagePart) {
+  const tried = new Set();
+  const queue = [
+    process.env.GEMINI_MODEL || 'gemini-flash-latest',
+    'gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.7-flash'
+  ];
+  let lastErr;
+  for (const m of queue) {
+    if (tried.has(m)) continue;
+    tried.add(m);
+    try {
+      const mdl = getGemini(m);
+      const parts = imagePart ? [prompt, imagePart] : [prompt];
+      const result = await mdl.generateContent(parts);
+      return result.response.text();
+    } catch(e) {
+      lastErr = e;
+      if (e.status === 503 || e.status === 429 || (e.message||'').includes('no longer available')) continue;
+      throw e;
+    }
+  }
+  throw lastErr;
 }
 
 // ── 确保 ai_rules 列存在 ──
@@ -1105,7 +1131,7 @@ router.post('/projects/:projectId/ai-extract-contract', authenticate, requirePro
 
   const model = getGemini();
 
-  const prompt = `คุณเป็นผู้เชี่ยวชาญสัญญาก่อสร้างในประเทศไทย
+  const prompt = `คุณเป็นผู้เชี่ยวชาญสัญญาก่อสร้าง
 คุณต้องอ่านสัญญาก่อสร้างนี้และดึงข้อกำหนดเรื่องความรับผิดชอบออกมา
 
 โดยเฉพาะ:
@@ -1135,14 +1161,14 @@ ${contractText.substring(0, 8000)}
 }
 ตอบ JSON เท่านั้น`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  const text = await callGemini(prompt);
+  const cleaned = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
 
   try {
-    const extracted = JSON.parse(text);
+    const extracted = JSON.parse(cleaned);
     res.json({ success: true, data: extracted, contract_length: contractText.length });
   } catch(e) {
-    res.json({ success: true, data: { rules_summary_cn: text, system_rules: text }, raw: true });
+    res.json({ success: true, data: { rules_summary_cn: cleaned, system_rules: cleaned }, raw: true });
   }
 }));
 router.post('/ai/ocr-receipt', authenticate, multerAI.single('image'), wrap(async (req,res)=>{

@@ -379,6 +379,7 @@ const PurchaseAudit = {
         const gn=(r,...keys)=>{for(const k of keys){if(r[k]!=null)return Number(r[k]);}return 0;};
 
         const deductRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('deduct'));
+        const mixedRows=records.filter(r=>r.ai&&(r.ai.status==='mixed_review'||r.ai.flags&&r.ai.flags.includes('mixed_review')));
         const dupRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('duplicate'));
         const highRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('price_high'));
         const totalAmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
@@ -407,10 +408,37 @@ const PurchaseAudit = {
           <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div></div>
           <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ ใบซ้ำ 重复单据</div></div>
           <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 ราคาสูง 价格偏高</div></div>
+          ${mixedRows.length?`<div class="pa-kpi warn"><div class="pa-kpi-n">${mixedRows.length}</div><div style="font-size:12px;color:#64748b">🔍 รายการผสม 混合需核查</div></div>`:''}
         </div>`;
 
         // Deduct section — rendered separately to allow agreement toggle
         html+=`<div id="pa-deduct-section"></div>`;
+
+        // Mixed review section — items that contain BOTH owner & contractor materials
+        if(mixedRows.length){
+            html+=`<div class="pa-sec" style="border:2px solid #fed7aa">
+              <h3 style="color:#92400e;margin:0 0 8px">🔍 รายการผสม — ต้องแยกรายการ 混合采购 — 需人工拆分</h3>
+              <div style="font-size:13px;color:#78350f;margin-bottom:12px;background:#fef3c7;padding:10px;border-radius:8px">
+                ⚠️ รายการเหล่านี้มีวัสดุของเจ้าของ + วัสดุของผู้รับเหมารวมกันในใบเดียว<br>
+                ไม่สามารถหักทั้งหมดได้ — ต้องขอใบเสร็จแยกรายการจากผู้รับเหมา<br>
+                这些单据混合了甲方材料+乙方消耗品，<b>不能整笔扣除</b>，需请承包方提供分项收据
+              </div>
+              ${mixedRows.map(r=>{
+                  const ai=r.ai||{};
+                  return `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:8px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+                      <div>
+                        <div style="font-weight:700;font-size:14px">${this.esc(g(r,'item_name_th','Item_Name_TH'))} <span style="color:#94a3b8;font-size:12px">${this.esc(g(r,'item_name_cn','Item_Name_CN'))}</span></div>
+                        <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','purchase_date'))} | Invoice: ${this.esc(g(r,'invoice_no','Invoice_No'))}</div>
+                      </div>
+                      <div style="font-size:16px;font-weight:700;color:#92400e">฿${this.fmt(gn(r,'total_price','Total_Price'))}</div>
+                    </div>
+                    ${ai.reason_th||ai.reason_cn?`<div style="margin-top:8px;font-size:13px;color:#92400e">🤖 ${this.esc(ai.reason_th||'')}${ai.reason_cn?' / '+this.esc(ai.reason_cn):''}</div>`:''}
+                    ${ai.mixed_items?`<div style="margin-top:6px;font-size:12px;background:#fff;padding:8px;border-radius:6px;color:#475569">📋 ${this.esc(ai.mixed_items)}</div>`:''}
+                  </div>`;
+              }).join('')}
+            </div>`;
+        }
 
         if(dupRows.length){
             html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ ใบเสร็จซ้ำ 重复单据</h3>
@@ -431,11 +459,13 @@ const PurchaseAudit = {
           </tr></thead><tbody>
           ${records.map(r=>{
               const f=r.ai&&r.ai.flags||[];
+              const st=r.ai&&r.ai.status||'';
               const badges=[
                 f.includes('deduct')?'<span class="pab2 deduct">🚫 หักคืน</span>':'',
+                st==='mixed_review'?'<span class="pab2" style="background:#fed7aa;color:#92400e">🔍 ผสม 混合</span>':'',
                 f.includes('duplicate')?'<span class="pab2 dup">⚠️ ซ้ำ</span>':'',
                 f.includes('price_high')?'<span class="pab2 high">📈 สูง</span>':'',
-                (!f.length||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
+                (!f.length&&st!=='mixed_review'||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
               ].filter(Boolean).join('');
               const total=gn(r,'Total_Price','total_price');
               return `<tr>

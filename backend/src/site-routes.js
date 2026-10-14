@@ -1399,11 +1399,11 @@ ${hasContractRules
 ${customRules}
 
 ⚠️ กฎเหล็ก / 铁律:
-- ให้ flag "deduct" เฉพาะรายการที่กฎข้างต้นระบุชัดเจนว่าเป็นความรับผิดชอบของผู้รับเหมาเท่านั้น
-- ถ้าไม่แน่ใจ = "normal" (ข้อสงสัยไม่ใช่ deduct)
-- ต้องระบุ contract_clause ที่อ้างอิงได้ทุกครั้งที่ flag deduct
-- 只有合同明确规定由乙方承担的项目，才标记 deduct
-- 有疑问 = normal，不是 deduct`
+- ให้ flag "deduct" เฉพาะเมื่อรายการนั้น **ทั้งหมด 100%** เป็นความรับผิดชอบของผู้รับเหมา
+- ถ้ารายการมีวัสดุหลายอย่างรวมกัน (เช่น "เหล็ก+ลวดเชื่อม+โคม") และบางส่วนเป็นของเจ้าของ → ใช้ status "mixed_review" อย่า flag deduct
+- 只有该条目 100% 全部是乙方责任才标 deduct；若该行包含多种材料混合（部分甲方/部分乙方），标 mixed_review 而非 deduct
+- ถ้าสงสัย → "normal" หรือ "mixed_review" ไม่ใช่ deduct
+- 有疑问 = normal/mixed_review，绝不是 deduct`
   : `⚠️ ยังไม่มีกฎจากสัญญา / 尚未上传合同规则
 - ห้าม flag รายการใดเป็น "deduct" เด็ดขาด
 - 严禁标记任何 deduct，合同未上传时无法判断乙方责任
@@ -1424,13 +1424,14 @@ ${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||
 [
   {
     "id": <id>,
-    "status": "normal" | "deduct" | "duplicate" | "price_high" | "price_low",
+    "status": "normal" | "deduct" | "mixed_review" | "duplicate" | "price_high" | "price_low",
     "flags": [],
     "boq_match": "ชื่อ BOQ หรือ null",
     "boq_confidence": 0-100,
     "reason_th": "เหตุผลสั้นๆ",
     "reason_cn": "简短理由",
-    "deduct_reason": "เหตุผลหักคืน (เฉพาะ deduct)",
+    "deduct_reason": "เหตุผลหักคืน (เฉพาะ deduct เท่านั้น — ต้องมั่นใจ 100%)",
+    "mixed_items": "ระบุว่ารายการไหนในบรรทัดนี้เป็นของเจ้าของ / ของผู้รับเหมา (เฉพาะ mixed_review)",
     "contract_clause": "ข้อสัญญา (เฉพาะ deduct ที่มีกฎอ้างอิงได้)",
     "clause_text": "ข้อความสัญญาโดยย่อ",
     "explanation_th": "คำอธิบายให้ผู้รับเหมาเข้าใจ",
@@ -1470,12 +1471,13 @@ ${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||
       if (!hasContractRules) {
         results.forEach(r => {
           r.flags = (r.flags || []).filter(f => f !== 'deduct');
-          if (r.status === 'deduct') r.status = 'normal';
+          if (r.status === 'deduct' || r.status === 'mixed_review') r.status = 'normal';
           delete r.deduct_reason;
           delete r.contract_clause;
           delete r.clause_text;
           delete r.explanation_th;
           delete r.explanation_cn;
+          delete r.mixed_items;
         });
       }
 

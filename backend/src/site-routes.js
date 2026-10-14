@@ -1079,7 +1079,6 @@ router.post('/projects/:projectId/ai-extract-contract', authenticate, requirePro
   const fname = (req.file.originalname||'').toLowerCase();
 
   if (fname.endsWith('.pdf')) {
-    // PDF → extract text
     try {
       const pdfParse = require('pdf-parse');
       const data = await pdfParse(req.file.buffer);
@@ -1087,8 +1086,16 @@ router.post('/projects/:projectId/ai-extract-contract', authenticate, requirePro
     } catch(e) {
       throw new S.HttpError(400, 'PDF读取失败: ' + e.message);
     }
+  } else if (fname.endsWith('.docx') || fname.endsWith('.doc')) {
+    try {
+      const mammoth = require('mammoth');
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      contractText = result.value;
+    } catch(e) {
+      throw new S.HttpError(400, 'DOCX读取失败: ' + e.message);
+    }
   } else {
-    // Text file (txt, doc content pasted, etc.)
+    // TXT or other text format
     contractText = req.file.buffer.toString('utf8');
   }
 

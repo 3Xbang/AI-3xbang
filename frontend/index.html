@@ -1,9 +1,9 @@
-Ôªø<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Villa | ‡∏£‡∏∞‡∏ö‡∏ö‡∏à‡∏±‡∏î‡∏Å‡∏≤‡∏£‡πÇ‡∏Ñ‡∏£‡∏á‡∏Å‡∏≤‡∏£‡∏Å‡πà‡∏≠‡∏™‡∏£‡πâ‡∏≤‡∏á</title>
+    <title>Mira Villa | ?????????????????????????</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/project-dashboard.css">
     <link rel="stylesheet" href="css/project-detail.css">
@@ -25,74 +25,74 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-    <!-- ÁôªÂΩïÈ°µÈù¢ -->
+    <!-- µ«¬º“≥√Ê -->
     <div id="login-page" class="page active">
         <div class="login-container">
             <div class="logo">
                 <h1>Mira Villa</h1>
-                <p>Âª∫Á≠ëÈ°πÁõÆÁÆ°ÁêÜÁ≥ªÁªü ‡∏£‡∏∞‡∏ö‡∏ö‡∏à‡∏±‡∏î‡∏Å‡∏≤‡∏£‡πÇ‡∏Ñ‡∏£‡∏á‡∏Å‡∏≤‡∏£‡∏Å‡πà‡∏≠‡∏™‡∏£‡πâ‡∏≤‡∏á</p>
+                <p>Ω®÷˛œÓƒøπ‹¿ÌœµÕ≥ ?????????????????????????</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
-                    <label>Áî®Êà∑Âêç ‡∏ä‡∏∑‡πà‡∏≠‡∏ú‡∏π‡πâ‡πÉ‡∏ä‡πâ</label>
+                    <label>”√ªß√˚ ??????????</label>
                     <input type="text" id="username" required>
                 </div>
                 <div class="form-group">
-                    <label>ÂØÜÁ†Å ‡∏£‡∏´‡∏±‡∏™‡∏ú‡πà‡∏≤‡∏ô</label>
+                    <label>√‹¬Î ????????</label>
                     <input type="password" id="password" required>
                 </div>
-                <button type="submit" class="btn-primary">ÁôªÂΩï ‡πÄ‡∏Ç‡πâ‡∏≤‡∏™‡∏π‡πà‡∏£‡∏∞‡∏ö‡∏ö</button>
+                <button type="submit" class="btn-primary">µ«¬º ???????????</button>
                 <div id="login-error" class="error-message"></div>
             </form>
         </div>
     </div>
 
-    <!-- ‰∏ªÈ°µÈù¢ -->
+    <!-- ÷˜“≥√Ê -->
     <div id="main-page" class="page">
-        <!-- È°∂ÈÉ®ÂØºËà™ -->
+        <!-- ∂•≤øµº∫Ω -->
         <header class="header">
             <div class="header-left">
                 <h2>Mira Villa</h2>
             </div>
             <div class="header-right">
                 <span id="user-name"></span>
-                <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">üë• Áî®Êà∑ÁÆ°ÁêÜ</button>
-                <button onclick="app.logout()" class="btn-link">ÈÄÄÂá∫ ‡∏≠‡∏≠‡∏Å‡∏à‡∏≤‡∏Å‡∏£‡∏∞‡∏ö‡∏ö</button>
+                <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">?? ”√ªßπ‹¿Ì</button>
+                <button onclick="app.logout()" class="btn-link">ÕÀ≥ˆ ??????????</button>
             </div>
         </header>
 
-        <!-- ‰∏ªÂÜÖÂÆπÂå∫ -->
+        <!-- ÷˜ƒ⁄»›«¯ -->
         <div class="main-container">
-            <!-- È°πÁõÆ‰ª™Ë°®ÁõòËßÜÂõæ -->
+            <!-- œÓƒø“«±Ì≈Ã ”Õº -->
             <div id="dashboard-view" class="view active">
                 <div id="project-dashboard-container"></div>
             </div>
 
-            <!-- È°πÁõÆËØ¶ÊÉÖËßÜÂõæ -->
+            <!-- œÓƒøœÍ«È ”Õº -->
             <div id="project-detail-view" class="view">
                 <div id="project-detail-container"></div>
             </div>
 
-            <!-- Áî®Êà∑ÁÆ°ÁêÜËßÜÂõæÔºà‰ªÖÁÆ°ÁêÜÂëòÔºâ -->
+            <!-- ”√ªßπ‹¿Ì ”Õº£®Ωˆπ‹¿Ì‘±£© -->
             <div id="users-view" class="view">
                 <div class="td-head" style="padding:12px 16px;border-bottom:1px solid #e2e8f0">
                     <div>
-                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">‚Üê ËøîÂõû ‡∏Å‡∏•‡∏±‡∏ö</button>
-                        <h2 class="td-title">üë• Áî®Êà∑ÁÆ°ÁêÜ <small class="td-th">‡∏à‡∏±‡∏î‡∏Å‡∏≤‡∏£‡∏ú‡∏π‡πâ‡πÉ‡∏ä‡πâ</small></h2>
+                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">°˚ ∑µªÿ ????</button>
+                        <h2 class="td-title">?? ”√ªßπ‹¿Ì <small class="td-th">????????????</small></h2>
                     </div>
-                    <button class="sb-btn primary" onclick="userManager.showAdd()">‚ûï Ê∑ªÂä†Áî®Êà∑ ‡πÄ‡∏û‡∏¥‡πà‡∏°‡∏ú‡∏π‡πâ‡πÉ‡∏ä‡πâ</button>
+                    <button class="sb-btn primary" onclick="userManager.showAdd()">? ÃÌº””√ªß ???????????</button>
                 </div>
                 <div id="user-mgmt-body" style="padding:16px;max-width:900px;margin:0 auto">
-                    <div class="td-empty">Âä†ËΩΩ‰∏≠‚Ä¶</div>
+                    <div class="td-empty">º”‘ÿ÷–°≠</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Ê®°ÊÄÅÊ°ÜÂÆπÂô® -->
+    <!-- ƒ£Ã¨øÚ»›∆˜ -->
     <div id="modal-container"></div>
 
-    <!-- Âä†ËΩΩÊèêÁ§∫ -->
+    <!-- º”‘ÿÃ· æ -->
     <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
     </div>
@@ -102,7 +102,7 @@
     <script src="js/permissions.js?v=103"></script>
     <script src="js/api.js?v=103"></script>
     <script src="js/project-dashboard.js?v=103"></script>
-    <script src="js/project-detail.js?v=116"></script>
+    <script src="js/project-detail.js?v=117"></script>
     <script src="js/process-manager.js?v=102"></script>
     <script src="js/process-scheduling.js?v=102"></script>
     <script src="js/app.js?v=105"></script>
@@ -119,7 +119,7 @@
     <script src="js/gantt.js?v=3"></script>
     <script src="js/daily-assign.js?v=6"></script>
     <script src="js/site-board.js?v=31"></script>
-    <script src="js/purchase-audit.js?v=6"></script>
+    <script src="js/purchase-audit.js?v=7"></script>
     <script src="js/purchase-db.js?v=3"></script>
     <script src="js/project-prepare.js?v=5"></script>
 </body>

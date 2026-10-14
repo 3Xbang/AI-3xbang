@@ -55,7 +55,7 @@ const ProjectDetail = {
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'เตรียมโครงการ', warn: true });
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
-        if (['manager','supervisor','purchaser','foreman'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
+        if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
@@ -165,14 +165,13 @@ const ProjectDetail = {
           <div class="td-head">
             <div>
               <h2 class="td-title">📦 การจัดซื้อ <small class="td-th">采购总览</small></h2>
-              <div class="td-sub">วัสดุและการวิเคราะห์การจัดซื้อ · 材料设备与采购分析（本项目共享采购）</div>
+              <div class="td-sub">วัสดุและการวิเคราะห์การจัดซื้อ · 材料设备与采购分析</div>
             </div>
           </div>
 
-          <!-- Sub-tabs — AI tab only visible to admin -->
           <div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
             <button class="proc-tab active" id="proc-tab-mat" onclick="ProjectDetail._switchProcTab('mat')">🧱 วัสดุ 收据材料</button>
-            ${isAdmin ? `<button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">🤖 AI วิเคราะห์ 采购分析</button>` : ''}
+            <button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">📋 การวิเคราะห์ 采购分析</button>
           </div>
           <style>
             .proc-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -181,7 +180,7 @@ const ProjectDetail = {
           </style>
 
           <div id="proc-mat-panel"><div id="materials-container"></div></div>
-          ${isAdmin ? `<div id="proc-ai-panel" style="display:none"><div id="purchase-audit-container"></div></div>` : ''}
+          <div id="proc-ai-panel" style="display:none"><div id="purchase-audit-container"></div></div>
         </div>`;
     },
 

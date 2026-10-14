@@ -10,16 +10,17 @@ const PurchaseAudit = {
     render() {
         const box = document.getElementById('purchase-audit-container');
         if (!box) return;
+        const isAdmin = PermissionManager.isManager();
         box.innerHTML = `
         <div style="padding:16px;max-width:1200px;margin:0 auto">
           <div class="td-head" style="margin-bottom:14px">
-            <div><h2 class="td-title">AI ตรวจสอบการจัดซื้อ <small class="td-th">AI采购核实</small></h2>
-            <div class="td-sub">ตั้งค่าสัญญา → อัปโหลดใบเสร็จ → AI วิเคราะห์ทันที</div></div>
+            <div><h2 class="td-title">📋 การวิเคราะห์การจัดซื้อ <small class="td-th">采购核实分析</small></h2>
+            <div class="td-sub">${isAdmin?'ตั้งค่าสัญญา → อัปโหลดใบเสร็จ → AI วิเคราะห์':'ผลการวิเคราะห์โดย AI ตามสัญญา / AI合同合规分析结果'}</div></div>
           </div>
-          <div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+          ${isAdmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
             <button class="pab-tab active" id="pab-t1" onclick="PurchaseAudit._tab('setup')">⚙️ ตั้งค่า 设置规则</button>
-            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 วิเคราะห์ 分析单据</button>
-          </div>
+            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 ผลวิเคราะห์ 分析结果</button>
+          </div>`:''}
           <style>
             .pab-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
             .pab-tab.active{background:#2563eb;color:#fff;font-weight:700}
@@ -39,10 +40,11 @@ const PurchaseAudit = {
             .pab2.high{background:#fce7f3;color:#9d174d}
             .pab2.ok{background:#dcfce7;color:#166534}
           </style>
-          <div id="pab-setup-panel"></div>
-          <div id="pab-analyze-panel" style="display:none"></div>
+          ${isAdmin?'<div id="pab-setup-panel"></div>':''}
+          <div id="pab-analyze-panel" ${isAdmin?'style="display:none"':''}></div>
         </div>`;
-        this._tab('setup');
+        if(isAdmin) this._tab('setup');
+        else this._renderAnalyze();
     },
 
     _tab(t) {
@@ -433,10 +435,9 @@ const PurchaseAudit = {
                     <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | Invoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
                   </div>
                   <div style="text-align:right;flex:0 0 auto">
-                    ${isAdmin?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:''}
+                    ${isAdmin||!isAgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ ยืนยันแล้ว 已确认扣回</div>'}
                     ${isAdmin?`<button class="sb-btn small ${isAgreed?'':'primary'}" onclick="PurchaseAudit.toggleAgreement('${this.esc(inv)}','${this.esc(itemCN)}',${isAgreed})" style="margin-top:4px;white-space:nowrap">
                       ${isAgreed?'✅ ตกลงแล้ว 已协商':'🤝 ตกลง 协商同意'}</button>`:''}
-                    ${!isAdmin&&isAgreed?'<span style="color:#166534;font-size:12px">✅ ยืนยันแล้ว 已确认</span>':''}
                   </div>
                 </div>
 
@@ -514,79 +515,6 @@ const PurchaseAudit = {
         </body></html>`);
         win.document.close();
         win.print();
-    },
-
-        let html='';
-        html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
-          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">ยอดรวม 总采购额</div></div>
-          ${boqTotal>0?`<div class="pa-kpi ${totalAmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totalAmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">ใช้งบ 已用预算</div></div>`:''}
-          <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div></div>
-          <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ ใบซ้ำ 重复单据</div></div>
-          <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 ราคาสูง 价格偏高</div></div>
-        </div>`;
-
-        if(deductRows.length){
-            html+=`<div class="pa-sec" style="border:2px solid #fde047">
-              <h3 style="color:#92400e">🚫 รายการที่ผู้รับเหมาควรรับผิดชอบ — ต้องเรียกเก็บคืน 应由建筑方承担、需追回</h3>
-              <div style="font-weight:700;color:#92400e;margin-bottom:10px">รวม 合计: ฿${this.fmt(deductAmt)}</div>
-              <table class="pa-table"><thead><tr>
-                <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th>
-                <th style="text-align:right">฿</th><th>เหตุผล AI</th>
-              </tr></thead><tbody>
-              ${deductRows.map(r=>`<tr style="background:#fffbeb">
-                <td>${this.fmtDate(g(r,'_date','Date','purchase_date'))}</td>
-                <td style="font-family:monospace;font-size:11px">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
-                <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
-                <td>${this.esc(g(r,'Item_Name_TH','item_name_th'))} <span style="color:#94a3b8;font-size:11px">${this.esc(g(r,'Item_Name_CN','item_name_cn'))}</span></td>
-                <td style="text-align:right;font-weight:700;color:#92400e">฿${this.fmt(gn(r,'Total_Price','total_price'))}</td>
-                <td style="font-size:12px;color:#64748b">${this.esc(r.ai&&r.ai.reason_th||'')} ${r.ai&&r.ai.reason_cn?'/ '+this.esc(r.ai.reason_cn):''}</td>
-              </tr>`).join('')}
-              </tbody></table>
-            </div>`;
-        }
-
-        if(dupRows.length){
-            html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ ใบเสร็จซ้ำ 重复单据</h3>
-              <table class="pa-table"><thead><tr><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th><th style="text-align:right">฿</th></tr></thead><tbody>
-              ${dupRows.map(r=>`<tr style="background:#fff5f5">
-                <td style="font-family:monospace;font-size:11px">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
-                <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
-                <td>${this.esc(g(r,'Item_Name_TH','item_name_th')||g(r,'Item_Name_CN','item_name_cn'))}</td>
-                <td style="text-align:right;font-weight:700;color:#dc2626">฿${this.fmt(gn(r,'Total_Price','total_price'))}</td>
-              </tr>`).join('')}
-              </tbody></table></div>`;
-        }
-
-        html+=`<div class="pa-sec"><h3>🧾 รายการทั้งหมด + ผล AI 全部明细</h3>
-          <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
-            <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th>
-            <th style="text-align:right">฿</th><th>ผล AI</th>
-          </tr></thead><tbody>
-          ${records.map(r=>{
-              const f=r.ai&&r.ai.flags||[];
-              const badges=[
-                f.includes('deduct')?'<span class="pab2 deduct">🚫 หักคืน</span>':'',
-                f.includes('duplicate')?'<span class="pab2 dup">⚠️ ซ้ำ</span>':'',
-                f.includes('price_high')?'<span class="pab2 high">📈 สูง</span>':'',
-                (!f.length||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
-              ].filter(Boolean).join('');
-              const total=gn(r,'Total_Price','total_price');
-              return `<tr>
-                <td style="white-space:nowrap;font-size:12px">${this.fmtDate(g(r,'_date','Date','purchase_date'))}</td>
-                <td style="font-family:monospace;font-size:11px;color:#64748b">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
-                <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
-                <td><div>${this.esc(g(r,'Item_Name_TH','item_name_th'))}</div><div style="font-size:11px;color:#94a3b8">${this.esc(g(r,'Item_Name_CN','item_name_cn'))}</div></td>
-                <td style="text-align:right;font-weight:600;color:${total<0?'#10b981':'#1e3a8a'}">฿${this.fmt(total)}</td>
-                <td>${badges}</td>
-              </tr>`;
-          }).join('')}
-          <tr style="background:#f8fafc;font-weight:700">
-            <td colspan="4" style="text-align:right">ยอดรวม 合计</td>
-            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totalAmt)}</td>
-            <td></td>
-          </tr></tbody></table></div></div>`;
-
-        report.innerHTML=html;
     }
 };
 

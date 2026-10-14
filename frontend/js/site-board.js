@@ -456,9 +456,13 @@
                         const nm = t.custom_title || t.process_name || '工作';
                         const floor = t.floor_no != null ? `·${t.floor_no}层` : '';
                         const isDone = t.status==='completed', isStart = t.status==='in_progress';
+                        const canStart = !isDone && !isStart && t.process_execution_id;
                         return `<div class="wb-exec-task ${isDone?'done':''}">
                             <div class="wb-exec-nm">${esc(nm+floor)}</div>
-                            <span class="wb-chip ${isDone?'c-done':isStart?'c-go':'c-wait'}">${isDone?'✅ เสร็จ':isStart?'🔄 กำลังทำ':'📋 รอทำ'}</span>
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                                <span class="wb-chip ${isDone?'c-done':isStart?'c-go':'c-wait'}">${isDone?'✅ เสร็จ':isStart?'🔄 กำลังทำ':'📋 รอทำ'}</span>
+                                ${canStart ? `<button class="sb-btn primary small" data-da-start="${t.id}" style="font-size:13px;padding:5px 10px">▶ เริ่ม 加入正在做</button>` : ''}
+                            </div>
                         </div>`;
                     }).join('')}
                 </div>`;

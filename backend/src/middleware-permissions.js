@@ -17,9 +17,9 @@ const PERMISSIONS = {
         'view_assigned_projects', 'manage_projects', 'purchase_material',
         'assign_task', 'update_progress', 'view_all_data'
     ],
-    // 工头 — 执行任务、更新进度、上传照片、点名
+    // 工头 — 执行任务、更新进度、上传照片、点名、加入正在做、接收材料
     foreman: [
-        'view_assigned_projects', 'update_progress'
+        'view_assigned_projects', 'update_progress', 'assign_task', 'receive_material'
     ],
     // 采购员 — 只管材料采购
     purchaser: [

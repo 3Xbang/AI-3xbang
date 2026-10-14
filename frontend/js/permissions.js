@@ -40,9 +40,19 @@ const PermissionManager = {
         return this.isManager() || this.isSupervisor();
     },
 
+    // 可以加入正在做 - 启动分配的任务 (manager + supervisor + foreman)
+    canStartAssignedTask() {
+        return ['manager', 'supervisor', 'foreman'].includes(this.role());
+    },
+
     // 可以采购材料（manager + supervisor + purchaser）
     canPurchaseMaterials() {
         return ['manager','supervisor','purchaser'].includes(this.role());
+    },
+
+    // 可以接收入库（manager + supervisor + foreman + purchaser）
+    canReceiveMaterials() {
+        return ['manager','supervisor','foreman','purchaser'].includes(this.role());
     },
 
     // 可以上传照片（所有除 owner）
@@ -67,7 +77,7 @@ const PermissionManager = {
 
     // 可以看材料设备
     canViewMaterials() {
-        return ['manager','supervisor','purchaser'].includes(this.role());
+        return ['manager','supervisor','foreman','purchaser'].includes(this.role());
     },
 
     // 可以看总览/报告

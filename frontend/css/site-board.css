@@ -259,7 +259,7 @@ details[open] > .td-sum::before { content: '▾'; }
 .da-yest-chip { background: #fef3c7; color: #92400e; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
 
 /* ── 工序选择弹窗 分组样式 ── */
-.da-sec-head { background: #f1f5f9; padding: 8px 14px; font-size: 13px; color: #1e3a8a; border-top: 1px solid #e2e8f0; margin-top: 2px; position: sticky; top: 0; z-index: 2; }
+.da-sec-head { padding: 10px 14px; font-size: 13px; border-top: 1px solid #e2e8f0; margin-top: 4px; position: sticky; top: 0; z-index: 2; overflow: hidden; }
 .da-sec-head b { font-size: 15px; margin-right: 6px; }
 .da-opt-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
 .da-opt-row:active { background: #f0f9ff; }

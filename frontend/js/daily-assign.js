@@ -97,15 +97,15 @@ const DailyAssign = {
 
     async addProcess() {
         const SECTIONS = {
-            A:{zh:'前期准备',th:'งานเตรียมการ'},
-            B:{zh:'地基与基础',th:'งานฐานราก'},
-            C:{zh:'主体结构',th:'งานโครงสร้างหลัก'},
-            D:{zh:'屋面',th:'งานหลังคา'},
-            E:{zh:'机电',th:'งานระบบน้ำ-ไฟ'},
-            F:{zh:'装饰装修',th:'งานตกแต่งภายใน'},
-            G:{zh:'外立面',th:'งานผนังภายนอก'},
-            H:{zh:'室外工程',th:'งานภายนอกอาคาร'},
-            I:{zh:'验收与交付',th:'ตรวจรับและส่งมอบ'}
+            A:{zh:'前期准备',th:'งานเตรียมการ',      color:'#64748b', bg:'#f1f5f9'},
+            B:{zh:'地基与基础',th:'งานฐานราก',       color:'#b45309', bg:'#fef3c7'},
+            C:{zh:'主体结构',th:'งานโครงสร้างหลัก',  color:'#1d4ed8', bg:'#dbeafe'},
+            D:{zh:'屋面',th:'งานหลังคา',              color:'#15803d', bg:'#dcfce7'},
+            E:{zh:'机电',th:'งานระบบน้ำ-ไฟ',         color:'#7c3aed', bg:'#ede9fe'},
+            F:{zh:'装饰装修',th:'งานตกแต่งภายใน',    color:'#c2410c', bg:'#ffedd5'},
+            G:{zh:'外立面',th:'งานผนังภายนอก',       color:'#0e7490', bg:'#cffafe'},
+            H:{zh:'室外工程',th:'งานภายนอกอาคาร',   color:'#065f46', bg:'#d1fae5'},
+            I:{zh:'验收与交付',th:'ตรวจรับและส่งมอบ',color:'#374151', bg:'#f9fafb'}
         };
 
         const r = await apiRequest('/api/projects/'+this.projectId+'/estimate');
@@ -125,8 +125,12 @@ const DailyAssign = {
         secOrder.forEach(sec => {
             const items = groups[sec];
             if(!items || !items.length) return;
-            const s = SECTIONS[sec] || {zh:sec, th:''};
-            opts += `<div class="da-sec-head"><b>${s.th}</b> <small>${s.zh}</small></div>`;
+            const s = SECTIONS[sec] || {zh:sec, th:'', color:'#334155', bg:'#f1f5f9'};
+            opts += `<div class="da-sec-head" style="background:${s.bg};border-left:5px solid ${s.color}">
+                <span style="color:${s.color};font-size:16px;font-weight:800">${s.th}</span>
+                <span style="color:${s.color};opacity:.75;font-size:12px;margin-left:7px">${s.zh}</span>
+                <span style="float:right;background:${s.color};color:#fff;border-radius:12px;padding:2px 8px;font-size:12px">${items.length}</span>
+            </div>`;
             items.forEach(t => {
                 const nm = (t.th||'') ? `<b>${t.th}</b> <small style="color:#64748b">${t.name}</small>` : t.name;
                 const floor = t.floor!=null ? ` <span class="da-floor-tag">ชั้น ${t.floor}</span>` : '';

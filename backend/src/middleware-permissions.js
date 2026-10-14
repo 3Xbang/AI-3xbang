@@ -8,7 +8,7 @@ const PERMISSIONS = {
         'create_project',
         'update_project',
         'delete_project',
-        'manage_projects',  // 管理项目的通用权限（包括增删改查工序、依赖等）
+        'manage_projects',
         'purchase_material',
         'assign_task',
         'manage_users',
@@ -16,10 +16,11 @@ const PERMISSIONS = {
     ],
     purchaser: [
         'view_assigned_projects',
-        'create_project',
+        'manage_projects',      // 可以查看所有项目数据（甘特图、工序、准备度等）
         'purchase_material',
         'assign_task',
-        'update_progress'
+        'update_progress',
+        'view_all_data'
     ],
     executor: [
         'view_assigned_projects',

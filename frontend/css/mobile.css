@@ -1,0 +1,227 @@
+/*
+  mobile.css — 手机端适配
+  目标：所有可点击元素最小 48×48px touch target，字体清晰，间距舒适
+  加载顺序：放在所有 CSS 最后
+*/
+
+/* ────────────────────────────────────────
+   触控设备全局基础
+───────────────────────────────────────── */
+@media (max-width: 768px), (pointer: coarse) {
+
+  /* 全局按钮最小 touch target */
+  button, .btn, .sb-btn, .nav-item,
+  input[type="button"], input[type="submit"],
+  label[for], label.cover-upload-btn,
+  .fc-btn, .td-btn, .pp-step button,
+  .btn-icon-only, .tab-btn {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: 15px !important;
+    padding: 10px 16px !important;
+    border-radius: 10px !important;
+    touch-action: manipulation;
+  }
+
+  /* 小按钮（small 修饰符）单独放宽一点 */
+  .sb-btn.small, button.small {
+    min-height: 40px;
+    min-width: 40px;
+    font-size: 13px !important;
+    padding: 7px 12px !important;
+  }
+
+  /* icon-only 按钮保持正方形 */
+  .btn-icon-only {
+    min-height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px !important;
+  }
+
+  /* ── 顶部 Hero 区域 ── */
+  .hero { padding: 12px 14px 8px !important; }
+  .hero-top { margin-bottom: 8px; }
+  .btn-back {
+    font-size: 15px !important;
+    padding: 10px 16px !important;
+    min-height: 48px;
+  }
+  .hero h2 { font-size: 1.25rem !important; }
+  .hp-row b { font-size: 1.3rem !important; }
+
+  /* ── 项目导航 Tab ── */
+  .project-nav.tabs-v2 {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px !important;
+    padding: 6px 8px !important;
+  }
+  .project-nav.tabs-v2::-webkit-scrollbar { display: none; }
+  .project-nav.tabs-v2 .nav-item {
+    flex: 0 0 auto;
+    min-width: 80px !important;
+    min-height: 60px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nav-icon { font-size: 20px; }
+  .nav-label b { font-size: 12px; }
+  .nav-label small { font-size: 10px; }
+
+  /* ── 今日现场 section headers ── */
+  .td-head { padding: 10px 12px !important; }
+  .td-title { font-size: 1rem !important; }
+  .td-th { font-size: 0.85rem; }
+
+  /* ── fc-step 工序卡片 ── */
+  .fc-step {
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+  }
+  .fc-step .fc-name { font-size: 15px !important; }
+  .fc-step .fc-sub  { font-size: 12px !important; }
+  .fc-btn {
+    min-height: 48px !important;
+    font-size: 14px !important;
+    padding: 10px 14px !important;
+  }
+  /* 按钮行横向滚动 */
+  .fc-more-btn {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px !important;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .fc-more-btn::-webkit-scrollbar { display: none; }
+  .fc-more-btn button { flex: 0 0 auto; }
+
+  /* ── 日常任务分配面板 ── */
+  .sb-overlay { padding: 2vh 8px !important; align-items: flex-start !important; }
+  .sb-dialog {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 14px 14px 0 0 !important;
+    margin-top: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  /* sb-dialog narrow 在手机上也全宽 */
+  .sb-dialog.narrow { max-width: 100% !important; }
+
+  .sb-body { padding: 12px 14px !important; }
+  .sb-field label { font-size: 14px !important; margin-bottom: 6px; display: block; }
+  .sb-field input, .sb-field select, .sb-field textarea {
+    font-size: 16px !important; /* 防止 iOS 自动缩放 */
+    min-height: 48px !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    width: 100%;
+    border: 1px solid #cbd5e1;
+  }
+  .sb-dialog header { padding: 14px 16px !important; }
+  .sb-dialog header h3 { font-size: 16px !important; }
+  .sb-dialog footer {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+    display: flex;
+  }
+  .sb-dialog footer button { flex: 1; }
+
+  /* ── 项目准备 pp-step ── */
+  .pp-step { padding: 12px 14px !important; gap: 10px !important; }
+  .pp-num { flex: 0 0 36px !important; height: 36px !important; font-size: 16px !important; }
+  .pp-title { font-size: 15px !important; }
+  .pp-why { font-size: 13px !important; }
+  .pp-act button {
+    width: 100%;
+    min-height: 48px !important;
+    font-size: 15px !important;
+    margin-top: 6px;
+  }
+
+  /* ── 甘特图 ── */
+  .gc-section-row { min-height: 48px !important; }
+  .gc-label { font-size: 13px !important; padding: 6px 8px !important; }
+
+  /* ── 进度计划卡片 ── */
+  .process-card { padding: 10px 12px !important; }
+  .process-card-title { font-size: 14px !important; }
+  .process-card button { min-height: 44px !important; }
+
+  /* ── 项目准备状态条 ── */
+  .pp-banner { font-size: 14px !important; padding: 10px 12px !important; }
+
+  /* ── Dashboard 项目卡片 ── */
+  .projects-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 0 4px;
+  }
+  .project-card-cover { height: 140px !important; }
+  .project-card-header h3 { font-size: 1.1rem !important; }
+  .project-card-body { padding: 10px 12px !important; }
+  .project-card-actions .btn-icon-only {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    font-size: 18px !important;
+  }
+
+  /* ── 主导航 (顶栏) ── */
+  .main-header { padding: 8px 12px !important; }
+  .header-title { font-size: 1.1rem !important; }
+
+  /* ── 通用表单 ── */
+  input[type="text"], input[type="number"], input[type="email"],
+  input[type="password"], input[type="date"], select, textarea {
+    font-size: 16px !important; /* 防 iOS 自动缩放 */
+    min-height: 48px !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── 登录页 ── */
+  .login-container { padding: 24px 20px !important; }
+  .login-container input { min-height: 52px !important; font-size: 16px !important; }
+  .login-container .btn { min-height: 52px !important; font-size: 16px !important; }
+
+  /* ── 材料设备模态 ── */
+  .modal-content { margin: 8px !important; border-radius: 14px !important; }
+  .modal-body { padding: 12px 14px !important; }
+  .modal-footer button { min-height: 48px !important; font-size: 15px !important; }
+
+  /* ── 选工序 assignment 列表行 ── */
+  .assign-row, .da-row {
+    min-height: 52px;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── 图纸 / BOQ 上传 file input ── */
+  input[type="file"] {
+    font-size: 14px !important;
+    padding: 10px 0 !important;
+  }
+}
+
+/* ────────────────────────────────────────
+   小屏手机额外适配 (≤ 390px)
+───────────────────────────────────────── */
+@media (max-width: 390px) {
+  .project-nav.tabs-v2 .nav-item { min-width: 70px !important; }
+  .hero h2 { font-size: 1.1rem !important; }
+  .nav-label b { font-size: 11px; }
+}

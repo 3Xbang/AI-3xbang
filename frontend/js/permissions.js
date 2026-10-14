@@ -31,9 +31,14 @@ const PermissionManager = {
         return this.isManager();
     },
 
-    // 检查是否可以管理项目 (仅管理者)
+    // 检查是否可以管理项目 (仅管理者) — 写操作：创建/删除/改结构
     canManageProjects() {
         return this.isManager();
+    },
+
+    // 检查是否可以查看项目完整内容 (管理者 + 采购者)
+    canViewProjectData() {
+        return this.isManager() || this.isPurchaser();
     },
 
     // 检查是否可以管理项目成员 (仅管理者)

@@ -268,3 +268,40 @@ details[open] > .td-sum::before { content: '▾'; }
 .da-opt-nm b { display: block; font-size: 15px; color: #0f172a; }
 .da-opt-nm small { color: #64748b; }
 .da-floor-tag { background: #dbeafe; color: #1e40af; border-radius: 10px; padding: 1px 8px; font-size: 12px; margin-left: 4px; }
+
+/* ── 自定义任务 重设计 ── */
+.ct-dlg { max-width: 540px !important; }
+.ct-dlg header { background: #1e3a8a; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+.ct-title-th { font-size: 18px; }
+.ct-title-zh { font-size: 13px; opacity: .75; }
+.ct-dlg header button { color: #fff; background: transparent; border: none; font-size: 24px; cursor: pointer; padding: 0 4px; }
+
+.ct-body { padding: 12px 14px !important; display: flex; flex-direction: column; gap: 12px; }
+.ct-row  { display: flex; flex-direction: column; gap: 4px; }
+.ct-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ct-half { display: flex; flex-direction: column; gap: 4px; }
+
+.ct-lbl { display: flex; flex-direction: column; line-height: 1.2; }
+.ct-lbl b     { font-size: 15px; color: #1e3a8a; }
+.ct-lbl small { font-size: 11px; color: #94a3b8; }
+
+.ct-select, .ct-input {
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    padding: 10px 12px; font-size: 15px; width: 100%;
+    background: #fff; color: #0f172a;
+    min-height: 46px;
+}
+.ct-select:focus, .ct-input:focus { border-color: #2563eb; outline: none; }
+textarea.ct-input { min-height: 60px; resize: vertical; }
+
+/* preset chips */
+.ct-preset-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 34px; }
+.ct-chip {
+    background: #f1f5f9; border: 1.5px solid #e2e8f0; border-radius: 20px;
+    padding: 5px 12px; cursor: pointer; font-size: 13px; color: #334155;
+    display: flex; flex-direction: column; align-items: center; line-height: 1.3;
+    transition: all .15s;
+}
+.ct-chip small { font-size: 10px; color: #94a3b8; }
+.ct-chip:active, .ct-chip.active { background: #dbeafe; border-color: #2563eb; color: #1e40af; }
+.ct-chip.active small { color: #3b82f6; }

@@ -151,20 +151,129 @@ const DailyAssign = {
     },
 
     async addCustom() {
+        // ─── preset work types with bilingual task suggestions ───
+        const CATS = [
+            { id:'structure', th:'งานโครงสร้าง', zh:'结构工程',
+              tasks:[
+                {th:'ผูกเหล็กเสา/คาน',zh:'钢筋绑扎',unit:'kg'},{th:'เทคอนกรีต',zh:'混凝土浇筑',unit:'m³'},
+                {th:'แบบหล่อ',zh:'模板安装/拆除',unit:'m²'},{th:'ก่ออิฐ',zh:'砌砖',unit:'m²'},
+                {th:'ฉาบปูน',zh:'抹灰',unit:'m²'},{th:'ถอดแบบ/บ่มคอนกรีต',zh:'养护拆模',unit:'项'}
+              ]},
+            { id:'mep', th:'งานระบบน้ำ-ไฟ', zh:'水电工程',
+              tasks:[
+                {th:'เดินท่อน้ำ',zh:'给排水管安装',unit:'m'},{th:'เดินสายไฟ',zh:'电线敷设',unit:'m'},
+                {th:'ฝังท่อ',zh:'预埋管线',unit:'m²'},{th:'ตรวจงานน้ำไฟ',zh:'水电验收',unit:'项'},
+                {th:'ติดตั้งสุขภัณฑ์',zh:'洁具安装',unit:'套'},{th:'ติดตั้งสวิตช์/ปลั๊ก',zh:'开关插座安装',unit:'个'}
+              ]},
+            { id:'finishing', th:'งานตกแต่ง', zh:'装修工程',
+              tasks:[
+                {th:'ปูกระเบื้องพื้น',zh:'地砖铺贴',unit:'m²'},{th:'ปูกระเบื้องผนัง',zh:'墙砖铺贴',unit:'m²'},
+                {th:'ทาสี',zh:'涂料/乳胶漆',unit:'m²'},{th:'โป๊วผนัง',zh:'腻子批刮',unit:'m²'},
+                {th:'ติดตั้งบานประตู/หน้าต่าง',zh:'门窗安装',unit:'樘'},{th:'เพดานยิปซั่ม',zh:'石膏板吊顶',unit:'m²'},
+                {th:'กันซึมห้องน้ำ',zh:'卫生间防水',unit:'m²'}
+              ]},
+            { id:'exterior', th:'งานภายนอก', zh:'外立面/室外',
+              tasks:[
+                {th:'ฉาบปูนผนังนอก',zh:'外墙抹灰',unit:'m²'},{th:'ทาสีผนังนอก',zh:'外墙涂料',unit:'m²'},
+                {th:'กันสาดหน้าต่าง',zh:'外窗收口打胶',unit:'m'},{th:'ถนน/ลานพื้น',zh:'道路铺装',unit:'m²'},
+                {th:'รั้วและประตู',zh:'围墙大门',unit:'m'},{th:'สระว่ายน้ำ',zh:'泳池施工',unit:'项'}
+              ]},
+            { id:'inspect', th:'ตรวจสอบ/แก้ไข', zh:'检查整改',
+              tasks:[
+                {th:'ตรวจงานฐานราก',zh:'基础验收',unit:'项'},{th:'ตรวจกันซึม',zh:'防水检查',unit:'项'},
+                {th:'ตรวจน้ำ-ไฟ',zh:'水电检查',unit:'项'},{th:'แก้ไขงาน',zh:'整改修补',unit:'项'},
+                {th:'ตรวจรับแต่ละชั้น',zh:'分层验收',unit:'项'}
+              ]},
+            { id:'procure', th:'จัดซื้อ/ขนส่ง', zh:'采购运输',
+              tasks:[
+                {th:'สั่งซื้อเหล็ก',zh:'采购钢筋',unit:'kg'},{th:'สั่งซื้อปูน/คอนกรีต',zh:'采购水泥/混凝土',unit:'m³'},
+                {th:'สั่งซื้อกระเบื้อง',zh:'采购瓷砖',unit:'m²'},{th:'สั่งซื้อวัสดุ',zh:'采购材料',unit:'项'},
+                {th:'ขนส่งวัสดุ',zh:'材料运输',unit:'项'}
+              ]},
+            { id:'other', th:'อื่นๆ', zh:'其他', tasks:[] }
+        ];
+        const FLOORS = ['ชั้น 1','ชั้น 2','ชั้น 3','ดาดฟ้า','ทุกชั้น'];
+        const ZONES  = ['ห้องน้ำ','ครัว','ห้องนอน','ห้องนั่งเล่น','ระเบียง','บันได','ทั้งหลัง','ภายนอก'];
+        const UNITS  = ['m','m²','m³','kg','t','ชิ้น','ชุด/套','แห่ง/项','วัน/天','คน/人'];
+
+        const catOpts = CATS.map(c=>`<option value="${c.id}">${c.th}  ${c.zh}</option>`).join('');
+        const floorOpts = ['— ชั้น (ไม่ระบุ) —',...FLOORS].map(f=>`<option>${f}</option>`).join('');
+        const zoneOpts  = ['— บริเวณ (ไม่ระบุ) —',...ZONES].map(z=>`<option>${z}</option>`).join('');
+        const unitOpts  = UNITS.map(u=>`<option>${u}</option>`).join('');
+
         const dlg = document.createElement('div'); dlg.className='sb-overlay';
-        dlg.innerHTML=`<div class="sb-dialog narrow"><header><h3>自定义任务</h3><button data-x>&times;</button></header>
-            <div class="sb-body">
-                <div class="sb-field"><label>任务名称 *</label><input type="text" id="ct-title" placeholder="例如：检查A区防水、采购钢筋"></div>
-                <div class="sb-field"><label>说明（可不填）</label><textarea id="ct-desc" rows="2"></textarea></div>
+        dlg.innerHTML=`<div class="sb-dialog ct-dlg"><header>
+            <div><b class="ct-title-th">📋 สร้างงาน</b><small class="ct-title-zh"> 添加工作任务</small></div>
+            <button data-x>&times;</button></header>
+            <div class="sb-body ct-body">
+
+            <div class="ct-row"><label class="ct-lbl"><b>ประเภทงาน</b><small>工作类型 *</small></label>
+                <select id="ct-cat" class="ct-select">${catOpts}</select></div>
+
+            <div class="ct-row ct-preset-row">
+                <label class="ct-lbl"><b>เลือกงาน</b><small>快速选择</small></label>
+                <div id="ct-presets" class="ct-preset-chips"></div>
             </div>
-            <footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>添加</button></footer></div>`;
+
+            <div class="ct-row"><label class="ct-lbl"><b>ชื่องาน</b><small>任务名称 *</small></label>
+                <input id="ct-title" type="text" class="ct-input" placeholder="ระบุงาน / 描述工作内容"></div>
+
+            <div class="ct-row2">
+                <div class="ct-half"><label class="ct-lbl"><b>ชั้น</b><small>楼层</small></label>
+                    <select id="ct-floor" class="ct-select">${floorOpts}</select></div>
+                <div class="ct-half"><label class="ct-lbl"><b>บริเวณ</b><small>区域</small></label>
+                    <select id="ct-zone" class="ct-select">${zoneOpts}</select></div>
+            </div>
+
+            <div class="ct-row2">
+                <div class="ct-half"><label class="ct-lbl"><b>ปริมาณ</b><small>数量</small></label>
+                    <input id="ct-qty" type="number" min="0" step="0.1" class="ct-input" placeholder="0"></div>
+                <div class="ct-half"><label class="ct-lbl"><b>หน่วย</b><small>单位</small></label>
+                    <select id="ct-unit" class="ct-select">${unitOpts}</select></div>
+            </div>
+
+            <div class="ct-row"><label class="ct-lbl"><b>หมายเหตุ</b><small>备注</small></label>
+                <textarea id="ct-desc" class="ct-input" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+            </div>
+            <footer>
+                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
+                <button class="sb-btn primary" data-ok>✅ เพิ่ม 添加</button>
+            </footer></div>`;
         document.body.appendChild(dlg);
+
+        // Update preset chips when category changes
+        const updatePresets = () => {
+            const cat = CATS.find(c=>c.id===dlg.querySelector('#ct-cat').value);
+            const box = dlg.querySelector('#ct-presets');
+            if(!cat||!cat.tasks.length){ box.innerHTML='<span style="color:#94a3b8;font-size:13px">—</span>'; return; }
+            box.innerHTML = cat.tasks.map(t=>`<button class="ct-chip" data-th="${t.th}" data-zh="${t.zh}" data-unit="${t.unit}">${t.th}<small>${t.zh}</small></button>`).join('');
+            box.querySelectorAll('.ct-chip').forEach(b=>b.onclick=()=>{
+                dlg.querySelector('#ct-title').value = b.dataset.th + ' ' + b.dataset.zh;
+                const uid = dlg.querySelector('#ct-unit');
+                Array.from(uid.options).forEach(o=>{ if(o.value.startsWith(b.dataset.unit)) uid.value=o.value; });
+                box.querySelectorAll('.ct-chip').forEach(x=>x.classList.remove('active'));
+                b.classList.add('active');
+            });
+        };
+        dlg.querySelector('#ct-cat').onchange = updatePresets;
+        updatePresets();
+
         dlg.querySelector('[data-x]').onclick=dlg.querySelector('[data-cancel]').onclick=()=>dlg.remove();
         dlg.querySelector('[data-ok]').onclick=async()=>{
-            const title=dlg.querySelector('#ct-title').value.trim();
-            if(!title){alert('请填写任务名称');return;}
+            let title = dlg.querySelector('#ct-title').value.trim();
+            if(!title){alert('กรุณาระบุชื่องาน / 请填写任务名称');return;}
+            const floor = dlg.querySelector('#ct-floor').value; const hasFloor = !floor.startsWith('—');
+            const zone  = dlg.querySelector('#ct-zone').value;  const hasZone  = !zone.startsWith('—');
+            const qty   = dlg.querySelector('#ct-qty').value;
+            const unit  = dlg.querySelector('#ct-unit').value;
+            // Build rich description
+            let desc = dlg.querySelector('#ct-desc').value.trim();
+            const extra = [hasFloor?floor:'', hasZone?zone:'', qty?qty+' '+unit:''].filter(Boolean).join(' | ');
+            if(extra) desc = (desc ? desc+'\n' : '') + extra;
             dlg.remove();
-            await apiRequest('/api/projects/'+this.projectId+'/daily-assignments',{method:'POST',body:JSON.stringify({work_date:this.date,custom_title:title,custom_description:dlg.querySelector('#ct-desc').value.trim(),sort_order:this.tasks.length})});
+            await apiRequest('/api/projects/'+this.projectId+'/daily-assignments',{method:'POST',body:JSON.stringify({
+                work_date:this.date, custom_title:title, custom_description:desc||null, sort_order:this.tasks.length
+            })});
             await this.load();
         };
     },

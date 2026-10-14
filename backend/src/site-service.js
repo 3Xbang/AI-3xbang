@@ -329,7 +329,7 @@ async function buildEstimate(client, projectId) {
     const q = getQuota(t.code, L.plan.profile);
     const o = byKey.get(t.key);
     const out = {
-      key: t.key, execId: L.execByKey.get(t.key), code: t.code, floor: t.floor, name: t.zh,
+      key: t.key, execId: L.execByKey.get(t.key), code: t.code, floor: t.floor, name: t.zh, th: t.th,
       kind: q.kind, status: (L.state.tasks[t.key] || {}).status || 'not_started',
       startDay: ((L.state.tasks[t.key] || {}).status ? null : o.start), finishDay: o.finish,
       startDate: ((L.state.tasks[t.key] || {}).status ? null : dateOf(o.start)), finishDate: dateOf(o.finish),

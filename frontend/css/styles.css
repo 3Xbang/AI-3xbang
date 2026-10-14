@@ -202,6 +202,19 @@ body {
     gap: 1rem;
 }
 
+/* 用户管理入口（仅管理员可见） */
+#btn-user-mgmt {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .2s;
+}
+#btn-user-mgmt:hover { background: rgba(255,255,255,0.28); }
+
 .main-container {
     display: flex;
     flex: 1;

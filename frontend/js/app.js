@@ -73,6 +73,10 @@ const app = {
         const roleDisplay = PermissionManager.getRoleDisplayName(user.role);
         document.getElementById('user-name').textContent = `${user.full_name || user.username} (${roleDisplay})`;
         
+        // 管理员显示"用户管理"入口
+        const btnUserMgmt = document.getElementById('btn-user-mgmt');
+        if (btnUserMgmt) btnUserMgmt.style.display = PermissionManager.canManageUsers() ? '' : 'none';
+
         // 初始化页面权限
         PermissionManager.initializePagePermissions();
     },

@@ -55,8 +55,7 @@ const ProjectDetail = {
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'เตรียมโครงการ', warn: true });
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
-        if (PermissionManager.canViewMaterials())  list.push({ v: 'materials',icon: '🧱', zh: '材料设备', th: 'วัสดุและอุปกรณ์' });
-        if (['manager','supervisor','purchaser','owner'].includes(PermissionManager.role())) list.push({ v: 'purchase', icon: '📊', zh: '采购分析', th: 'วิเคราะห์การจัดซื้อ' });
+        if (['manager','supervisor','purchaser'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
@@ -148,10 +147,59 @@ const ProjectDetail = {
                 container.innerHTML = '<div id="purchase-audit-container"></div>';
                 if (typeof PurchaseAudit !== 'undefined') PurchaseAudit.init(this.projectId);
                 break;
+            case 'procurement':
+                container.innerHTML = this.renderProcurement();
+                this._initProcurement();
+                break;
             case 'overview':
                 container.innerHTML = this.renderOverview();
                 this.loadOverviewData();
                 break;
+        }
+    },
+
+    // ---------- 采购总览 ----------
+    renderProcurement() {
+        return `<div style="padding:16px;max-width:1400px;margin:0 auto">
+          <div class="td-head">
+            <div>
+              <h2 class="td-title">📦 การจัดซื้อ <small class="td-th">采购总览</small></h2>
+              <div class="td-sub">วัสดุและการวิเคราะห์การจัดซื้อ · 材料设备与采购分析（本项目共享采购）</div>
+            </div>
+          </div>
+
+          <!-- Sub-tabs -->
+          <div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+            <button class="proc-tab active" id="proc-tab-mat" onclick="ProjectDetail._switchProcTab('mat')">🧱 วัสดุ 收据材料</button>
+            <button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">🤖 AI วิเคราะห์ 采购分析</button>
+          </div>
+          <style>
+            .proc-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
+            .proc-tab.active{background:#2563eb;color:#fff;font-weight:700}
+            .proc-tab:hover:not(.active){background:#f1f5f9}
+          </style>
+
+          <div id="proc-mat-panel"><div id="materials-container"></div></div>
+          <div id="proc-ai-panel" style="display:none"><div id="purchase-audit-container"></div></div>
+        </div>`;
+    },
+
+    _initProcurement() {
+        MaterialManager.init(this.projectId);
+    },
+
+    _switchProcTab(tab) {
+        document.getElementById('proc-tab-mat').classList.toggle('active', tab==='mat');
+        document.getElementById('proc-tab-ai').classList.toggle('active', tab==='ai');
+        document.getElementById('proc-mat-panel').style.display = tab==='mat' ? '' : 'none';
+        document.getElementById('proc-ai-panel').style.display = tab==='ai' ? '' : 'none';
+        // Lazy init AI panel
+        if (tab==='ai' && typeof PurchaseAudit!=='undefined') {
+            const box = document.getElementById('purchase-audit-container');
+            if (box && !box.hasAttribute('data-init')) {
+                box.setAttribute('data-init','1');
+                PurchaseAudit.init(this.projectId);
+            }
         }
     },
 

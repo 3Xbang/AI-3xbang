@@ -1069,7 +1069,75 @@ router.put('/projects/:projectId/ai-rules', authenticate, requireProjectAccess()
   res.json({ success:true });
 }));
 
-// ── POST /ai/ocr-receipt — 收据照片 → 结构化数据 ──
+// ── POST /projects/:id/ai-extract-contract — 上传合同，AI提取责任条款 ──
+const contractUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 20*1024*1024 } });
+
+router.post('/projects/:projectId/ai-extract-contract', authenticate, requireProjectAccess(), requirePermission('manage_projects'), contractUpload.single('contract'), wrap(async (req, res) => {
+  if (!req.file) throw new S.HttpError(400, '请上传合同文件');
+
+  let contractText = '';
+  const fname = (req.file.originalname||'').toLowerCase();
+
+  if (fname.endsWith('.pdf')) {
+    // PDF → extract text
+    try {
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(req.file.buffer);
+      contractText = data.text;
+    } catch(e) {
+      throw new S.HttpError(400, 'PDF读取失败: ' + e.message);
+    }
+  } else {
+    // Text file (txt, doc content pasted, etc.)
+    contractText = req.file.buffer.toString('utf8');
+  }
+
+  if (!contractText || contractText.trim().length < 100) {
+    throw new S.HttpError(400, 'ไม่สามารถอ่านเนื้อหาสัญญาได้ / 无法读取合同内容，请检查文件格式');
+  }
+
+  const model = getGemini();
+
+  const prompt = `คุณเป็นผู้เชี่ยวชาญสัญญาก่อสร้างในประเทศไทย
+คุณต้องอ่านสัญญาก่อสร้างนี้และดึงข้อกำหนดเรื่องความรับผิดชอบออกมา
+
+โดยเฉพาะ:
+1. วัสดุหลัก (主材) = สิ่งที่เจ้าของโครงการ (甲方) ต้องจัดหาและจ่าย
+2. วัสดุรอง/สิ้นเปลือง (辅材) = สิ่งที่ผู้รับเหมา (乙方) ต้องจ่ายเอง ห้ามเบิกจากเจ้าของ
+3. ค่าบริการ เช่น เครื่องจักร ค่าขนส่ง ที่ฝ่ายใดรับผิดชอบ
+
+ตัวอย่างวัสดุรอง (辅材) ทั่วไปในการก่อสร้าง:
+- ใบตัดเหล็ก, ลวดเชื่อม, น้ำยาถอดแบบ, ดอกสว่าน (consumable tools)
+- เชือก, ตาข่าย, ผ้าใบ (temporary protection materials)  
+- ตะปู, สกรู, น้ำยากาว (fixings & adhesives สำหรับงานก่อสร้าง)
+
+เนื้อหาสัญญา:
+---
+${contractText.substring(0, 8000)}
+---
+
+กรุณาวิเคราะห์และตอบเป็น JSON:
+{
+  "project_name": "ชื่อโครงการในสัญญา",
+  "owner_responsibilities": ["รายการที่เจ้าของต้องจ่าย..."],
+  "contractor_responsibilities": ["รายการที่ผู้รับเหมาต้องจ่ายเอง..."],
+  "auxiliary_materials": ["วัสดุรองที่ผู้รับเหมารับผิดชอบ..."],
+  "rules_summary_th": "สรุปกฎสำหรับใช้ในระบบ (ภาษาไทย)",
+  "rules_summary_cn": "用于系统分析的规则摘要（中文）",
+  "system_rules": "กฎที่จะใช้กำกับ AI ในการตรวจสอบใบเสร็จ ระบุชัดเจนว่าอะไรที่ผู้รับเหมาควรจ่ายเอง"
+}
+ตอบ JSON เท่านั้น`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+
+  try {
+    const extracted = JSON.parse(text);
+    res.json({ success: true, data: extracted, contract_length: contractText.length });
+  } catch(e) {
+    res.json({ success: true, data: { rules_summary_cn: text, system_rules: text }, raw: true });
+  }
+}));
 router.post('/ai/ocr-receipt', authenticate, multerAI.single('image'), wrap(async (req,res)=>{
   if (!req.file) throw new S.HttpError(400,'请上传图片');
 

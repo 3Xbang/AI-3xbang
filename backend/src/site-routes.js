@@ -1037,4 +1037,313 @@ router.post('/purchase-records', authenticate, requirePermission('purchase_mater
   res.json({ success: true, data: r.rows[0] });
 }));
 
+// ============================================================
+// AI 采购分析 + 收据识别 (Google Gemini)
+// ============================================================
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const multerAI = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 20*1024*1024 } });
+
+function getGemini() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+  const genAI = new GoogleGenerativeAI(apiKey);
+  return genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' });
+}
+
+// ── 确保 ai_rules 列存在 ──
+async function ensureAiRulesCol() {
+  await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
+}
+
+// GET /projects/:id/ai-rules
+router.get('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), wrap(async (req,res)=>{
+  await ensureAiRulesCol();
+  const r = await pool.query('SELECT ai_rules FROM projects WHERE id=$1',[req.params.projectId]);
+  res.json({ success:true, data:{ rules: r.rows[0]?.ai_rules||'' } });
+}));
+
+// PUT /projects/:id/ai-rules
+router.put('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req,res)=>{
+  await ensureAiRulesCol();
+  await pool.query('UPDATE projects SET ai_rules=$1 WHERE id=$2',[req.body.rules||'',req.params.projectId]);
+  res.json({ success:true });
+}));
+
+// ── POST /ai/ocr-receipt — 收据照片 → 结构化数据 ──
+router.post('/ai/ocr-receipt', authenticate, multerAI.single('image'), wrap(async (req,res)=>{
+  if (!req.file) throw new S.HttpError(400,'请上传图片');
+
+  const model = getGemini();
+  const imagePart = {
+    inlineData: {
+      data: req.file.buffer.toString('base64'),
+      mimeType: req.file.mimetype
+    }
+  };
+
+  const prompt = `คุณเป็นผู้ช่วยอ่านใบเสร็จก่อสร้างภาษาไทย/จีน
+อ่านใบเสร็จในภาพแล้วดึงข้อมูลออกมาเป็น JSON ดังนี้:
+{
+  "date": "วันที่ (dd/mm/yyyy)",
+  "invoice_no": "เลขที่ใบเสร็จ",
+  "supplier": "ชื่อร้านค้า/ผู้ขาย",
+  "items": [
+    {
+      "name_th": "ชื่อสินค้าภาษาไทย",
+      "name_cn": "ชื่อสินค้าภาษาจีน (ถ้ามี)",
+      "qty": จำนวนตัวเลข,
+      "unit": "หน่วย",
+      "unit_price": ราคาต่อหน่วยตัวเลข,
+      "total_price": ราคารวมตัวเลข
+    }
+  ],
+  "grand_total": ยอดรวมทั้งหมดตัวเลข
+}
+ตอบเป็น JSON เท่านั้น ไม่ต้องมีคำอธิบายอื่น`;
+
+  const result = await model.generateContent([prompt, imagePart]);
+  const text = result.response.text().replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+
+  try {
+    const data = JSON.parse(text);
+    res.json({ success:true, data });
+  } catch(e) {
+    res.json({ success:false, message:'AI ไม่สามารถอ่านได้', raw: text });
+  }
+}));
+
+// ── POST /projects/:id/ai-analyze — AI全量分析 (SSE streaming) ──
+router.post('/projects/:projectId/ai-analyze', authenticate, requireProjectAccess(), wrap(async (req,res)=>{
+  // SSE headers
+  res.setHeader('Content-Type','text/event-stream');
+  res.setHeader('Cache-Control','no-cache');
+  res.setHeader('Connection','keep-alive');
+  res.setHeader('Access-Control-Allow-Origin','*');
+  const send = (ev,d) => res.write(`event: ${ev}\ndata: ${JSON.stringify(d)}\n\n`);
+
+  try {
+    const pid = req.params.projectId;
+    await ensureAiRulesCol();
+
+    const [prR, projR, pbR] = await Promise.all([
+      pool.query('SELECT * FROM purchase_records WHERE project_id=$1 ORDER BY purchase_date ASC, id ASC',[pid]),
+      pool.query('SELECT ai_rules FROM projects WHERE id=$1',[pid]),
+      pool.query('SELECT item_name_cn, unit, avg_price, min_price, max_price FROM price_benchmarks ORDER BY sample_count DESC LIMIT 30')
+    ]);
+
+    const records = prR.rows;
+    if (!records.length) { send('error',{message:'ไม่มีข้อมูลใบเสร็จ 没有收据数据'}); res.end(); return; }
+
+    send('status',{message:`กำลังวิเคราะห์ ${records.length} รายการ / 正在分析 ${records.length} 条...`});
+
+    const boqRows = req.body.boq || [];
+    const customRules = projR.rows[0]?.ai_rules || '';
+    const prices = pbR.rows;
+
+    const SYSTEM_RULES = `
+=== กฎการตรวจสอบ / 核实规则 ===
+
+ก. สิ่งที่ผู้รับเหมา (ฝ่ายก่อสร้าง) ต้องจ่ายเอง ห้ามเบิกจากเจ้าของ / 乙方自负，不应向甲方报销:
+- ค่าเช่าเครื่องจักร: แบคโฮ, เครน, รถบรรทุก / 机械租赁：挖机、吊车、卡车  
+- วัสดุสิ้นเปลือง: ใบตัดเหล็ก, ลวดเชื่อม, น้ำยาถอดแบบ, ดอกสว่าน / 消耗品：切割片、焊条、脱模剂、钻头
+- บริการกำจัดปลวก/แมลง / 灭虫服务
+- ต้นทุนการดำเนินงานอื่นของผู้รับเหมา / 其他承包方运营成本
+
+ข. ตรวจจับใบเสร็จซ้ำ: Invoice_No เดียวกันหลายรายการ / 重复发票检测
+
+ค. ราคาผิดปกติ: สูงกว่าราคาเฉลี่ยมากกว่า 10% / 价格超均价10%以上
+${customRules ? '\n=== กฎเพิ่มเติม / 附加规则 ===\n' + customRules : ''}`;
+
+    const PRICE_CONTEXT = prices.length ?
+      `\n=== ราคาอ้างอิง / 参考价格 ===\n${prices.map(p=>`${p.item_name_cn} (${p.unit}): เฉลี่ย ฿${p.avg_price}, Min ฿${p.min_price}, Max ฿${p.max_price}`).join('\n')}` : '';
+
+    const BOQ_CONTEXT = boqRows.length ?
+      `\n=== BOQ งบประมาณ / 预算 (${boqRows.length} รายการ) ===\n${boqRows.slice(0,60).map(b=>`${b.Description} | ${b.Category} | ${b.Quantity} ${b.Unit} | ฿${b.Supply_Unit_Price}/unit | Total ฿${b.Total_Amount}`).join('\n')}` : '';
+
+    const RECORDS_TEXT = records.map(r =>
+      `[${r.id}] ${(r.purchase_date||'').slice(0,10)} | INV:${r.invoice_no||'-'} | ${r.supplier_name||''} | ${r.item_name_th||''} ${r.item_name_cn||''} | Qty:${r.qty} ${r.unit} | Unit:฿${r.unit_price} | Total:฿${r.total_price}`
+    ).join('\n');
+
+    const prompt = `${SYSTEM_RULES}${PRICE_CONTEXT}${BOQ_CONTEXT}
+
+=== ใบเสร็จทั้งหมด / 所有收据 (${records.length} รายการ) ===
+${RECORDS_TEXT}
+
+=== คำสั่ง / 指令 ===
+วิเคราะห์ทุกรายการตามกฎข้างต้น ตอบเป็น JSON array ดังนี้ (ห้ามมีข้อความอื่น):
+[
+  {
+    "id": <id>,
+    "flags": [],   // เช่น ["deduct","duplicate","price_high"]
+    "status": "normal"|"deduct"|"duplicate"|"price_high"|"price_low",
+    "boq_match": "ชื่อ BOQ ที่ตรงหรือ null",
+    "boq_confidence": 0-100,
+    "reason_th": "สรุปสั้นๆ ภาษาไทย",
+    "reason_cn": "简短说明（中文）"
+  }
+]
+ตอบ JSON array เท่านั้น`;
+
+    send('status',{message:'AI กำลังประมวลผล... / AI正在推理...'});
+
+    const model = getGemini();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+
+    send('status',{message:'กำลังประมวลผลผลลัพธ์... / 正在处理结果...'});
+
+    try {
+      const analysis = JSON.parse(text);
+      // Attach analysis to records for frontend
+      const analysisMap = {};
+      analysis.forEach(a => { analysisMap[a.id] = a; });
+      const enriched = records.map(r => ({ ...r, ai: analysisMap[r.id] || { flags:[], status:'normal', reason_th:'ไม่ได้วิเคราะห์', reason_cn:'未分析' } }));
+      send('result',{ records: enriched, total: records.length, analyzed: analysis.length });
+    } catch(e) {
+      send('error',{ message:'แยก JSON ไม่ได้ / 解析失败: '+text.slice(0,300) });
+    }
+  } catch(e) {
+    send('error',{ message: e.message });
+  }
+  res.end();
+}));
+
+module.exports = router;
+
+// GET /projects/:projectId/ai-rules — 获取项目AI规则
+router.get('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const r = await pool.query('SELECT ai_rules FROM projects WHERE id=$1', [req.params.projectId]);
+  res.json({ success: true, data: { rules: r.rows[0]?.ai_rules || '' } });
+}));
+
+// PUT /projects/:projectId/ai-rules — 保存项目AI规则
+router.put('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
+  const { rules } = req.body;
+  // Add ai_rules column if not exists
+  await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
+  await pool.query('UPDATE projects SET ai_rules=$1 WHERE id=$2', [rules, req.params.projectId]);
+  res.json({ success: true });
+}));
+
+// POST /projects/:projectId/ai-analyze — AI分析采购单据 (SSE streaming)
+router.post('/projects/:projectId/ai-analyze', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const projectId = req.params.projectId;
+
+  // Set SSE headers for real-time streaming
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  const send = (event, data) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    // Load purchase records
+    const pr = await pool.query(
+      `SELECT * FROM purchase_records WHERE project_id=$1 ORDER BY purchase_date ASC, id ASC`,
+      [projectId]);
+    const records = pr.rows;
+
+    if (!records.length) {
+      send('error', { message: 'ไม่มีข้อมูลใบเสร็จ 没有收据数据' });
+      res.end(); return;
+    }
+
+    send('status', { message: `กำลังวิเคราะห์ ${records.length} รายการ... / 正在分析 ${records.length} 条记录...` });
+
+    // Load BOQ
+    const boqRows = req.body.boq || [];  // BOQ passed from frontend
+
+    // Load project AI rules
+    await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
+    const projR = await pool.query('SELECT ai_rules FROM projects WHERE id=$1', [projectId]);
+    const customRules = projR.rows[0]?.ai_rules || '';
+
+    // Load price benchmarks
+    const pbR = await pool.query('SELECT item_name_cn, unit, avg_price, min_price, max_price FROM price_benchmarks ORDER BY sample_count DESC');
+    const prices = pbR.rows;
+
+    // Build AI prompt
+    const defaultRules = `
+=== กฎการตรวจสอบ / 核实规则 ===
+
+กฎ A — สิ่งที่ผู้รับเหมาต้องรับผิดชอบเอง (ไม่ควรเบิกจากเจ้าของ) / 乙方（承包方）自负项目（不应向甲方报销）:
+- ค่าเช่าเครื่องจักร: รถแบคโฮ, รถเครน, รถบรรทุก / 机械租赁：挖机、吊车、卡车
+- วัสดุสิ้นเปลือง: ใบตัดเหล็ก, ลวดเชื่อม, น้ำยาถอดแบบ, ดอกสว่าน / 消耗品：切割片、焊条、脱模剂
+- บริการกำจัดแมลง / 灭虫服务
+- อื่นๆ ที่เป็นต้นทุนการดำเนินงานของผู้รับเหมา / 其他承包方运营成本
+
+กฎ B — ตรวจหาใบเสร็จซ้ำ: ถ้า Invoice_No เหมือนกันหลายรายการ ให้แจ้งเตือน / 重复发票检测
+
+กฎ C — ราคาผิดปกติ: ถ้าราคาสูงกว่าราคาเฉลี่ยมากกว่า 10% / 价格超均价10%以上需标记
+`;
+
+    const prompt = `${defaultRules}
+
+${customRules ? '=== กฎเพิ่มเติมของโครงการ / 项目自定义规则 ===\n' + customRules : ''}
+
+=== ราคาอ้างอิง / 参考价格 ===
+${prices.slice(0, 20).map(p => `${p.item_name_cn} (${p.unit}): เฉลี่ย/均价 ฿${p.avg_price}, ต่ำสุด/最低 ฿${p.min_price}, สูงสุด/最高 ฿${p.max_price}`).join('\n')}
+
+${boqRows.length ? `=== BOQ งบประมาณ / 预算 ===
+${boqRows.slice(0, 50).map(b => `${b.Description} (${b.Category}): ${b.Quantity} ${b.Unit} × ฿${b.Supply_Unit_Price} = ฿${b.Total_Amount}`).join('\n')}` : ''}
+
+=== ใบเสร็จที่ต้องวิเคราะห์ / 需要分析的收据 ===
+${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||'-'} | ผู้ขาย: ${r.supplier_name||''} | รายการ: ${r.item_name_th||''} ${r.item_name_cn||''} | ${r.qty} ${r.unit} | ฿${r.unit_price}/หน่วย | รวม: ฿${r.total_price}`).join('\n')}
+
+=== คำสั่ง / 指令 ===
+วิเคราะห์ทุกรายการข้างต้น ตอบเป็น JSON array เท่านั้น ห้ามมีข้อความอื่น:
+[
+  {
+    "id": <id จากรายการ>,
+    "status": "normal" | "deduct" | "duplicate" | "price_high" | "price_low",
+    "flags": ["deduct", "duplicate", ...],  
+    "boq_match": "ชื่อรายการ BOQ ที่ตรงกัน หรือ null",
+    "boq_confidence": 0-100,
+    "reason_th": "เหตุผลสั้นๆ เป็นภาษาไทย",
+    "reason_cn": "简短理由（中文）",
+    "deduct_reason": "เหตุผลหักคืน (ถ้ามี) / 扣回原因（如有）"
+  }
+]
+ตอบ JSON เท่านั้น ไม่ต้องมี markdown code block`;
+
+    send('status', { message: 'กำลังส่งข้อมูลให้ AI... / 正在调用AI...' });
+
+    const client = getAIClient();
+    let fullResponse = '';
+
+    const stream = await client.chat.completions.create({
+      model: process.env.OPENROUTER_MODEL || 'tngtech/deepseek-r1t2-chimera:free',
+      messages: [{ role: 'user', content: prompt }],
+      stream: true,
+      max_tokens: 4000
+    });
+
+    send('status', { message: 'AI กำลังวิเคราะห์... / AI正在分析...' });
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      if (delta) {
+        fullResponse += delta;
+        send('chunk', { text: delta });
+      }
+    }
+
+    // Parse AI response
+    try {
+      const jsonStr = fullResponse.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+      const results = JSON.parse(jsonStr);
+      send('result', { analysis: results, total: records.length });
+    } catch(e) {
+      send('error', { message: 'AI ตอบกลับไม่ถูกรูปแบบ: ' + fullResponse.slice(0, 200) });
+    }
+
+  } catch(e) {
+    send('error', { message: e.message });
+  }
+  res.end();
+}));
+
 module.exports = router;

@@ -27,11 +27,12 @@ const userManager = {
             owner:      '👑 业主 เจ้าของโครงการ',
             supervisor: '🏗️ 工地主管 หัวหน้างาน',
             foreman:    '🪚 工头 โฟร์แมน',
-            purchaser:  '🛒 采购员 เจ้าหน้าที่จัดซื้อ'
+            purchaser:  '🛒 采购员 เจ้าหน้าที่จัดซื้อ',
+            patrol:     '🔦 巡逻员 ยาม'
         }[role] || role;
     },
     roleBadgeClass(role) {
-        return { manager:'um-badge-mgr', owner:'um-badge-own', supervisor:'um-badge-sup', foreman:'um-badge-for', purchaser:'um-badge-pur' }[role] || '';
+        return { manager:'um-badge-mgr', owner:'um-badge-own', supervisor:'um-badge-sup', foreman:'um-badge-for', purchaser:'um-badge-pur', patrol:'um-badge-pat' }[role] || '';
     },
     esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
 
@@ -41,7 +42,8 @@ const userManager = {
             owner:      this.users.filter(u=>u.role==='owner').length,
             supervisor: this.users.filter(u=>u.role==='supervisor').length,
             foreman:    this.users.filter(u=>u.role==='foreman').length,
-            purchaser:  this.users.filter(u=>u.role==='purchaser').length };
+            purchaser:  this.users.filter(u=>u.role==='purchaser').length,
+            patrol:     this.users.filter(u=>u.role==='patrol').length };
 
         const rows = this.users.length ? this.users.map(u => `
             <tr>
@@ -64,6 +66,7 @@ const userManager = {
                 <div class="um-stat"><div class="um-stat-n">${counts.supervisor}</div><div class="um-stat-l">🏗️ 工地主管</div></div>
                 <div class="um-stat"><div class="um-stat-n">${counts.foreman}</div><div class="um-stat-l">🪚 工头</div></div>
                 <div class="um-stat"><div class="um-stat-n">${counts.purchaser}</div><div class="um-stat-l">🛒 采购员</div></div>
+                <div class="um-stat"><div class="um-stat-n">${counts.patrol}</div><div class="um-stat-l">🔦 巡逻员</div></div>
             </div>
             <div class="um-table-wrap">
                 <table class="um-table">
@@ -89,6 +92,7 @@ const userManager = {
                     <option value="supervisor">🏗️ หัวหน้างาน 工地主管</option>
                     <option value="foreman">🪚 โฟร์แมน 工头</option>
                     <option value="purchaser">🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
+                    <option value="patrol">🔦 ยาม 巡逻员</option>
                 </select>
             </div>`,
             '添加', async () => {
@@ -117,6 +121,7 @@ const userManager = {
                     <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🏗️ หัวหน้างาน 工地主管</option>
                     <option value="foreman" ${u.role==='foreman'?'selected':''}>🪚 โฟร์แมน 工头</option>
                     <option value="purchaser" ${u.role==='purchaser'?'selected':''}>🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
+                    <option value="patrol" ${u.role==='patrol'?'selected':''}>🔦 ยาม 巡逻员</option>
                 </select>
             </div>`,
             '保存', async () => {

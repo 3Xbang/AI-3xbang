@@ -127,7 +127,7 @@ const projectMembers = {
     },
 
     getRoleBadge(role) {
-        return { manager:'⚙️', owner:'👑', supervisor:'🏗️', foreman:'🪚', purchaser:'🛒' }[role] || '👤';
+        return { manager:'⚙️', owner:'👑', supervisor:'🏗️', foreman:'🪚', purchaser:'🛒', patrol:'🔦' }[role] || '👤';
     },
 
     async addMember(userId) {

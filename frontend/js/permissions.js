@@ -19,8 +19,9 @@ const PermissionManager = {
     isSupervisor() { return this.role() === 'supervisor'; },
     isForeman()    { return this.role() === 'foreman'; },
     isPurchaser()  { return this.role() === 'purchaser'; },
+    isPatrol()     { return this.role() === 'patrol'; },
 
-    // 兼容旧调用（原 isPurchaser 是 supervisor）
+    // 兼容旧调用
     isExecutor()   { return this.isForeman(); },
 
     // ── 权限判断 ──
@@ -53,6 +54,11 @@ const PermissionManager = {
     // 可以接收入库（manager + supervisor + foreman + purchaser）
     canReceiveMaterials() {
         return ['manager','supervisor','foreman','purchaser'].includes(this.role());
+    },
+
+    // 可以看今日现场
+    canViewSite() {
+        return ['manager','owner','supervisor','foreman','patrol'].includes(this.role());
     },
 
     // 可以上传照片（所有除 owner）
@@ -96,12 +102,13 @@ const PermissionManager = {
             owner:      '业主 เจ้าของโครงการ',
             supervisor: '工地主管 หัวหน้างาน',
             foreman:    '工头 โฟร์แมน',
-            purchaser:  '采购员 เจ้าหน้าที่จัดซื้อ'
+            purchaser:  '采购员 เจ้าหน้าที่จัดซื้อ',
+            patrol:     '巡逻员 ยาม'
         }[role] || role;
     },
 
     getRoleBadgeIcon(role) {
-        return { manager:'⚙️', owner:'👑', supervisor:'🏗️', foreman:'🪚', purchaser:'🛒' }[role] || '👤';
+        return { manager:'⚙️', owner:'👑', supervisor:'🏗️', foreman:'🪚', purchaser:'🛒', patrol:'🔦' }[role] || '👤';
     },
 
     // ── 初始化页面权限 ──

@@ -24,6 +24,10 @@ const PERMISSIONS = {
     // 采购员 — 只管材料采购
     purchaser: [
         'view_assigned_projects', 'purchase_material', 'view_all_data'
+    ],
+    // 巡逻员 — 查看现场、上传巡逻照片
+    patrol: [
+        'view_assigned_projects', 'update_progress'
     ]
 };
 

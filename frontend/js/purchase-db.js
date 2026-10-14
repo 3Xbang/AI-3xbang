@@ -27,7 +27,7 @@ const PurchaseDB = {
           <!-- Tab bar -->
           <div style="display:flex;gap:4px;margin-bottom:16px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
             ${['import','prices','suppliers'].map(t => {
-              const labels={import:'📥 นำเข้า 导入',prices:'💰 ฐานราคา 价格库',suppliers:'🏢 ผู้ขาย 供货商'};
+              const labels={import:'🔍 ตรวจราคา 核实',prices:'💰 ฐานราคา 价格库',suppliers:'🏢 ผู้ขาย 供货商'};
               return `<button class="pdb-tab ${this.activeTab===t?'active':''}" data-tab="${t}" onclick="PurchaseDB.switchTab('${t}')">${labels[t]}</button>`;
             }).join('')}
           </div>
@@ -67,43 +67,119 @@ const PurchaseDB = {
         if (this.activeTab === 'suppliers') this.renderSuppliers();
     },
 
-    // ═══ TAB 1: Import ═══
+    // ═══ TAB 1: Import / Price Check ═══
     renderImport() {
         document.getElementById('pdb-content').innerHTML = `
           <!-- CSV Drop zone -->
           <div class="pdb-card" id="pdb-drop" style="border:2.5px dashed #94a3b8;text-align:center;cursor:pointer;transition:.2s" onclick="document.getElementById('pdb-csv').click()">
             <div style="font-size:36px;margin-bottom:8px">📂</div>
-            <div style="font-size:16px;font-weight:700;color:#1e3a8a;margin-bottom:4px">อัปโหลด purchase_records.csv</div>
-            <div style="font-size:13px;color:#64748b">คลิกหรือลากไฟล์มาวาง · 点击或拖放CSV文件</div>
+            <div style="font-size:16px;font-weight:700;color:#1e3a8a;margin-bottom:4px">สร้างฐานราคาอ้างอิง</div>
+            <div style="font-size:13px;color:#64748b">อัปโหลด purchase_records.csv เพื่อสร้างมาตรฐานราคา · 上传历史CSV建立参考价格库（只需做一次）</div>
             <input type="file" id="pdb-csv" accept=".csv" style="display:none">
           </div>
           <div id="pdb-import-result"></div>
 
-          <!-- Manual add -->
+          <!-- Price check -->
           <div class="pdb-card">
-            <div style="font-weight:700;color:#1e3a8a;font-size:15px;margin-bottom:12px">✏️ บันทึกรายการเดี่ยว <small style="color:#64748b;font-weight:400">手动添加单笔</small></div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">วันที่ 日期</div><input type="date" id="pdb-m-date" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">เลขที่ใบเสร็จ 单据号</div><input type="text" id="pdb-m-inv" placeholder="IN-001" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">ผู้ขาย 供货商 *</div><input type="text" id="pdb-m-supp" placeholder="Fa Thawee Porn" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">ประเภท 分类</div>
-                <select id="pdb-m-cat" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
-                  <option value="">เลือก...</option>
-                  ${['Rebar','Concrete','Precast','Block','Cement','Aggregate','PVC','Steel','Transport','Service','Machinery','Consumable','Misc'].map(c=>`<option>${c}</option>`).join('')}
-                </select>
+            <div style="font-weight:700;color:#1e3a8a;font-size:15px;margin-bottom:4px">🔍 ตรวจสอบราคา <small style="color:#64748b;font-weight:400">报价核实 — 输入供货商报价，对比历史均价</small></div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:14px">กรอกราคาที่ผู้ขายเสนอ ระบบจะเปรียบเทียบกับราคาอ้างอิงทันที</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+              <div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:3px">รายการ 品名 *</div>
+                <input type="text" id="pdb-ck-item" placeholder="พิมพ์ชื่อ เช่น DB16..." oninput="PurchaseDB.searchItems(this.value)"
+                  style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
+                <div id="pdb-ck-suggest" style="background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;margin-top:2px;display:none;max-height:160px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12);position:relative;z-index:10"></div>
               </div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">ชื่อ(ไทย) 泰文品名</div><input type="text" id="pdb-m-nth" placeholder="เหล็ก DB16" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">ชื่อ(จีน) 中文品名 *</div><input type="text" id="pdb-m-ncn" placeholder="DB16螺纹钢" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">จำนวน 数量</div><input type="number" id="pdb-m-qty" placeholder="0" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">หน่วย 单位</div><input type="text" id="pdb-m-unit" placeholder="เส้น / kg" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
-              <div><div style="font-size:12px;color:#64748b;margin-bottom:3px">ราคา/หน่วย 单价 ฿</div><input type="number" id="pdb-m-price" placeholder="0.00" step="0.01" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px"></div>
+              <div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:3px">หน่วย 单位</div>
+                <input type="text" id="pdb-ck-unit" placeholder="เส้น / kg / m²"
+                  style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
+              </div>
+              <div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:3px">ราคาที่เสนอ 报价单价 ฿ *</div>
+                <input type="number" id="pdb-ck-price" placeholder="0.00" step="0.01" oninput="PurchaseDB.checkPrice()"
+                  style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
+              </div>
             </div>
-            <div style="margin-top:12px">
-              <button class="sb-btn primary" onclick="PurchaseDB.addManual()">✅ บันทึก 保存</button>
-            </div>
+            <div id="pdb-ck-result"></div>
           </div>`;
 
         this._bindDrop();
+        this._loadItemsCache();
+    },
+
+    _itemsCache: [],
+    async _loadItemsCache() {
+        try {
+            const r = await apiRequest('/api/price-benchmarks');
+            this._itemsCache = r.data || [];
+        } catch(_) {}
+    },
+
+    searchItems(q) {
+        const sug = document.getElementById('pdb-ck-suggest');
+        if (!q || q.length < 1) { sug.style.display='none'; return; }
+        const matches = this._itemsCache.filter(x =>
+            (x.item_name_cn||'').toLowerCase().includes(q.toLowerCase()) ||
+            (x.name_th||'').toLowerCase().includes(q.toLowerCase())
+        ).slice(0, 8);
+        if (!matches.length) { sug.style.display='none'; return; }
+        sug.style.display = '';
+        sug.innerHTML = matches.map(x => `
+            <div onclick="PurchaseDB.selectItem('${this.esc(x.item_name_cn)}','${this.esc(x.unit||'')}',${x.avg_price},${x.min_price},${x.max_price},${x.sample_count})"
+              style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px"
+              onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">
+              <b>${this.esc(x.name_th||x.item_name_cn)}</b>
+              <span style="color:#64748b;margin-left:6px">${this.esc(x.item_name_cn)}</span>
+              <span style="float:right;color:#1e3a8a;font-weight:700">฿${this.fmt(x.avg_price)}<small style="color:#94a3b8">/${this.esc(x.unit||'')}</small></span>
+            </div>`).join('');
+    },
+
+    _selectedBenchmark: null,
+    selectItem(nameCn, unit, avg, mn, mx, cnt) {
+        this._selectedBenchmark = { nameCn, unit, avg:Number(avg), mn:Number(mn), mx:Number(mx), cnt:Number(cnt) };
+        document.getElementById('pdb-ck-item').value = nameCn;
+        document.getElementById('pdb-ck-unit').value = unit;
+        document.getElementById('pdb-ck-suggest').style.display = 'none';
+        this.checkPrice();
+    },
+
+    checkPrice() {
+        const price = parseFloat(document.getElementById('pdb-ck-price').value);
+        const res = document.getElementById('pdb-ck-result');
+        if (!this._selectedBenchmark || !price || isNaN(price)) { res.innerHTML=''; return; }
+        const { nameCn, unit, avg, mn, mx, cnt } = this._selectedBenchmark;
+        const diff = price - avg;
+        const pct = avg > 0 ? ((diff / avg) * 100).toFixed(1) : 0;
+        const isHigh = price > avg * 1.05;
+        const isLow  = price < avg * 0.95;
+        const signal = isHigh ? { icon:'⚠️', label:'ราคาสูงกว่าปกติ 价格偏高', bg:'#fff5f5', border:'#fca5a5', color:'#dc2626' }
+                     : isLow  ? { icon:'✅', label:'ราคาต่ำกว่าปกติ 价格偏低（有利）', bg:'#f0fdf4', border:'#86efac', color:'#16a34a' }
+                     :          { icon:'✅', label:'ราคาปกติ 价格正常', bg:'#eff6ff', border:'#93c5fd', color:'#1e3a8a' };
+
+        res.innerHTML = `
+          <div style="background:${signal.bg};border:2px solid ${signal.border};border-radius:12px;padding:16px">
+            <div style="font-size:20px;font-weight:700;color:${signal.color};margin-bottom:8px">${signal.icon} ${signal.label}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;font-size:14px">
+              <div style="background:rgba(255,255,255,.8);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:11px;color:#64748b;margin-bottom:3px">ราคาที่เสนอ 报价</div>
+                <div style="font-size:1.3rem;font-weight:700;color:${signal.color}">฿${this.fmt(price)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,.8);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:11px;color:#64748b;margin-bottom:3px">ราคาเฉลี่ย 历史均价</div>
+                <div style="font-size:1.3rem;font-weight:700;color:#1e3a8a">฿${this.fmt(avg)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,.8);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:11px;color:#64748b;margin-bottom:3px">ต่ำสุด-สูงสุด 区间</div>
+                <div style="font-size:13px;font-weight:700;color:#475569">฿${this.fmt(mn)} — ฿${this.fmt(mx)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,.8);border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:11px;color:#64748b;margin-bottom:3px">ส่วนต่าง 差额</div>
+                <div style="font-size:1.3rem;font-weight:700;color:${diff>0?'#dc2626':'#16a34a'}">${diff>0?'+':''}${pct}%</div>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:#64748b">อ้างอิงจาก ${cnt} ครั้ง / 基于 ${cnt} 条历史记录 · ${this.esc(nameCn)} / ${this.esc(unit)}</div>
+          </div>`;
     },
 
     _bindDrop() {

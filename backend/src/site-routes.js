@@ -1465,12 +1465,26 @@ ${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||
     try {
       const jsonStr = fullResponse.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
       const results = JSON.parse(jsonStr);
+
+      // ===== HARD FILTER: if no contract rules, strip ALL deduct flags (AI cannot override this) =====
+      if (!hasContractRules) {
+        results.forEach(r => {
+          r.flags = (r.flags || []).filter(f => f !== 'deduct');
+          if (r.status === 'deduct') r.status = 'normal';
+          delete r.deduct_reason;
+          delete r.contract_clause;
+          delete r.clause_text;
+          delete r.explanation_th;
+          delete r.explanation_cn;
+        });
+      }
+
       // Map analysis results back to purchase records
-const mapped = records.map(rec => {
-  const ai = results.find(a => a.id === rec.id) || {};
-  return { ...rec, ai };
-});
-send('result', { records: mapped, total: records.length });
+      const mapped = records.map(rec => {
+        const ai = results.find(a => a.id === rec.id) || {};
+        return { ...rec, ai };
+      });
+      send('result', { records: mapped, total: records.length });
     } catch(e) {
       send('error', { message: 'AI ตอบกลับไม่ถูกรูปแบบ: ' + fullResponse.slice(0, 200) });
     }

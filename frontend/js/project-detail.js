@@ -56,6 +56,7 @@ const ProjectDetail = {
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
         if (PermissionManager.canViewMaterials())  list.push({ v: 'materials',icon: '🧱', zh: '材料设备', th: 'วัสดุและอุปกรณ์' });
+        if (['manager','supervisor','purchaser','owner'].includes(PermissionManager.role())) list.push({ v: 'purchase', icon: '📊', zh: '采购分析', th: 'วิเคราะห์การจัดซื้อ' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
@@ -142,6 +143,10 @@ const ProjectDetail = {
             case 'photos':
                 container.innerHTML = this.renderPhotos();
                 photoManager.init(this.projectId);
+                break;
+            case 'purchase':
+                container.innerHTML = '<div id="purchase-audit-container"></div>';
+                if (typeof PurchaseAudit !== 'undefined') PurchaseAudit.init(this.projectId);
                 break;
             case 'overview':
                 container.innerHTML = this.renderOverview();

@@ -101,15 +101,17 @@ function requireProjectAccess() {
 }
 
 // 记录操作日志
-async function logActivity(client, userId, action, targetType, targetId, details) {
+// 使用独立连接，确保日志失败不会影响调用方的事务
+async function logActivity(_ignoredClient, userId, action, targetType, targetId, details) {
     try {
-        await client.query(
+        const pool = require('./config/db');
+        await pool.query(
             `INSERT INTO activity_logs (user_id, action, target_type, target_id, details)
              VALUES ($1, $2, $3, $4, $5)`,
-            [userId, action, targetType, targetId, details]
+            [userId, action, targetType, String(targetId), typeof details === 'string' ? details : JSON.stringify(details)]
         );
-    } catch (error) {
-        console.error('Log activity error:', error);
+    } catch (_) {
+        // 日志失败不影响主流程，静默忽略
     }
 }
 

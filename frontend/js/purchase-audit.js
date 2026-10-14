@@ -5,7 +5,7 @@ const PurchaseAudit = {
 
     init(pid) { this.projectId=pid; this.purchases=[]; this.boq=[]; this.render(); },
     esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
-    fmt(n,d=0){ return n==null?'鈥?:Number(n).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); },
+    fmt(n,d=0){ return n==null?'-':Number(n).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); },
 
     render() {
         const box = document.getElementById('purchase-audit-container');

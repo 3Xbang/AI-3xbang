@@ -883,13 +883,31 @@ router.post('/purchase-records/import-csv', authenticate, requirePermission('pur
     const purchaseDate = get(col('Date')) || null;
     const invoiceNo    = get(col('Invoice_No'));
     const supplierName = get(col('Supplier'));
-    const category     = get(col('Item_Category'));
-    const nameTH       = get(col('Item_Name_TH'));
-    const nameCN       = get(col('Item_Name_CN'));
-    const qty          = parseFloat(get(col('Qty'))) || 0;
-    const unit         = get(col('Unit'));
-    const unitPrice    = parseFloat(get(col('Unit_Price'))) || 0;
-    const totalPrice   = parseFloat(get(col('Total_Price'))) || 0;
+    // Support both column name variants
+    const nameTH  = get(col('Item_Name_TH')) || get(col('Item_TH'));
+    const nameCN  = get(col('Item_Name_CN')) || get(col('Item_CN'));
+    const qty     = parseFloat(get(col('Qty'))) || 0;
+    const unit    = get(col('Unit'));
+    const unitPrice  = parseFloat(get(col('Unit_Price'))) || 0;
+    const totalPrice = parseFloat(get(col('Total_Price'))) || 0;
+    // Auto-detect category if not present
+    let category = get(col('Item_Category'));
+    if (!category) {
+      const nm = (nameCN + nameTH).toLowerCase();
+      if (/แบคโฮ|เครน|挖掘机|吊车|รถ.*เช่า|机械/.test(nm)) category = 'Machinery';
+      else if (/กำจัดปลวก|白蚁|pest|บริการ|service/.test(nm)) category = 'Service';
+      else if (/ขนส่ง|运输|transport/.test(nm)) category = 'Transport';
+      else if (/ใบตัด|切割片|น้ำยา|脱模剂|consumable/.test(nm)) category = 'Consumable';
+      else if (/เหล็ก|钢|rebar/.test(nm)) category = 'Rebar';
+      else if (/คอนกรีต|混凝土|concrete/.test(nm)) category = 'Concrete';
+      else if (/ปูน|water cement|ซีเมนต์|水泥|cement/.test(nm)) category = 'Cement';
+      else if (/หิน|石|aggregate|gravel/.test(nm)) category = 'Aggregate';
+      else if (/ทราย|沙|sand/.test(nm)) category = 'Aggregate';
+      else if (/pvc|ท่อ|管/.test(nm)) category = 'PVC';
+      else if (/แผ่นพื้น|precast|楼板/.test(nm)) category = 'Precast';
+      else if (/อิฐ|brick|砖/.test(nm)) category = 'Block';
+      else category = 'Misc';
+    }
 
     if (!supplierName || !nameCN) continue;
 

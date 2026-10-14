@@ -27,16 +27,127 @@ const PurchaseAudit = {
               <h2 class="td-title">📋 ตรวจสอบการจัดซื้อ <small class="td-th">采购核实报告</small></h2>
               <div class="td-sub">เปรียบเทียบใบเสร็จจริงกับ BOQ · 对比实际采购与预算，检查超支/应扣回/重复报销</div>
             </div>
+            <label style="background:#2563eb;color:#fff;border-radius:10px;padding:9px 16px;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap">
+                📤 <span>อัปโหลดใบเสร็จ 上传收据</span>
+                <input type="file" accept=".csv" style="display:none" onchange="PurchaseAudit.uploadReceipts(this)">
+            </label>
           </div>
+          <div id="pa-upload-status"></div>
 
-          <!-- Upload row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-            ${this._dropZone('pa-drop1','pa-csv1','📂 อัปโหลดใบเสร็จ 上传采购单据','purchase_records.csv','purchase')}
-            ${this._dropZone('pa-drop2','pa-csv2','📐 อัปโหลด BOQ 上传预算','villa_boq.csv','boq')}
+          <!-- BOQ upload (still needed for comparison) -->
+          <div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:600;color:#1e3a8a">📐 BOQ 预算文件：</span>
+            <label class="drop-zone" id="pa-boq-btn" style="cursor:pointer;padding:8px 16px;display:inline-flex;align-items:center;gap:6px;font-size:13px">
+              📂 <span id="pa-boq-name">อัปโหลด villa_boq.csv 上传BOQ预算</span>
+              <input type="file" id="pa-csv2" accept=".csv" style="display:none">
+            </label>
           </div>
 
           <div id="pa-report"></div>
         </div>
+
+        <style>
+          .pa-kpi{background:#fff;border-radius:12px;padding:14px 18px;border-left:4px solid #2563eb;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+          .pa-kpi-n{font-size:1.7rem;font-weight:700;color:#1e3a8a}
+          .pa-kpi.danger{border-left-color:#dc2626}.pa-kpi.danger .pa-kpi-n{color:#dc2626}
+          .pa-kpi.warn{border-left-color:#f59e0b}.pa-kpi.warn .pa-kpi-n{color:#d97706}
+          .pa-kpi.ok{border-left-color:#10b981}.pa-kpi.ok .pa-kpi-n{color:#059669}
+          .pa-sec{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+          .pa-sec h3{font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:12px}
+          .pa-table{width:100%;border-collapse:collapse;font-size:13px}
+          .pa-table th{background:#f8fafc;padding:8px 12px;border-bottom:2px solid #e2e8f0;text-align:left;white-space:nowrap;color:#475569}
+          .pa-table td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+          .pa-table tr.row-dup td{background:#fff5f5}
+          .pa-table tr.row-deduct td{background:#fffbeb}
+          .pab{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;white-space:nowrap}
+          .pab.dup{background:#fee2e2;color:#dc2626}
+          .pab.deduct{background:#fef3c7;color:#92400e}
+          .pab.ok{background:#dcfce7;color:#166534}
+          .prog-wrap{display:flex;align-items:center;gap:6px;min-width:120px}
+          .prog-bar{height:8px;border-radius:4px;background:#e2e8f0;width:100px;overflow:hidden;flex:0 0 auto}
+          .prog-fill{height:8px;border-radius:4px;background:#2563eb}
+          .drop-zone{background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;transition:.2s}
+          .drop-zone:hover,.drop-zone.loaded{border-color:#10b981;background:#f0fdf4}
+        </style>`;
+
+        this._bindBoq();
+        // Auto-load from DB
+        this._loadFromDB();
+    },
+
+    async uploadReceipts(input) {
+        const file = input.files[0]; if (!file) return;
+        const status = document.getElementById('pa-upload-status');
+        if (status) status.innerHTML = '<div style="padding:8px 12px;color:#2563eb;font-size:13px">⏳ กำลังนำเข้า... 导入中...</div>';
+        try {
+            if (typeof app!=='undefined') app.showLoading();
+            const fd = new FormData();
+            fd.append('csv', file);
+            if (this.projectId) fd.append('project_id', this.projectId);
+            const r = await fetch(window.location.origin+'/api/purchase-records/import-csv',{method:'POST',headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},body:fd});
+            const j = await r.json();
+            if (typeof app!=='undefined') app.hideLoading();
+            if (!j.success) throw new Error(j.message);
+            const d=j.data;
+            if (status) status.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#166534">
+                ✅ ${d.imported} รายการ · ${d.suppliers_created} ผู้ขายใหม่ · ${d.items_created} รายการใหม่
+            </div>`;
+            input.value='';
+            await this._loadFromDB();
+        } catch(e) {
+            if (typeof app!=='undefined') app.hideLoading();
+            if (status) status.innerHTML=`<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px;color:#dc2626;font-size:13px;margin-bottom:10px">❌ ${e.message}</div>`;
+        }
+    },
+
+    async _loadFromDB() {
+        const report = document.getElementById('pa-report');
+        if (report) report.innerHTML = '<div style="padding:16px;text-align:center;color:#64748b">กำลังโหลด... 加载中</div>';
+        try {
+            const r = await apiRequest('/api/purchase-records?limit=300' + (this.projectId ? '&project_id='+this.projectId : ''));
+            if (!r.data || !r.data.length) {
+                if (report) report.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8"><div style="font-size:40px">📋</div><div>ยังไม่มีข้อมูล 还没有收据数据<br><small>อัปโหลด CSV ด้านบน · 先上传收据CSV</small></div></div>`;
+                return;
+            }
+            // Map DB rows to same format as CSV-parsed purchases
+            this.purchases = r.data.map(row => ({
+                Date: row.purchase_date ? String(row.purchase_date).slice(0,10) : '',
+                Invoice_No: row.invoice_no || '',
+                Supplier: row.supplier_name || '',
+                Item_Category: row.item_category || '',
+                Item_Name_TH: row.item_name_th || '',
+                Item_Name_CN: row.item_name_cn || '',
+                Qty: row.qty,
+                Unit: row.unit || '',
+                Unit_Price: row.unit_price,
+                Total_Price: row.total_price
+            }));
+            if (this.purchases.length) this._analyze();
+        } catch(e) {
+            if (report) report.innerHTML=`<div style="color:#dc2626;padding:12px">${e.message}</div>`;
+        }
+    },
+
+    _bindBoq() {
+        const btn = document.getElementById('pa-boq-btn');
+        if (!btn) return;
+        btn.onclick = () => document.getElementById('pa-csv2').click();
+        document.getElementById('pa-csv2').onchange = e => {
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('pa-boq-name').textContent = '✅ ' + file.name;
+            btn.classList.add('loaded');
+            Papa.parse(file, {
+                header:true, skipEmptyLines:true, dynamicTyping:true,
+                complete: r => {
+                    this.boq = r.data.filter(row=>{
+                        const desc=(row.Description||'').toLowerCase();
+                        return row.Quantity>0&&!desc.includes('subtotal')&&!desc.includes('grand total')&&!desc.includes('total');
+                    });
+                    if (this.purchases.length) this._analyze();
+                }
+            });
+        };
+    },
 
         <style>
           .pa-kpi{background:#fff;border-radius:12px;padding:14px 18px;border-left:4px solid #2563eb;box-shadow:0 1px 4px rgba(0,0,0,.06)}

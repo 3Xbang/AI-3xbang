@@ -1,365 +1,399 @@
-// purchase-audit.js — 采购账务核实分析
-// 集成在项目「采购分析」标签页里，纯前端运行，不需要后端
+// purchase-audit.js — 采购单据核实系统
+// 功能: BOQ对比 + 应扣回检测 + 重复发票检测
+// 纯前端，不需要后端，两个CSV上传后直接分析
+
 const PurchaseAudit = {
+    purchases: [],   // 实际采购记录
+    boq: [],         // BOQ预算行
     projectId: null,
-    records: [],
-    boqData: [],
-    charts: {},
 
     init(projectId) {
         this.projectId = projectId;
-        this.records = [];
-        this.boqData = [];
-        this.charts = {};
+        this.purchases = [];
+        this.boq = [];
         this.render();
     },
 
-    esc(s) { return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
-    fmt(n)  { return n==null?'-':Number(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); },
-    fmtN(n) { return n==null?'-':Number(n).toLocaleString('th-TH'); },
+    esc(s) { return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+    fmt(n,d=0) { return n==null?'—':Number(n).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); },
 
     render() {
         const box = document.getElementById('purchase-audit-container');
         if (!box) return;
         box.innerHTML = `
-        <div style="padding:16px;max-width:1400px;margin:0 auto">
+        <div style="padding:16px;max-width:1200px;margin:0 auto">
           <div class="td-head">
             <div>
-              <h2 class="td-title">📊 วิเคราะห์การจัดซื้อ <small class="td-th">采购分析</small></h2>
-              <div class="td-sub">อัปโหลด CSV เพื่อตรวจสอบใบเสร็จ · 上传采购CSV自动核实</div>
+              <h2 class="td-title">📋 ตรวจสอบการจัดซื้อ <small class="td-th">采购核实报告</small></h2>
+              <div class="td-sub">เปรียบเทียบใบเสร็จจริงกับ BOQ · 对比实际采购与预算，检查超支/应扣回/重复报销</div>
             </div>
           </div>
 
-          <!-- Upload zone -->
-          <div id="pa-drop" style="background:#fff;border:2.5px dashed #94a3b8;border-radius:14px;padding:28px;text-align:center;cursor:pointer;margin-bottom:16px;transition:.2s">
-            <div style="font-size:36px;margin-bottom:6px">📂</div>
-            <div style="font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:4px">อัปโหลดไฟล์ purchase_records.csv</div>
-            <div style="font-size:13px;color:#64748b">คลิกหรือลากไฟล์มาวาง / 点击或拖放 CSV</div>
-            <input type="file" id="pa-input" accept=".csv" style="display:none">
+          <!-- Upload row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+            ${this._dropZone('pa-drop1','pa-csv1','📂 อัปโหลดใบเสร็จ 上传采购单据','purchase_records.csv','purchase')}
+            ${this._dropZone('pa-drop2','pa-csv2','📐 อัปโหลด BOQ 上传预算','villa_boq.csv','boq')}
           </div>
 
-          <!-- KPIs -->
-          <div id="pa-kpis" style="display:none;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px"></div>
+          <div id="pa-report"></div>
+        </div>
 
-          <!-- Charts -->
-          <div id="pa-charts" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;font-size:14px">🏢 供货商采购占比</div>
-              <div id="pa-chart1" style="height:280px"></div>
-            </div>
-            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;font-size:14px">📦 各分类支出金额</div>
-              <div id="pa-chart2" style="height:280px"></div>
-            </div>
-          </div>
+        <style>
+          .pa-kpi{background:#fff;border-radius:12px;padding:14px 18px;border-left:4px solid #2563eb;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+          .pa-kpi-n{font-size:1.7rem;font-weight:700;color:#1e3a8a}
+          .pa-kpi.danger{border-left-color:#dc2626}.pa-kpi.danger .pa-kpi-n{color:#dc2626}
+          .pa-kpi.warn{border-left-color:#f59e0b}.pa-kpi.warn .pa-kpi-n{color:#d97706}
+          .pa-kpi.ok{border-left-color:#10b981}.pa-kpi.ok .pa-kpi-n{color:#059669}
+          .pa-sec{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+          .pa-sec h3{font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:12px}
+          .pa-table{width:100%;border-collapse:collapse;font-size:13px}
+          .pa-table th{background:#f8fafc;padding:8px 12px;border-bottom:2px solid #e2e8f0;text-align:left;white-space:nowrap;color:#475569}
+          .pa-table td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+          .pa-table tr.row-dup td{background:#fff5f5}
+          .pa-table tr.row-deduct td{background:#fffbeb}
+          .pab{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;white-space:nowrap}
+          .pab.dup{background:#fee2e2;color:#dc2626}
+          .pab.deduct{background:#fef3c7;color:#92400e}
+          .pab.ok{background:#dcfce7;color:#166534}
+          .prog-wrap{display:flex;align-items:center;gap:6px;min-width:120px}
+          .prog-bar{height:8px;border-radius:4px;background:#e2e8f0;width:100px;overflow:hidden;flex:0 0 auto}
+          .prog-fill{height:8px;border-radius:4px;background:#2563eb;transition:.3s}
+          .drop-zone{background:#fff;border:2px dashed #cbd5e1;border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:.2s}
+          .drop-zone:hover,.drop-zone.ready{border-color:#2563eb;background:#eff6ff}
+          .drop-zone.loaded{border-color:#10b981;background:#f0fdf4}
+        </style>`;
 
-          <!-- Filters + Table -->
-          <div id="pa-table-sec" style="display:none;background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:16px">
-            <div style="font-weight:700;color:#1e3a8a;margin-bottom:12px;font-size:15px">🧾 采购明细 · 智能核实</div>
-            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-              <select id="pa-fcat" onchange="PurchaseAudit.renderTable()" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px"><option value="">全部分类</option></select>
-              <select id="pa-fflag" onchange="PurchaseAudit.renderTable()" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
-                <option value="">全部状态</option>
-                <option value="dup">⚠️ 重复单据</option>
-                <option value="deduct">🚫 需扣回</option>
-                <option value="high">📈 价格偏高</option>
-              </select>
-              <input id="pa-ftxt" type="text" placeholder="搜索供货商/品名..." oninput="PurchaseAudit.renderTable()" style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;min-width:160px">
-              <button class="sb-btn small" onclick="PurchaseAudit.exportCSV()">⬇️ 导出</button>
-            </div>
-            <div id="pa-table" style="overflow-x:auto"></div>
-          </div>
+        this._bindAll();
+    },
 
-          <!-- BOQ Compare -->
-          <div id="pa-boq-sec" style="display:none;background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-            <div style="font-weight:700;color:#1e3a8a;margin-bottom:12px;font-size:15px">📐 BOQ 预算对比</div>
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-              <button class="sb-btn small primary" onclick="document.getElementById('pa-boq-input').click()">📂 上传 BOQ CSV</button>
-              <input type="file" id="pa-boq-input" accept=".csv" style="display:none">
-              <span id="pa-boq-name" style="font-size:13px;color:#64748b">字段: 材料名称, 预算数量, 预算单价</span>
-            </div>
-            <div id="pa-boq-table"><div style="text-align:center;padding:24px;color:#94a3b8">上传 BOQ CSV 后显示对比</div></div>
-          </div>
+    _dropZone(dropId, inputId, titleTH, hint, type) {
+        return `<div class="drop-zone" id="${dropId}" onclick="document.getElementById('${inputId}').click()">
+          <div style="font-size:28px;margin-bottom:6px">${type==='purchase'?'🧾':'📐'}</div>
+          <div style="font-weight:700;color:#1e3a8a;font-size:14px">${titleTH}</div>
+          <div id="${dropId}-status" style="font-size:12px;color:#64748b;margin-top:3px">${hint}</div>
+          <input type="file" id="${inputId}" accept=".csv" style="display:none">
         </div>`;
-
-        this._bindEvents();
     },
 
-    _bindEvents() {
-        const drop = document.getElementById('pa-drop');
+    _bindAll() {
+        this._bindDrop('pa-drop1','pa-csv1','purchase');
+        this._bindDrop('pa-drop2','pa-csv2','boq');
+    },
+
+    _bindDrop(dropId, inputId, type) {
+        const drop = document.getElementById(dropId);
         if (!drop) return;
-        drop.onclick = () => document.getElementById('pa-input').click();
-        drop.ondragover = e => { e.preventDefault(); drop.style.borderColor='#2563eb'; drop.style.background='#eff6ff'; };
-        drop.ondragleave = () => { drop.style.borderColor=''; drop.style.background=''; };
-        drop.ondrop = e => { e.preventDefault(); drop.style.borderColor=''; drop.style.background=''; this._loadCSV(e.dataTransfer.files[0]); };
-        document.getElementById('pa-input').onchange = e => this._loadCSV(e.target.files[0]);
-        document.getElementById('pa-boq-input').onchange = e => {
-            const f = e.target.files[0]; if (!f) return;
-            document.getElementById('pa-boq-name').textContent = f.name;
-            Papa.parse(f, { header:true, skipEmptyLines:true, complete: r => { this.boqData = r.data; this.renderBOQ(); } });
-        };
+        drop.ondragover = e=>{e.preventDefault();drop.classList.add('ready');};
+        drop.ondragleave = ()=>drop.classList.remove('ready');
+        drop.ondrop = e=>{e.preventDefault();drop.classList.remove('ready');this._loadFile(e.dataTransfer.files[0],type,dropId);};
+        document.getElementById(inputId).onchange = e=>this._loadFile(e.target.files[0],type,dropId);
     },
 
-    _loadCSV(file) {
+    _loadFile(file, type, dropId) {
         if (!file) return;
         Papa.parse(file, {
             header:true, skipEmptyLines:true, dynamicTyping:true,
             complete: r => {
-                this.records = r.data.map(row => ({...row, _flags:[]}));
-                document.getElementById('pa-drop').querySelector('div:nth-child(2)').textContent = `✅ ${file.name} — ${this.records.length} 条`;
-                this._applyRules();
-                this._showAll();
+                const drop = document.getElementById(dropId);
+                const status = document.getElementById(dropId+'-status');
+                drop.classList.remove('ready');
+                drop.classList.add('loaded');
+                if (type==='purchase') {
+                    this.purchases = r.data;
+                    if (status) status.textContent = `✅ ${file.name} — ${r.data.length} รายการ`;
+                } else {
+                    this.boq = r.data.filter(row => {
+                        // Exclude subtotal and grand total rows
+                        const desc = (row.Description||'').toLowerCase();
+                        return row.Quantity > 0 && !desc.includes('subtotal') && !desc.includes('grand total') && !desc.includes('total');
+                    });
+                    if (status) status.textContent = `✅ ${file.name} — ${this.boq.length} รายการ BOQ`;
+                }
+                if (this.purchases.length || this.boq.length) this._analyze();
             }
         });
     },
 
-    _applyRules() {
-        // Rule A: Duplicate Invoice_No
-        const inv = {};
-        this.records.forEach(r => { const k=(r.Invoice_No||'').trim(); inv[k]=(inv[k]||0)+1; });
+    // ─── Core analysis ───
+    _analyze() {
+        const P = this.purchases;
+        const B = this.boq;
 
-        // Rule C: Price anomaly
-        const pm = {};
-        this.records.forEach(r => {
-            const k=(r.Item_Name_CN||'').trim();
-            if (!pm[k]) pm[k]=[];
-            if (r.Unit_Price>0) pm[k].push(Number(r.Unit_Price));
+        // Rule A: Duplicate invoices
+        const invMap = {};
+        P.forEach(r => {
+            const k = (r.Invoice_No||'').trim();
+            if (k) invMap[k] = (invMap[k]||[]).concat(r);
         });
-        const avg = {};
-        Object.keys(pm).forEach(k => { avg[k]=pm[k].reduce((a,b)=>a+b,0)/pm[k].length; });
+        const dups = Object.entries(invMap).filter(([,rows])=>rows.length>1);
 
-        this.records.forEach(r => {
-            r._flags = [];
-            if ((r.Invoice_No||'').trim() && inv[(r.Invoice_No||'').trim()]>1) r._flags.push('dup');
-            if (['Consumable','Machinery'].includes(r.Item_Category)) r._flags.push('deduct');
-            const k=(r.Item_Name_CN||'').trim();
-            if (avg[k] && r.Unit_Price > avg[k]*1.10 && pm[k].length>1) r._flags.push('high');
-        });
+        // Rule B: Contractor responsibility
+        const DEDUCT_CATS = ['Consumable','Machinery','Service','Transport'];
+        const deductRows = P.filter(r => DEDUCT_CATS.includes(r.Item_Category));
+        const deductTotal = deductRows.reduce((s,r)=>s+Number(r.Total_Price||0),0);
+
+        // Totals
+        const totalPurchased = P.reduce((s,r)=>s+Number(r.Total_Price||0),0);
+        const totalBOQ = B.reduce((s,r)=>s+Number(r.Total_Amount||0),0);
+        const netPurchased = totalPurchased - deductTotal;
+
+        // BOQ vs Actual matching (by Description keyword)
+        const boqRows = this._matchBOQ(P, B);
+
+        // Render
+        this._renderReport({ P, B, dups, deductRows, deductTotal, totalPurchased, totalBOQ, netPurchased, boqRows });
     },
 
-    _showAll() {
-        // KPIs
-        const total = this.records.reduce((s,r)=>s+Number(r.Total_Price||0),0);
-        const invSet = new Set(this.records.map(r=>(r.Invoice_No||'').trim()).filter(Boolean));
-        const dupSet = new Set(this.records.filter(r=>r._flags.includes('dup')).map(r=>(r.Invoice_No||'').trim()));
-        const deduct = this.records.filter(r=>r._flags.includes('deduct')).reduce((s,r)=>s+Number(r.Total_Price||0),0);
-        const high = this.records.filter(r=>r._flags.includes('high')).length;
+    // Simple keyword matching: BOQ Description ↔ purchase Item_Name_CN or Item_Name_TH
+    _matchBOQ(P, B) {
+        // Group purchases by normalized description
+        const normPurch = {};
+        P.forEach(r => {
+            const keys = this._keywords(r.Item_Name_CN||'', r.Item_Name_TH||'', r.Item_Category||'');
+            keys.forEach(k => {
+                normPurch[k] = (normPurch[k]||0) + Number(r.Total_Price||0);
+            });
+        });
 
-        const kpis = document.getElementById('pa-kpis');
-        kpis.style.display = 'grid';
-        kpis.innerHTML = `
-          ${this._kpi('💰 总采购金额','฿'+this.fmt(total),'ok')}
-          ${this._kpi('🧾 单据总数',invSet.size,'')}
-          ${this._kpi('⚠️ 重复单据',dupSet.size,'danger')}
-          ${this._kpi('🚫 应扣回金额','฿'+this.fmt(deduct),'warn')}
-          ${this._kpi('📈 价格偏高笔数',high,'warn')}`;
+        return B.map(b => {
+            const desc = b.Description||'';
+            const unit = b.Unit||'';
+            const budgetQty = Number(b.Quantity||0);
+            const budgetUP = Number(b.Supply_Unit_Price||0);
+            const budgetAmt = Number(b.Total_Amount||0);
 
-        // Charts
-        const cr = document.getElementById('pa-charts');
-        cr.style.display = 'grid';
-        setTimeout(() => this._renderCharts(), 100);
+            // Find matching purchases
+            const matchKey = this._matchKey(desc);
+            const actualAmt = normPurch[matchKey] || 0;
+            const pct = budgetAmt > 0 ? Math.round(actualAmt / budgetAmt * 100) : 0;
 
-        // Filter options
-        const cats = [...new Set(this.records.map(r=>r.Item_Category).filter(Boolean))].sort();
-        const sel = document.getElementById('pa-fcat');
-        sel.innerHTML = '<option value="">全部分类</option>' + cats.map(c=>`<option>${c}</option>`).join('');
-
-        document.getElementById('pa-table-sec').style.display = '';
-        document.getElementById('pa-boq-sec').style.display = '';
-        this.renderTable();
+            return { desc, category: b.Category, unit, budgetQty, budgetUP, budgetAmt, actualAmt, pct, matchKey };
+        }).filter(r => r.budgetAmt > 0);
     },
 
-    _kpi(label, val, cls) {
-        const border = {ok:'#10b981',danger:'#dc2626',warn:'#f59e0b','':'#2563eb'}[cls]||'#2563eb';
-        const color  = {ok:'#10b981',danger:'#dc2626',warn:'#f59e0b','':'#1e3a8a'}[cls]||'#1e3a8a';
-        return `<div style="background:#fff;border-radius:12px;padding:14px 18px;border-left:4px solid ${border};box-shadow:0 1px 4px rgba(0,0,0,.06)">
-          <div style="font-size:1.6rem;font-weight:700;color:${color}">${val}</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">${label}</div>
+    _keywords(cn, th, cat) {
+        const s = (cn+' '+th+' '+cat).toLowerCase();
+        const res = [];
+        if (/db\s*12|螺纹.*12|12mm|12มิล/.test(s)) res.push('db12');
+        if (/db\s*16|螺纹.*16|16mm|16มิล/.test(s)) res.push('db16');
+        if (/rb\s*9|圆钢.*9|rebar.*9|9มิล/.test(s)) res.push('rb9');
+        if (/rb\s*6|rebar.*6|6มิล/.test(s)) res.push('rb6');
+        if (/concrete|คอนกรีต|混凝土/.test(s)) res.push('concrete');
+        if (/precast|สำเร็จ|楼板/.test(s)) res.push('precast');
+        if (/wire\s*mesh|ตาข่าย|网片/.test(s)) res.push('wiremesh');
+        if (/wire|ลวด|铁丝/.test(s)) res.push('wire');
+        if (/nail|ตะปู|钉子/.test(s)) res.push('nail');
+        if (/formwork|แบบหล่อ|模板/.test(s)) res.push('formwork');
+        if (/cement|ซีเมนต์|水泥/.test(s)) res.push('cement');
+        if (/block|บล็อก|砖/.test(s)) res.push('block');
+        if (/pvc|ท่อ/.test(s)) res.push('pvc');
+        if (/c.?channel|c型钢/.test(s)) res.push('cchannel');
+        if (/metal\s*sheet|matal|彩钢/.test(s)) res.push('metalsheet');
+        if (/excavat|ขุด|挖/.test(s)) res.push('excavation');
+        if (/plaster|ฉาบ|抹灰/.test(s)) res.push('plastering');
+        if (res.length===0) res.push(cn.toLowerCase().replace(/\s+/g,'_').slice(0,20)||'other');
+        return res;
+    },
+
+    _matchKey(desc) {
+        const s = desc.toLowerCase().replace(/\s+/g,'');
+        if (/db12/.test(s)) return 'db12';
+        if (/db16/.test(s)) return 'db16';
+        if (/rb9/.test(s)) return 'rb9';
+        if (/rb6/.test(s)) return 'rb6';
+        if (/concret|คอนกรีต/.test(s)) return 'concrete';
+        if (/precast/.test(s)) return 'precast';
+        if (/wiremesh/.test(s)) return 'wiremesh';
+        if (/wire/.test(s)) return 'wire';
+        if (/nail/.test(s)) return 'nail';
+        if (/formwork/.test(s)) return 'formwork';
+        if (/cement/.test(s)) return 'cement';
+        if (/block/.test(s)) return 'block';
+        if (/pvc/.test(s)) return 'pvc';
+        if (/cchannel|c-channel/.test(s)) return 'cchannel';
+        if (/metalsheet|matalsheet/.test(s)) return 'metalsheet';
+        if (/excavat/.test(s)) return 'excavation';
+        if (/plaster/.test(s)) return 'plastering';
+        return desc.toLowerCase().replace(/\s+/g,'_').slice(0,20);
+    },
+
+    _renderReport({ P, B, dups, deductRows, deductTotal, totalPurchased, totalBOQ, netPurchased, boqRows }) {
+        const pct = totalBOQ > 0 ? Math.round(netPurchased / totalBOQ * 100) : 0;
+        const dupCount = dups.length;
+
+        let html = '';
+
+        // ── KPIs ──
+        html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">
+          <div class="pa-kpi ${pct>100?'danger':pct>80?'warn':'ok'}">
+            <div class="pa-kpi-n">${pct}%</div>
+            <div style="font-size:12px;color:#64748b">BOQ ที่ใช้แล้ว 已用预算</div>
+            <div style="font-size:11px;color:#94a3b8">฿${this.fmt(netPurchased)} / ฿${this.fmt(totalBOQ)}</div>
+          </div>
+          <div class="pa-kpi ok">
+            <div class="pa-kpi-n">฿${this.fmt(totalPurchased)}</div>
+            <div style="font-size:12px;color:#64748b">ยอดใบเสร็จรวม 采购总额</div>
+          </div>
+          <div class="pa-kpi warn">
+            <div class="pa-kpi-n">฿${this.fmt(deductTotal)}</div>
+            <div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div>
+            <div style="font-size:11px;color:#94a3b8">${deductRows.length} รายการ (Machinery/Service)</div>
+          </div>
+          <div class="pa-kpi ${dupCount>0?'danger':'ok'}">
+            <div class="pa-kpi-n">${dupCount}</div>
+            <div style="font-size:12px;color:#64748b">⚠️ ใบเสร็จซ้ำ 重复单据</div>
+          </div>
+          <div class="pa-kpi ok">
+            <div class="pa-kpi-n">฿${this.fmt(totalBOQ - netPurchased)}</div>
+            <div style="font-size:12px;color:#64748b">งบคงเหลือ 预算剩余</div>
+          </div>
         </div>`;
-    },
 
-    _renderCharts() {
-        // Supplier pie
-        const sm = {};
-        this.records.forEach(r=>{ const s=r.Supplier||'其他'; sm[s]=(sm[s]||0)+Number(r.Total_Price||0); });
-        const sd = Object.entries(sm).sort((a,b)=>b[1]-a[1]).map(([n,v])=>({name:n,value:Math.round(v)}));
-
-        const el1 = document.getElementById('pa-chart1');
-        if (el1 && el1.offsetHeight > 0) {
-            if (this.charts.c1) this.charts.c1.dispose();
-            this.charts.c1 = echarts.init(el1);
-            this.charts.c1.setOption({
-                tooltip:{trigger:'item',formatter:'{b}<br/>฿{c} ({d}%)'},
-                legend:{orient:'vertical',right:0,top:'middle',textStyle:{fontSize:11}},
-                series:[{type:'pie',radius:['38%','68%'],center:['40%','50%'],data:sd,
-                    label:{formatter:'{d}%',fontSize:11},
-                    emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(0,0,0,.2)'}}}]
-            });
+        // ── Duplicate Invoices ──
+        if (dups.length) {
+            html += `<div class="pa-sec">
+              <h3>⚠️ ใบเสร็จซ้ำ 重复单据 — ควรตรวจสอบ 需核实</h3>
+              <table class="pa-table"><thead><tr>
+                <th>Invoice No.</th><th>ครั้ง 次数</th><th>ผู้ขาย 供货商</th><th>รายการ 品名</th><th style="text-align:right">รวม ฿</th>
+              </tr></thead><tbody>
+              ${dups.map(([inv,rows])=>rows.map((r,i)=>`<tr class="row-dup">
+                <td style="font-family:monospace">${i===0?this.esc(inv):''}</td>
+                <td>${i===0?`<span class="pab dup">${rows.length}× ซ้ำ</span>`:''}</td>
+                <td>${this.esc(r.Supplier||'')}</td>
+                <td>${this.esc(r.Item_Name_CN||r.Item_Name_TH||'')}</td>
+                <td style="text-align:right">฿${this.fmt(r.Total_Price)}</td>
+              </tr>`).join('')).join('')}
+              </tbody></table>
+            </div>`;
         }
 
-        // Category bar
-        const cm = {};
-        this.records.forEach(r=>{ const c=r.Item_Category||'其他'; cm[c]=(cm[c]||0)+Number(r.Total_Price||0); });
-        const cats = Object.keys(cm).sort((a,b)=>cm[b]-cm[a]);
-        const colors = ['#2563eb','#f59e0b','#10b981','#a855f7','#f97316','#0891b2','#dc2626','#64748b','#6366f1','#14b8a6'];
-
-        const el2 = document.getElementById('pa-chart2');
-        if (el2 && el2.offsetHeight > 0) {
-            if (this.charts.c2) this.charts.c2.dispose();
-            this.charts.c2 = echarts.init(el2);
-            this.charts.c2.setOption({
-                tooltip:{trigger:'axis',formatter:p=>`${p[0].name}<br/>฿${p[0].value.toLocaleString()}`},
-                xAxis:{type:'category',data:cats,axisLabel:{rotate:30,fontSize:11}},
-                yAxis:{type:'value',axisLabel:{formatter:v=>'฿'+(v/1000).toFixed(0)+'k'}},
-                series:[{type:'bar',data:cats.map((c,i)=>({value:Math.round(cm[c]),itemStyle:{color:colors[i%colors.length]}})),
-                    label:{show:true,position:'top',formatter:p=>'฿'+(p.value/1000).toFixed(0)+'k',fontSize:10}}]
-            });
+        // ── Contractor Responsibility ──
+        if (deductRows.length) {
+            html += `<div class="pa-sec">
+              <h3>🚫 ควรหักคืน 应扣回 — รายการที่ผู้รับเหมาต้องรับผิดชอบเอง 建筑方应自行承担</h3>
+              <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e">
+                Machinery（机械租赁）和 Service（劳务/服务）按合同应由施工方承担，不应报销为项目材料费。共 <b>฿${this.fmt(deductTotal)}</b> 需扣回。
+              </div>
+              <table class="pa-table"><thead><tr>
+                <th>วันที่ 日期</th><th>ผู้ขาย 供货商</th><th>ประเภท 分类</th><th>รายการ 品名</th><th style="text-align:right">฿</th>
+              </tr></thead><tbody>
+              ${deductRows.map(r=>`<tr class="row-deduct">
+                <td style="white-space:nowrap">${r.Date||''}</td>
+                <td>${this.esc(r.Supplier||'')}</td>
+                <td><span class="pab deduct">${this.esc(r.Item_Category||'')}</span></td>
+                <td>${this.esc(r.Item_Name_CN||r.Item_Name_TH||'')}</td>
+                <td style="text-align:right;font-weight:700;color:#92400e">฿${this.fmt(r.Total_Price)}</td>
+              </tr>`).join('')}
+              <tr style="background:#fef3c7;font-weight:700">
+                <td colspan="4" style="text-align:right">รวมหัก 合计应扣</td>
+                <td style="text-align:right;color:#92400e">฿${this.fmt(deductTotal)}</td>
+              </tr>
+              </tbody></table>
+            </div>`;
         }
-    },
 
-    renderTable() {
-        const catF = (document.getElementById('pa-fcat')||{}).value||'';
-        const flagF = (document.getElementById('pa-fflag')||{}).value||'';
-        const txt = ((document.getElementById('pa-ftxt')||{}).value||'').toLowerCase();
+        // ── BOQ Comparison ──
+        if (B.length && boqRows.length) {
+            // Group by Category
+            const cats = [...new Set(boqRows.map(r=>r.category))];
+            const catSums = {};
+            boqRows.forEach(r => {
+                if (!catSums[r.category]) catSums[r.category]={budget:0,actual:0};
+                catSums[r.category].budget += r.budgetAmt;
+                catSums[r.category].actual += r.actualAmt;
+            });
 
-        const rows = this.records.filter(r=>{
-            if (catF && r.Item_Category!==catF) return false;
-            if (flagF && !r._flags.includes(flagF)) return false;
-            if (txt && !((r.Supplier||'')+(r.Item_Name_CN||'')+(r.Item_Name_TH||'')).toLowerCase().includes(txt)) return false;
-            return true;
-        });
+            html += `<div class="pa-sec">
+              <h3>📐 เปรียบเทียบ BOQ กับการจัดซื้อจริง BOQ预算对比</h3>
+              <div style="background:#eff6ff;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#1e3a8a">
+                หมายเหตุ: การจับคู่ใช้ keyword matching (DB12↔DB12螺纹钢) อาจมีความคลาดเคลื่อน ใช้เป็นแนวทางเท่านั้น · 匹配基于关键词，仅供参考
+              </div>
 
-        const wrap = document.getElementById('pa-table'); if (!wrap) return;
-
-        if (!rows.length) { wrap.innerHTML='<div style="text-align:center;padding:24px;color:#94a3b8">ไม่มีข้อมูล 没有记录</div>'; return; }
-
-        const subtotal = rows.reduce((s,r)=>s+Number(r.Total_Price||0),0);
-        wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead style="position:sticky;top:0;z-index:1">
-            <tr style="background:#f8fafc">
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left;white-space:nowrap">วันที่ 日期</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left;white-space:nowrap">Invoice No.</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">ผู้ขาย 供货商</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">ประเภท 分类</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">รายการ 品名(TH)</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">中文品名</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">จำนวน 数量</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">ราคา/หน่วย 单价</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">รวม 总价 ฿</th>
-              <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">ผลตรวจ 审核</th>
-            </tr>
-          </thead>
-          <tbody>${rows.map(r=>{
-              const f=r._flags||[];
-              const bg=f.includes('dup')?'#fff5f5':f.includes('deduct')?'#fffbeb':'';
-              const badges=[
-                f.includes('dup')    ?'<span style="background:#fee2e2;color:#dc2626;padding:2px 7px;border-radius:8px;font-size:11px;white-space:nowrap">⚠️ ซ้ำ/重复</span>':'',
-                f.includes('deduct') ?'<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:8px;font-size:11px;white-space:nowrap">🚫 หักคืน/扣回</span>':'',
-                f.includes('high')   ?'<span style="background:#fce7f3;color:#9d174d;padding:2px 7px;border-radius:8px;font-size:11px;white-space:nowrap">📈 ราคาสูง</span>':'',
-                !f.length            ?'<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:8px;font-size:11px">✅ ปกติ</span>':''
-              ].filter(Boolean).join(' ');
-              return `<tr style="background:${bg};border-bottom:1px solid #f1f5f9">
-                <td style="padding:8px 10px;white-space:nowrap">${this.esc(r.Date||'')}</td>
-                <td style="padding:8px 10px;font-family:monospace;font-size:12px">${this.esc(r.Invoice_No||'')}</td>
-                <td style="padding:8px 10px">${this.esc(r.Supplier||'')}</td>
-                <td style="padding:8px 10px"><span style="background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:8px;font-size:11px">${this.esc(r.Item_Category||'')}</span></td>
-                <td style="padding:8px 10px;font-size:12px">${this.esc(r.Item_Name_TH||'')}</td>
-                <td style="padding:8px 10px">${this.esc(r.Item_Name_CN||'')}</td>
-                <td style="padding:8px 10px;text-align:right">${this.fmtN(r.Qty)} ${this.esc(r.Unit||'')}</td>
-                <td style="padding:8px 10px;text-align:right">${this.fmt(r.Unit_Price)}</td>
-                <td style="padding:8px 10px;text-align:right;font-weight:600">${this.fmt(r.Total_Price)}</td>
-                <td style="padding:8px 10px">${badges}</td>
-              </tr>`;
-          }).join('')}</tbody>
-          <tfoot><tr style="background:#f8fafc;font-weight:700">
-            <td colspan="8" style="padding:8px 10px;text-align:right">รวม/小计 (${rows.length} รายการ)</td>
-            <td style="padding:8px 10px;text-align:right;color:#1e3a8a">฿${this.fmt(subtotal)}</td>
-            <td></td>
-          </tr></tfoot>
-        </table>`;
-    },
-
-    renderBOQ() {
-        if (!this.boqData.length || !this.records.length) return;
-        const sample = this.boqData[0];
-        const keys = Object.keys(sample);
-        const nameKey  = keys.find(k=>/名称|name|item/i.test(k))||keys[0];
-        const qtyKey   = keys.find(k=>/数量|qty/i.test(k))||keys[2];
-        const priceKey = keys.find(k=>/单价|price/i.test(k))||keys[3];
-
-        const actMap = {};
-        this.records.forEach(r=>{
-            const k=(r.Item_Name_CN||'').trim();
-            if (!actMap[k]) actMap[k]={qty:0,amount:0};
-            actMap[k].qty+=Number(r.Qty||0);
-            actMap[k].amount+=Number(r.Total_Price||0);
-        });
-
-        const rows = this.boqData.map(b=>{
-            const name=b[nameKey]||'';
-            const bq=Number(b[qtyKey]||0), bp=Number(b[priceKey]||0), ba=bq*bp;
-            const a=actMap[name]||{qty:0,amount:0};
-            const pct=bq>0?Math.min(150,Math.round(a.qty/bq*100)):0;
-            const diff=a.amount-ba;
-            return {name,bq,bp,ba,aq:a.qty,aa:a.amount,pct,diff};
-        });
-
-        const wrap = document.getElementById('pa-boq-table'); if (!wrap) return;
-        wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead><tr style="background:#f8fafc">
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:left">รายการ 材料名称</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">ประมาณ 预算量</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">จัดซื้อแล้ว 已采购</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0">ความคืบหน้า 进度</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">งบ ฿ 预算金额</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">จริง ฿ 实际金额</th>
-            <th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;text-align:right">ผลต่าง 盈亏 ฿</th>
-          </tr></thead>
-          <tbody>${rows.map(r=>{
-              const barColor=r.pct>110?'#dc2626':r.pct>90?'#f59e0b':'#10b981';
-              const diffColor=r.diff>0?'#dc2626':'#10b981';
-              return `<tr style="border-bottom:1px solid #f1f5f9">
-                <td style="padding:8px 10px">${this.esc(r.name)}</td>
-                <td style="padding:8px 10px;text-align:right">${this.fmt(r.bq)}</td>
-                <td style="padding:8px 10px;text-align:right">${this.fmt(r.aq)}</td>
-                <td style="padding:8px 10px">
-                  <div style="background:#e2e8f0;border-radius:4px;height:6px;width:80px;display:inline-block;vertical-align:middle">
-                    <div style="background:${barColor};height:6px;border-radius:4px;width:${Math.min(100,r.pct)}%"></div>
-                  </div>
-                  <span style="font-size:12px;margin-left:6px">${r.pct}%</span>
+              <!-- Category Summary -->
+              <table class="pa-table" style="margin-bottom:14px"><thead><tr>
+                <th>หมวด 章节</th>
+                <th style="text-align:right">งบ BOQ ฿</th>
+                <th style="text-align:right">จัดซื้อแล้ว ฿</th>
+                <th>ความคืบหน้า</th>
+                <th style="text-align:right">ผลต่าง ฿</th>
+              </tr></thead><tbody>
+              ${cats.map(cat=>{
+                const s=catSums[cat];
+                const pct2=s.budget>0?Math.min(150,Math.round(s.actual/s.budget*100)):0;
+                const over=s.actual>s.budget;
+                const barColor=pct2>110?'#dc2626':pct2>90?'#f59e0b':'#10b981';
+                const diff=s.actual-s.budget;
+                return `<tr>
+                  <td><b>${this.esc(cat)}</b></td>
+                  <td style="text-align:right">฿${this.fmt(s.budget)}</td>
+                  <td style="text-align:right">฿${this.fmt(s.actual)}</td>
+                  <td><div class="prog-wrap">
+                    <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,pct2)}%;background:${barColor}"></div></div>
+                    <span style="font-size:12px;${over?'color:#dc2626;font-weight:700':''}">${pct2}%</span>
+                  </div></td>
+                  <td style="text-align:right;font-weight:${Math.abs(diff)>0?'700':'400'};color:${diff>0?'#dc2626':diff<0?'#10b981':'#64748b'}">
+                    ${diff>0?'▲ +':'▼ '}฿${this.fmt(Math.abs(diff))}
+                  </td>
+                </tr>`;
+              }).join('')}
+              <tr style="background:#f8fafc;font-weight:700">
+                <td>รวม 合计</td>
+                <td style="text-align:right">฿${this.fmt(cats.reduce((s,c)=>s+catSums[c].budget,0))}</td>
+                <td style="text-align:right">฿${this.fmt(cats.reduce((s,c)=>s+catSums[c].actual,0))}</td>
+                <td></td>
+                <td style="text-align:right;color:${cats.reduce((s,c)=>s+catSums[c].actual,0)>cats.reduce((s,c)=>s+catSums[c].budget,0)?'#dc2626':'#10b981'}">
+                  ${cats.reduce((s,c)=>s+catSums[c].actual-catSums[c].budget,0)>0?'▲':'▼'} ฿${this.fmt(Math.abs(cats.reduce((s,c)=>s+catSums[c].actual-catSums[c].budget,0)))}
                 </td>
-                <td style="padding:8px 10px;text-align:right">${this.fmt(r.ba)}</td>
-                <td style="padding:8px 10px;text-align:right">${this.fmt(r.aa)}</td>
-                <td style="padding:8px 10px;text-align:right;font-weight:700;color:${diffColor}">${r.diff>0?'+':''}${this.fmt(r.diff)}</td>
-              </tr>`;
-          }).join('')}</tbody>
-          <tfoot><tr style="font-weight:700;background:#f8fafc">
-            <td colspan="4" style="padding:8px 10px;text-align:right">รวม 合计</td>
-            <td style="padding:8px 10px;text-align:right">฿${this.fmt(rows.reduce((s,r)=>s+r.ba,0))}</td>
-            <td style="padding:8px 10px;text-align:right">฿${this.fmt(rows.reduce((s,r)=>s+r.aa,0))}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:700;color:${rows.reduce((s,r)=>s+r.diff,0)>0?'#dc2626':'#10b981'}">
-              ${rows.reduce((s,r)=>s+r.diff,0)>0?'+':''}฿${this.fmt(rows.reduce((s,r)=>s+r.diff,0))}
-            </td>
-          </tr></tfoot>
-        </table>`;
-    },
+              </tr>
+              </tbody></table>
+            </div>`;
+        }
 
-    exportCSV() {
-        const catF=(document.getElementById('pa-fcat')||{}).value||'';
-        const flagF=(document.getElementById('pa-fflag')||{}).value||'';
-        const txt=((document.getElementById('pa-ftxt')||{}).value||'').toLowerCase();
-        const rows=this.records.filter(r=>{
-            if(catF&&r.Item_Category!==catF)return false;
-            if(flagF&&!r._flags.includes(flagF))return false;
-            if(txt&&!((r.Supplier||'')+(r.Item_Name_CN||'')+(r.Item_Name_TH||'')).toLowerCase().includes(txt))return false;
-            return true;
-        });
-        if(!rows.length){alert('没有数据可导出');return;}
-        const csv=Papa.unparse(rows.map(r=>({...r,审核标记:r._flags.map(f=>({dup:'重复单据',deduct:'应扣回',high:'价格偏高'})[f]||f).join(',')||'正常'})));
-        const a=document.createElement('a');
-        a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-        a.download='purchase_audit_'+new Date().toISOString().slice(0,10)+'.csv';
-        a.click();
+        // ── All Records with Flags ──
+        const invCount = {};
+        this.purchases.forEach(r=>{const k=(r.Invoice_No||'').trim();invCount[k]=(invCount[k]||0)+1;});
+        const DEDUCT = new Set(['Consumable','Machinery','Service','Transport']);
+
+        html += `<div class="pa-sec">
+          <h3>🧾 รายการทั้งหมด + ผลตรวจ 明细清单 + 标记结果</h3>
+          <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
+            <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>ประเภท</th><th>รายการ 品名</th>
+            <th style="text-align:right">จำนวน</th><th style="text-align:right">ราคา/หน่วย</th>
+            <th style="text-align:right">รวม ฿</th><th>ผลตรวจ 标记</th>
+          </tr></thead><tbody>
+          ${this.purchases.map(r=>{
+            const isDup = (invCount[(r.Invoice_No||'').trim()]||0)>1;
+            const isDeduct = DEDUCT.has(r.Item_Category);
+            const trCls = isDup?'row-dup':isDeduct?'row-deduct':'';
+            const badges = [
+              isDup    ? '<span class="pab dup">⚠️ ใบซ้ำ</span>' : '',
+              isDeduct ? '<span class="pab deduct">🚫 หักคืน</span>' : '',
+              (!isDup&&!isDeduct) ? '<span class="pab ok">✅ ปกติ</span>' : ''
+            ].filter(Boolean).join(' ');
+            return `<tr class="${trCls}">
+              <td style="white-space:nowrap;font-size:12px">${r.Date||''}</td>
+              <td style="font-family:monospace;font-size:11px">${this.esc(r.Invoice_No||'')}</td>
+              <td>${this.esc(r.Supplier||'')}</td>
+              <td><span style="background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:6px;font-size:11px">${this.esc(r.Item_Category||'')}</span></td>
+              <td>
+                <div style="font-size:13px">${this.esc(r.Item_Name_TH||'')}</div>
+                <div style="font-size:11px;color:#94a3b8">${this.esc(r.Item_Name_CN||'')}</div>
+              </td>
+              <td style="text-align:right;font-size:12px">${r.Qty||''} ${this.esc(r.Unit||'')}</td>
+              <td style="text-align:right">฿${this.fmt(r.Unit_Price,2)}</td>
+              <td style="text-align:right;font-weight:600">฿${this.fmt(r.Total_Price)}</td>
+              <td>${badges}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:#f8fafc;font-weight:700">
+            <td colspan="7" style="text-align:right">ยอดรวม 合计</td>
+            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(this.purchases.reduce((s,r)=>s+Number(r.Total_Price||0),0))}</td>
+            <td></td>
+          </tr>
+          </tbody></table></div>
+        </div>`;
+
+        document.getElementById('pa-report').innerHTML = html;
     }
 };
 

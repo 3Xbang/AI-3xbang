@@ -146,7 +146,7 @@ const ProjectDetail = {
                 break;
             case 'purchase':
                 container.innerHTML = '<div id="purchase-audit-container"></div>';
-                if (typeof PurchaseDB !== 'undefined') PurchaseDB.init(this.projectId);
+                if (typeof PurchaseAudit !== 'undefined') PurchaseAudit.init(this.projectId);
                 break;
             case 'overview':
                 container.innerHTML = this.renderOverview();

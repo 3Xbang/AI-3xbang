@@ -7,7 +7,7 @@ const projectMembers = {
 
     ROLE_TEXT: {
         manager: '管理者 ผู้จัดการ',
-        purchaser: '采购者 ผู้จัดซื้อ',
+        purchaser: '主管 ผู้ควบคุมงาน',
         executor: '执行者 ผู้ปฏิบัติงาน'
     },
 
@@ -124,7 +124,7 @@ const projectMembers = {
     },
 
     getRoleBadge(role) {
-        return { manager: '👔', purchaser: '🛒', executor: '👷' }[role] || '👤';
+        return { manager: '👔', purchaser: '📋', executor: '👷' }[role] || '👤';
     },
 
     async addMember(userId) {

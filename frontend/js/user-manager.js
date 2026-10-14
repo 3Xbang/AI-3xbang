@@ -79,7 +79,7 @@ const userManager = {
     getRoleText(role) {
         const roles = {
             manager: '经理 ผู้จัดการ',
-            purchaser: '采购 จัดซื้อ',
+            purchaser: '主管 ผู้ควบคุมงาน',
             executor: '执行者 ผู้ปฏิบัติ'
         };
         return roles[role] || role;
@@ -104,7 +104,7 @@ const userManager = {
     getRoleBadge(role) {
         const badges = {
             manager: '👔',
-            purchaser: '🛒',
+            purchaser: '📋',
             executor: '👷'
         };
         return badges[role] || '👤';
@@ -138,7 +138,7 @@ const userManager = {
                             <select name="role" required>
                                 <option value="">选择角色 เลือกบทบาท</option>
                                 <option value="manager">👔 经理 ผู้จัดการ</option>
-                                <option value="purchaser">🛒 采购 จัดซื้อ</option>
+                                <option value="purchaser">📋 主管 ผู้ควบคุมงาน</option>
                                 <option value="executor">👷 执行者 ผู้ปฏิบัติ</option>
                             </select>
                         </div>

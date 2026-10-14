@@ -16,7 +16,7 @@ const PermissionManager = {
         return this.getCurrentUserRole() === 'manager';
     },
 
-    // 检查是否是采购者
+    // 检查是否是主管（旧称采购者）
     isPurchaser() {
         return this.getCurrentUserRole() === 'purchaser';
     },
@@ -157,7 +157,7 @@ const PermissionManager = {
     getRoleDisplayName(role) {
         const roleNames = {
             manager: '管理者 ผู้จัดการ',
-            purchaser: '采购者 ผู้จัดซื้อ',
+            purchaser: '主管 ผู้ควบคุมงาน',
             executor: '执行者 ผู้ปฏิบัติงาน'
         };
 

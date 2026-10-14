@@ -55,7 +55,7 @@ const ProjectDetail = {
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'เตรียมโครงการ', warn: true });
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
-        if (['manager','supervisor','purchaser'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
+        if (['manager','supervisor','purchaser','foreman'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
@@ -160,6 +160,7 @@ const ProjectDetail = {
 
     // ---------- 采购总览 ----------
     renderProcurement() {
+        const isAdmin = PermissionManager.isManager();
         return `<div style="padding:16px;max-width:1400px;margin:0 auto">
           <div class="td-head">
             <div>
@@ -168,10 +169,10 @@ const ProjectDetail = {
             </div>
           </div>
 
-          <!-- Sub-tabs -->
+          <!-- Sub-tabs — AI tab only visible to admin -->
           <div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
             <button class="proc-tab active" id="proc-tab-mat" onclick="ProjectDetail._switchProcTab('mat')">🧱 วัสดุ 收据材料</button>
-            <button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">🤖 AI วิเคราะห์ 采购分析</button>
+            ${isAdmin ? `<button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">🤖 AI วิเคราะห์ 采购分析</button>` : ''}
           </div>
           <style>
             .proc-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -180,7 +181,7 @@ const ProjectDetail = {
           </style>
 
           <div id="proc-mat-panel"><div id="materials-container"></div></div>
-          <div id="proc-ai-panel" style="display:none"><div id="purchase-audit-container"></div></div>
+          ${isAdmin ? `<div id="proc-ai-panel" style="display:none"><div id="purchase-audit-container"></div></div>` : ''}
         </div>`;
     },
 
@@ -189,11 +190,13 @@ const ProjectDetail = {
     },
 
     _switchProcTab(tab) {
-        document.getElementById('proc-tab-mat').classList.toggle('active', tab==='mat');
-        document.getElementById('proc-tab-ai').classList.toggle('active', tab==='ai');
-        document.getElementById('proc-mat-panel').style.display = tab==='mat' ? '' : 'none';
-        document.getElementById('proc-ai-panel').style.display = tab==='ai' ? '' : 'none';
-        // Lazy init AI panel
+        document.getElementById('proc-tab-mat')?.classList.toggle('active', tab==='mat');
+        document.getElementById('proc-tab-ai')?.classList.toggle('active', tab==='ai');
+        const matPanel = document.getElementById('proc-mat-panel');
+        const aiPanel = document.getElementById('proc-ai-panel');
+        if(matPanel) matPanel.style.display = tab==='mat' ? '' : 'none';
+        if(aiPanel) aiPanel.style.display = tab==='ai' ? '' : 'none';
+        // Lazy init AI panel (admin only)
         if (tab==='ai' && typeof PurchaseAudit!=='undefined') {
             const box = document.getElementById('purchase-audit-container');
             if (box && !box.hasAttribute('data-init')) {

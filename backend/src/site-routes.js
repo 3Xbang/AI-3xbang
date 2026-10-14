@@ -1481,6 +1481,31 @@ ${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||
         });
       }
 
+      // ===== MIXED ITEM DETECTION: items containing BOTH main materials AND consumables =====
+      // These cannot be fully deducted — AI always flags the whole amount incorrectly
+      const MAIN_MATERIALS = ['钢筋','螺纹钢','圆钢','商品混凝土','水泥30','水泥20',
+        '碎石','砂石','砖块','模板木','黑膜胶合板','预制楼板','预制板',
+        'PVC管','C型钢','方管','圆管','角钢','工字钢','防蚊网',
+        '瓷砖','空心砖','红砖','电线','水管',
+        '小石','石+沙','石头','沙子'];
+      const CONSUMABLES_TH = ['ลวดเชื่อม','ใบตัด','สกรู','ตะปู','น้ำยาถอดแบบ','กาว'];
+      const CONSUMABLES_CN = ['焊条','切割片','螺丝','钉子','脱模剂','铁桶','胶水'];
+
+      results.forEach(r => {
+        if (r.status !== 'deduct') return;
+        const rec = records.find(x => x.id === r.id);
+        if (!rec) return;
+        const cn = (rec.item_name_cn || '').toLowerCase();
+        const th = (rec.item_name_th || '').toLowerCase();
+        const hasMain = MAIN_MATERIALS.some(kw => cn.includes(kw.toLowerCase()) || th.includes(kw.toLowerCase()));
+        const hasCons = CONSUMABLES_CN.some(kw => cn.includes(kw)) || CONSUMABLES_TH.some(kw => th.includes(kw));
+        if (hasMain && hasCons) {
+          r.status = 'mixed_review';
+          r.flags = (r.flags || []).filter(f => f !== 'deduct');
+          r.mixed_items = (r.mixed_items || `包含甲方主材+乙方消耗品，无法整笔扣除，请要求承包方出具分项收据`);
+        }
+      });
+
       // Map analysis results back to purchase records
       const mapped = records.map(rec => {
         const ai = results.find(a => a.id === rec.id) || {};

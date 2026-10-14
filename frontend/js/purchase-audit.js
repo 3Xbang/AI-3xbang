@@ -266,7 +266,7 @@ const PurchaseAudit = {
         try {
             const r = await apiRequest('/api/purchase-records?limit=300'+(this.projectId?'&project_id='+this.projectId:''));
             this.purchases=(r.data||[]).map(row=>({
-                Date:(row.purchase_date||'').slice(0,10),Invoice_No:row.invoice_no||'',
+                Date: row.purchase_date ? String(row.purchase_date).slice(0,10) : '',Invoice_No:row.invoice_no||'',
                 Supplier:row.supplier_name||'',Item_Category:row.item_category||'',
                 Item_Name_TH:row.item_name_th||'',Item_Name_CN:row.item_name_cn||'',
                 Qty:row.qty,Unit:row.unit||'',Unit_Price:row.unit_price,Total_Price:row.total_price,_id:row.id

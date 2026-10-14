@@ -235,7 +235,37 @@ const PurchaseAudit = {
             } else if(summary){
                 summary.innerHTML=`<div style="text-align:center;padding:24px;color:#94a3b8"><div style="font-size:32px">📋</div><div>ไปอัปโหลดใบเสร็จที่แท็บ วัสดุ ก่อน<br>请先在收据材料标签上传CSV</div></div>`;
             }
+            // Auto-load cached analysis result
+            if(this.purchases.length) {
+                try {
+                    const cached=localStorage.getItem('pa_result_'+this.projectId);
+                    if(cached){
+                        const {d,ts}=JSON.parse(cached);
+                        if(bar) bar.style.display='none'; // hide big button while cached shown
+                        this._renderReport(d);
+                        const report=document.getElementById('pa-report');
+                        if(report){
+                            const age=Math.round((Date.now()-ts)/60000);
+                            const ageStr=age<60?`${age} นาทีที่แล้ว / ${age}分钟前`:`${Math.round(age/60)} ชม.ที่แล้ว / ${Math.round(age/60)}小时前`;
+                            const div=document.createElement('div');
+                            div.innerHTML=`<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:13px;flex-wrap:wrap;gap:8px">
+                                <span>📊 ผลวิเคราะห์ล่าสุด: <b>${ageStr}</b></span>
+                                <button class="sb-btn small primary" onclick="PurchaseAudit._reAnalyze()" style="white-space:nowrap">🔄 วิเคราะห์ใหม่ 重新分析</button>
+                            </div>`;
+                            report.insertBefore(div.firstChild,report.firstChild);
+                        }
+                    }
+                } catch(e){ localStorage.removeItem('pa_result_'+this.projectId); }
+            }
         } catch(e){ console.error('loadFromDB',e); }
+    },
+
+    _reAnalyze() {
+        const report=document.getElementById('pa-report');
+        if(report) report.innerHTML='';
+        const bar=document.getElementById('pa-analyze-bar');
+        if(bar) bar.style.display='';
+        bar && bar.scrollIntoView({behavior:'smooth',block:'center'});
     },
 
     async runAnalysis() {
@@ -276,7 +306,7 @@ const PurchaseAudit = {
                     try{
                         const d=JSON.parse(data);
                         if(ev==='status'){log(d.message);setBar(60);}
-                        if(ev==='result'){setBar(100);this._renderReport(d);}
+                        if(ev==='result'){setBar(100);this._renderReport(d);try{localStorage.setItem('pa_result_'+this.projectId,JSON.stringify({d,ts:Date.now()}));}catch(_){}}
                         if(ev==='error'){
                             const msg=d.message||'';
                             if(msg.includes('503')||msg.includes('high demand')||msg.includes('Service Unavailable')) throw new Error('__RETRY__:'+msg);

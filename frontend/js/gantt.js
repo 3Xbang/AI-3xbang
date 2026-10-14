@@ -97,7 +97,7 @@ const GanttChart = {
                     <span>📅 เปิดงาน/开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% งานเสร็จจริง(ตามต้นทุน)</span>` : ""}
                     <span class="gc-plan-tag">กำหนดเสร็จ/计划完工 ${d.plannedEnd}</span>
                     <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">คาดว่าเสร็จ/预计完工 ${d.estimatedEnd}</span>
-                    <button class="sb-btn small" onclick="GanttChart.load()">🔄 刷新</button>${PermissionManager && PermissionManager.canManageProjects() ? `<button class="sb-btn primary small" onclick="DailyAssign.open(GanttChart.projectId)">📋 安排明天 มอบหมายงาน</button>` : ""}
+                    <button class="sb-btn small" onclick="GanttChart.load()">🔄 刷新</button>${PermissionManager && (PermissionManager.canManageProjects() || PermissionManager.canViewProjectData()) ? `<button class="sb-btn primary small" onclick="DailyAssign.open(GanttChart.projectId)">📋 工作安排 มอบหมายงาน</button>` : ""}
                 </div>
                 <div class="gc-chart">
                     <div class="gc-header">

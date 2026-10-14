@@ -825,4 +825,189 @@ router.post('/projects/:projectId/cover', authenticate, requireProjectAccess(), 
   res.json({success:true,data:{cover_photo:url}});
 }));
 
+// ============================================================
+// 采购价格参考数据库 Purchase Price Reference Database
+// ============================================================
+
+// CSV行解析（处理逗号在引号内的情况）
+function parseCSVLine(line) {
+  const res = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  res.push(cur.trim());
+  return res;
+}
+
+// 更新价格基准（每次导入后调用）
+async function refreshPriceBenchmark(itemNameCn, unit) {
+  const r = await pool.query(
+    `SELECT AVG(unit_price) avg, MIN(unit_price) mn, MAX(unit_price) mx, COUNT(*) cnt,
+            (SELECT unit_price FROM purchase_records WHERE item_name_cn=$1 AND unit=$2 ORDER BY purchase_date DESC, id DESC LIMIT 1) last_price,
+            (SELECT purchase_date FROM purchase_records WHERE item_name_cn=$1 AND unit=$2 ORDER BY purchase_date DESC, id DESC LIMIT 1) last_date
+     FROM purchase_records WHERE item_name_cn=$1 AND unit=$2 AND unit_price > 0`,
+    [itemNameCn, unit]);
+  const d = r.rows[0];
+  await pool.query(
+    `INSERT INTO price_benchmarks (item_name_cn, unit, avg_price, min_price, max_price, sample_count, last_price, last_purchase_date, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP)
+     ON CONFLICT (item_name_cn, unit) DO UPDATE SET
+       avg_price=EXCLUDED.avg_price, min_price=EXCLUDED.min_price, max_price=EXCLUDED.max_price,
+       sample_count=EXCLUDED.sample_count, last_price=EXCLUDED.last_price,
+       last_purchase_date=EXCLUDED.last_purchase_date, updated_at=CURRENT_TIMESTAMP`,
+    [itemNameCn, unit, d.avg, d.mn, d.mx, d.cnt, d.last_price, d.last_date]);
+}
+
+// POST /purchase-records/import-csv
+const csvUploadMW = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 10*1024*1024 } });
+router.post('/purchase-records/import-csv', authenticate, requirePermission('purchase_material'), csvUploadMW.single('csv'), wrap(async (req, res) => {
+  if (!req.file) throw new S.HttpError(400, '请上传CSV文件');
+  const text = req.file.buffer.toString('utf8');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) throw new S.HttpError(400, 'CSV为空或格式错误');
+
+  const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g,'').trim());
+  const col = h => headers.indexOf(h);
+
+  let imported = 0, suppNew = 0, itemNew = 0;
+  const suppCache = {}, itemCache = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g,'').trim());
+    if (vals.every(v => !v)) continue;
+
+    const get = idx => (idx >= 0 ? vals[idx] : '') || '';
+    const purchaseDate = get(col('Date')) || null;
+    const invoiceNo    = get(col('Invoice_No'));
+    const supplierName = get(col('Supplier'));
+    const category     = get(col('Item_Category'));
+    const nameTH       = get(col('Item_Name_TH'));
+    const nameCN       = get(col('Item_Name_CN'));
+    const qty          = parseFloat(get(col('Qty'))) || 0;
+    const unit         = get(col('Unit'));
+    const unitPrice    = parseFloat(get(col('Unit_Price'))) || 0;
+    const totalPrice   = parseFloat(get(col('Total_Price'))) || 0;
+
+    if (!supplierName || !nameCN) continue;
+
+    // Upsert supplier
+    if (!suppCache[supplierName]) {
+      const sr = await pool.query(
+        `INSERT INTO suppliers (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
+        [supplierName]);
+      suppCache[supplierName] = sr.rows[0].id;
+      if (sr.rowCount === 1 && sr.rows[0].id) suppNew++;
+    }
+
+    // Upsert material item
+    const itemKey = nameCN + '|' + unit;
+    if (!itemCache[itemKey]) {
+      const ir = await pool.query(
+        `INSERT INTO material_items (name_cn, name_th, category, unit) VALUES ($1,$2,$3,$4)
+         ON CONFLICT (name_cn, unit) DO UPDATE SET name_th=COALESCE(EXCLUDED.name_th,material_items.name_th), category=COALESCE(EXCLUDED.category,material_items.category)
+         RETURNING id`,
+        [nameCN, nameTH||null, category||null, unit]);
+      itemCache[itemKey] = ir.rows[0].id;
+      if (ir.rowCount === 1) itemNew++;
+    }
+
+    // Parse date (dd/mm/yyyy or yyyy-mm-dd)
+    let dateStr = null;
+    if (purchaseDate) {
+      const dm = purchaseDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (dm) dateStr = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`;
+      else dateStr = purchaseDate.slice(0,10);
+    }
+
+    await pool.query(
+      `INSERT INTO purchase_records (purchase_date, invoice_no, supplier_id, supplier_name, item_id, item_name_cn, item_name_th, item_category, qty, unit, unit_price, total_price, project_id, imported_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [dateStr, invoiceNo||null, suppCache[supplierName], supplierName, itemCache[itemKey], nameCN, nameTH||null, category||null, qty, unit, unitPrice, totalPrice, req.body.project_id||null, req.user.id]);
+
+    imported++;
+    await refreshPriceBenchmark(nameCN, unit);
+  }
+
+  res.json({ success: true, data: { imported, suppliers_created: suppNew, items_created: itemNew } });
+}));
+
+// GET /suppliers
+router.get('/suppliers', authenticate, wrap(async (req, res) => {
+  const r = await pool.query(
+    `SELECT s.*, COUNT(pr.id) purchase_count, COALESCE(SUM(pr.total_price),0) total_spend
+     FROM suppliers s LEFT JOIN purchase_records pr ON pr.supplier_id=s.id
+     GROUP BY s.id ORDER BY total_spend DESC`);
+  res.json({ success: true, data: r.rows });
+}));
+
+// GET /material-items
+router.get('/material-items', authenticate, wrap(async (req, res) => {
+  let where = 'WHERE 1=1'; const params = [];
+  if (req.query.category) { where += ` AND mi.category=$${params.length+1}`; params.push(req.query.category); }
+  if (req.query.q) { where += ` AND (mi.name_cn ILIKE $${params.length+1} OR mi.name_th ILIKE $${params.length+1})`; params.push('%'+req.query.q+'%'); }
+  const r = await pool.query(
+    `SELECT mi.*, pb.avg_price, pb.min_price, pb.max_price, pb.sample_count, pb.last_price, pb.last_purchase_date
+     FROM material_items mi LEFT JOIN price_benchmarks pb ON pb.item_name_cn=mi.name_cn AND pb.unit=mi.unit
+     ${where} ORDER BY pb.sample_count DESC NULLS LAST, mi.name_cn`, params);
+  res.json({ success: true, data: r.rows });
+}));
+
+// GET /material-items/:id/price-history
+router.get('/material-items/:id/price-history', authenticate, wrap(async (req, res) => {
+  const mi = (await pool.query('SELECT * FROM material_items WHERE id=$1', [req.params.id])).rows[0];
+  if (!mi) throw new S.HttpError(404, '找不到材料');
+  const r = await pool.query(
+    `SELECT pr.*, s.name supplier_nm FROM purchase_records pr
+     LEFT JOIN suppliers s ON s.id=pr.supplier_id
+     WHERE pr.item_name_cn=$1 AND pr.unit=$2 ORDER BY pr.purchase_date DESC, pr.id DESC`,
+    [mi.name_cn, mi.unit]);
+  res.json({ success: true, data: { item: mi, records: r.rows } });
+}));
+
+// GET /price-benchmarks
+router.get('/price-benchmarks', authenticate, wrap(async (req, res) => {
+  const r = await pool.query(
+    `SELECT pb.*, mi.name_th, mi.category FROM price_benchmarks pb
+     LEFT JOIN material_items mi ON mi.name_cn=pb.item_name_cn AND mi.unit=pb.unit
+     ORDER BY pb.sample_count DESC, pb.item_name_cn`);
+  res.json({ success: true, data: r.rows });
+}));
+
+// GET /purchase-records
+router.get('/purchase-records', authenticate, wrap(async (req, res) => {
+  const params = [];
+  let where = 'WHERE 1=1';
+  if (req.query.supplier) { where += ` AND pr.supplier_name ILIKE $${params.length+1}`; params.push('%'+req.query.supplier+'%'); }
+  if (req.query.category) { where += ` AND pr.item_category=$${params.length+1}`; params.push(req.query.category); }
+  if (req.query.invoice)  { where += ` AND pr.invoice_no=$${params.length+1}`; params.push(req.query.invoice); }
+  if (req.query.project_id) { where += ` AND pr.project_id=$${params.length+1}`; params.push(req.query.project_id); }
+  const limit = Math.min(200, parseInt(req.query.limit)||100);
+  const offset = parseInt(req.query.offset)||0;
+  const r = await pool.query(
+    `SELECT pr.* FROM purchase_records pr ${where} ORDER BY pr.purchase_date DESC NULLS LAST, pr.id DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`,
+    [...params, limit, offset]);
+  const cnt = (await pool.query(`SELECT COUNT(*) n FROM purchase_records pr ${where}`, params)).rows[0].n;
+  res.json({ success: true, data: r.rows, total: parseInt(cnt) });
+}));
+
+// POST /purchase-records (single manual record)
+router.post('/purchase-records', authenticate, requirePermission('purchase_material'), wrap(async (req, res) => {
+  const { invoice_no, supplier_name, item_name_cn, item_name_th, item_category, qty, unit, unit_price, purchase_date, project_id } = req.body;
+  if (!supplier_name || !item_name_cn || !unit) throw new S.HttpError(400, '供货商、品名、单位为必填');
+
+  const sr = await pool.query(`INSERT INTO suppliers (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, [supplier_name]);
+  const ir = await pool.query(`INSERT INTO material_items (name_cn, name_th, category, unit) VALUES ($1,$2,$3,$4) ON CONFLICT (name_cn, unit) DO UPDATE SET name_th=COALESCE(EXCLUDED.name_th,material_items.name_th) RETURNING id`, [item_name_cn, item_name_th||null, item_category||null, unit]);
+
+  const r = await pool.query(
+    `INSERT INTO purchase_records (purchase_date, invoice_no, supplier_id, supplier_name, item_id, item_name_cn, item_name_th, item_category, qty, unit, unit_price, total_price, project_id, imported_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+    [purchase_date||null, invoice_no||null, sr.rows[0].id, supplier_name, ir.rows[0].id, item_name_cn, item_name_th||null, item_category||null, qty||0, unit, unit_price||0, (qty||0)*(unit_price||0), project_id||null, req.user.id]);
+
+  await refreshPriceBenchmark(item_name_cn, unit);
+  res.json({ success: true, data: r.rows[0] });
+}));
+
 module.exports = router;

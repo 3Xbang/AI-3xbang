@@ -56,7 +56,8 @@ const ProjectDetail = {
         list.push({ v: 'site', icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
         list.push({ v: 'processes', icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
         list.push({ v: 'materials', icon: '🧱', zh: '材料设备', th: 'วัสดุและอุปกรณ์' });
-        list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวมและแจ้งเตือน' });
+        list.push({ v: 'photos', icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
+        list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
     },
 
@@ -134,12 +135,27 @@ const ProjectDetail = {
                 container.innerHTML = '<div id="materials-container"></div>';
                 MaterialManager.init(this.projectId);
                 break;
+            case 'photos':
+                container.innerHTML = this.renderPhotos();
+                photoManager.init(this.projectId);
+                break;
             case 'overview':
                 container.innerHTML = this.renderOverview();
                 this.loadOverviewData();
-                photoManager.init(this.projectId);
                 break;
         }
+    },
+
+    // ---------- 现场照片 ----------
+    renderPhotos() {
+        return `<div style="padding:16px;max-width:900px;margin:0 auto">
+            <div class="td-head">
+                <div><h2 class="td-title">📷 รูปถ่ายหน้างาน <small class="td-th">现场照片</small></h2>
+                <div class="td-sub">อัปโหลดรูปถ่ายความคืบหน้า · 上传施工进度照片</div></div>
+                <button class="sb-btn primary" onclick="photoManager.showUploadForm()">📷 อัปโหลด 上传照片</button>
+            </div>
+            <div id="photos-grid" class="photo-grid" style="margin-top:12px"></div>
+        </div>`;
     },
 
     // ---------- 总览提醒 ----------
@@ -173,11 +189,6 @@ const ProjectDetail = {
                     </div>
                 </div>
 
-                <div class="detail-section">
-                    <h3>现场照片 รูปถ่ายหน้างาน</h3>
-                    <div style="margin:8px 0 12px"><button class="btn-primary" onclick="photoManager.showUploadForm()">📷 上传照片 อัปโหลดรูป</button></div>
-                    <div id="photos-grid" class="photo-grid"></div>
-                </div>
             </div>
         `;
     },

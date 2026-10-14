@@ -1054,14 +1054,22 @@ function getGemini(modelOverride) {
 // 自动轮换模型，处理 503/429 过载
 async function callGemini(prompt, imagePart) {
   const tried = new Set();
+  // 从可用列表里尽量多放几个，冷门模型往往不堵
   const queue = [
     process.env.GEMINI_MODEL || 'gemini-flash-latest',
-    'gemini-flash-latest', 'gemini-pro-latest', 'gemini-3.5-flash',
-    'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'
+    'gemini-flash-latest',
+    'gemini-flash-lite-latest',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash',
+    'gemini-pro-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-omni-1.1-flash',
+    'gemini-3-flash-preview',
   ];
   let lastErr;
-
-  // Try Gemini models
   for (const m of queue) {
     if (tried.has(m)) continue;
     tried.add(m);
@@ -1074,32 +1082,12 @@ async function callGemini(prompt, imagePart) {
       lastErr = e;
       if (e.status === 503 || e.status === 429 ||
           (e.message||'').includes('no longer available') ||
-          (e.message||'').includes('high demand')) continue;
+          (e.message||'').includes('high demand') ||
+          (e.message||'').includes('new users')) continue;
       throw e;
     }
   }
-
-  // Fallback: OpenRouter DeepSeek (text-only, no image)
-  if (!imagePart && process.env.OPENROUTER_API_KEY) {
-    try {
-      const OpenAI = require('openai');
-      const client = new OpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: process.env.OPENROUTER_API_KEY,
-        defaultHeaders: { 'HTTP-Referer': 'https://winaii.com', 'X-Title': 'Mira Villa' }
-      });
-      const resp = await client.chat.completions.create({
-        model: process.env.OPENROUTER_MODEL || 'tngtech/deepseek-r1t2-chimera:free',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 4000
-      });
-      return resp.choices[0]?.message?.content || '';
-    } catch(e2) {
-      throw new Error('Gemini全部503, OpenRouter也失败: ' + e2.message);
-    }
-  }
-
-  throw lastErr || new Error('所有AI模型均不可用，请稍后再试');
+  throw lastErr || new Error('模型全部繁忙，请稍后再试 / ระบบ AI ยุ่ง กรุณาลองใหม่ทีหลัง');
 }
 
 // ── 确保 ai_rules 列存在 ──

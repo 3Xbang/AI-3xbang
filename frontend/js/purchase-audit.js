@@ -331,6 +331,191 @@ const PurchaseAudit = {
         const report=document.getElementById('pa-report');
         if(!report) return;
 
+        const isAdmin = PermissionManager.isManager() || PermissionManager.isSupervisor();
+
+        // Store for later use by agreement toggle and print
+        this._lastDeductRows = deductRows;
+        this._lastDeductAmt = deductAmt;
+
+        // Load existing agreements
+        this._agreements = this._agreements || new Set();
+        apiRequest('/api/projects/'+this.projectId+'/deduction-agreements').then(r=>{
+            (r.data||[]).forEach(a=>this._agreements.add(a.invoice_no+'|'+a.item_name_cn));
+            this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
+        }).catch(()=>{});
+
+        let html='';
+        html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
+          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">ยอดรวม 总采购额</div></div>
+          ${boqTotal>0?`<div class="pa-kpi ${totalAmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totalAmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">ใช้งบ 已用预算</div></div>`:''}
+          <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div></div>
+          <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ ใบซ้ำ 重复单据</div></div>
+          <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 ราคาสูง 价格偏高</div></div>
+        </div>`;
+
+        // Deduct section — rendered separately to allow agreement toggle
+        html+=`<div id="pa-deduct-section"></div>`;
+
+        if(dupRows.length){
+            html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ ใบเสร็จซ้ำ 重复单据</h3>
+              <table class="pa-table"><thead><tr><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th><th style="text-align:right">฿</th></tr></thead><tbody>
+              ${dupRows.map(r=>`<tr style="background:#fff5f5">
+                <td style="font-family:monospace;font-size:11px">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
+                <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
+                <td>${this.esc(g(r,'Item_Name_TH','item_name_th')||g(r,'Item_Name_CN','item_name_cn'))}</td>
+                <td style="text-align:right;font-weight:700;color:#dc2626">฿${this.fmt(gn(r,'Total_Price','total_price'))}</td>
+              </tr>`).join('')}
+              </tbody></table></div>`;
+        }
+
+        html+=`<div class="pa-sec"><h3>🧾 รายการทั้งหมด 全部明细</h3>
+          <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
+            <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th>
+            <th style="text-align:right">฿</th><th>ผล AI</th>
+          </tr></thead><tbody>
+          ${records.map(r=>{
+              const f=r.ai&&r.ai.flags||[];
+              const badges=[
+                f.includes('deduct')?'<span class="pab2 deduct">🚫 หักคืน</span>':'',
+                f.includes('duplicate')?'<span class="pab2 dup">⚠️ ซ้ำ</span>':'',
+                f.includes('price_high')?'<span class="pab2 high">📈 สูง</span>':'',
+                (!f.length||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
+              ].filter(Boolean).join('');
+              const total=gn(r,'Total_Price','total_price');
+              return `<tr>
+                <td style="white-space:nowrap;font-size:12px">${this.fmtDate(g(r,'_date','Date','purchase_date'))}</td>
+                <td style="font-family:monospace;font-size:11px;color:#64748b">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
+                <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
+                <td><div>${this.esc(g(r,'Item_Name_TH','item_name_th'))}</div><div style="font-size:11px;color:#94a3b8">${this.esc(g(r,'Item_Name_CN','item_name_cn'))}</div></td>
+                <td style="text-align:right;font-weight:600;color:${total<0?'#10b981':'#1e3a8a'}">฿${this.fmt(total)}</td>
+                <td>${badges}</td>
+              </tr>`;
+          }).join('')}
+          <tr style="background:#f8fafc;font-weight:700">
+            <td colspan="4" style="text-align:right">ยอดรวม 合计</td>
+            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totalAmt)}</td>
+            <td></td>
+          </tr></tbody></table></div></div>`;
+
+        report.innerHTML=html;
+        // Render deduct section after setting innerHTML
+        this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
+    },
+
+    _reRenderDeductSection(deductRows, deductAmt, isAdmin) {
+        const sec = document.getElementById('pa-deduct-section');
+        if(!sec || !deductRows.length) { if(sec) sec.innerHTML=''; return; }
+        const agreed = this._agreements || new Set();
+        const g=(r,...keys)=>{for(const k of keys){if(r[k]!=null&&r[k]!=='')return r[k];}return '';};
+        const gn=(r,...keys)=>{for(const k of keys){if(r[k]!=null)return Number(r[k]);}return 0;};
+
+        sec.innerHTML=`<div class="pa-sec" style="border:2px solid #fde047">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="color:#92400e;margin:0">🚫 รายการที่ผู้รับเหมาควรรับผิดชอบ 应由建筑方承担</h3>
+              <div style="font-size:13px;color:#92400e;margin-top:4px">รวม 合计应追回: <b>฿${this.fmt(deductAmt)}</b></div>
+            </div>
+            ${isAdmin?`<button class="sb-btn small" onclick="PurchaseAudit.printContractorReport()" style="white-space:nowrap">🏗️ รายงานสำหรับผู้รับเหมา 乙方报告</button>`:''}
+          </div>
+
+          ${deductRows.map(r=>{
+              const inv=g(r,'Invoice_No','invoice_no');
+              const itemCN=g(r,'Item_Name_CN','item_name_cn');
+              const itemTH=g(r,'Item_Name_TH','item_name_th');
+              const total=gn(r,'Total_Price','total_price');
+              const key=inv+'|'+itemCN;
+              const isAgreed=agreed.has(key);
+              const ai=r.ai||{};
+              return `<div style="background:${isAgreed?'#f0fdf4':'#fffbeb'};border:1.5px solid ${isAgreed?'#86efac':'#fde047'};border-radius:12px;padding:14px 16px;margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+                  <div style="flex:1;min-width:200px">
+                    <div style="font-weight:700;font-size:15px;color:#1e293b">${this.esc(itemTH)} <span style="color:#94a3b8;font-size:12px">${this.esc(itemCN)}</span></div>
+                    <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | Invoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
+                  </div>
+                  <div style="text-align:right;flex:0 0 auto">
+                    ${isAdmin?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:''}
+                    ${isAdmin?`<button class="sb-btn small ${isAgreed?'':'primary'}" onclick="PurchaseAudit.toggleAgreement('${this.esc(inv)}','${this.esc(itemCN)}',${isAgreed})" style="margin-top:4px;white-space:nowrap">
+                      ${isAgreed?'✅ ตกลงแล้ว 已协商':'🤝 ตกลง 协商同意'}</button>`:''}
+                    ${!isAdmin&&isAgreed?'<span style="color:#166534;font-size:12px">✅ ยืนยันแล้ว 已确认</span>':''}
+                  </div>
+                </div>
+
+                ${ai.reason_th||ai.reason_cn?`<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,.7);border-radius:8px;font-size:13px">
+                  <b>🤖 AI วิเคราะห์:</b> ${this.esc(ai.reason_th||'')} ${ai.reason_cn?'/ '+this.esc(ai.reason_cn):''}
+                </div>`:''}
+
+                ${ai.contract_clause?`<div style="margin-top:8px;padding:10px;background:rgba(255,255,255,.7);border-radius:8px;font-size:13px;border-left:3px solid #f59e0b">
+                  <b>📋 อ้างอิงสัญญา 合同条款: ${this.esc(ai.contract_clause)}</b>
+                  ${ai.clause_text?`<div style="margin-top:4px;color:#475569;font-style:italic">"${this.esc(ai.clause_text)}"</div>`:''}
+                  ${ai.explanation_th?`<div style="margin-top:8px;color:#1e3a8a">${this.esc(ai.explanation_th)}</div>`:''}
+                  ${ai.explanation_cn?`<div style="margin-top:4px;color:#475569;font-size:12px">${this.esc(ai.explanation_cn)}</div>`:''}
+                </div>`:''}
+              </div>`;
+          }).join('')}
+        </div>`;
+    },
+
+    async toggleAgreement(invoiceNo, itemCN, isCurrentlyAgreed) {
+        try {
+            if(isCurrentlyAgreed){
+                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'DELETE',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+                this._agreements && this._agreements.delete(invoiceNo+'|'+itemCN);
+            } else {
+                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'POST',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+                if(!this._agreements) this._agreements=new Set();
+                this._agreements.add(invoiceNo+'|'+itemCN);
+            }
+            if(typeof app!=='undefined'&&app.showToast) app.showToast(isCurrentlyAgreed?'ยกเลิกการตกลง 取消同意':'ตกลงแล้ว 已标记协商同意','success');
+            // Re-render deduct section
+            if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductAmt, true);
+        } catch(e){alert(e.message);}
+    },
+
+    printContractorReport() {
+        const sec = document.getElementById('pa-deduct-section');
+        if(!sec) return;
+        const items = sec.querySelectorAll('[data-deduct-item]');
+        // Open print window without amounts
+        const win = window.open('','_blank');
+        const agreed = this._agreements||new Set();
+        const rows = Array.from(this._lastDeductRows||[]).filter(r=>{
+            const key=(r.invoice_no||r.Invoice_No||'')+'|'+(r.item_name_cn||r.Item_Name_CN||'');
+            return agreed.has(key);
+        });
+        if(!rows.length){alert('ยังไม่มีรายการที่ตกลง กรุณาทำเครื่องหมาย "ตกลง" ก่อน\n请先标记"协商同意"的项目');return;}
+        const g=(r,...keys)=>{for(const k of keys){if(r[k]!=null&&r[k]!=='')return r[k];}return '';};
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>รายงานสำหรับผู้รับเหมา / 乙方确认报告</title>
+        <style>body{font-family:sans-serif;margin:32px;color:#1e293b}h1{color:#1e3a8a}table{width:100%;border-collapse:collapse}th{background:#f8fafc;padding:8px;border:1px solid #e2e8f0;text-align:left}td{padding:8px;border:1px solid #e2e8f0}tr:nth-child(even){background:#f8fafc}.clause{background:#fffbeb;border-left:3px solid #f59e0b;padding:10px;margin-top:6px;font-size:13px}.footer{margin-top:32px;color:#64748b;font-size:12px}</style>
+        </head><body>
+        <h1>📋 รายงานรายการที่ผู้รับเหมารับผิดชอบ</h1>
+        <h2 style="color:#475569;font-weight:400">乙方应承担费用确认报告</h2>
+        <p style="color:#64748b">วันที่ออกรายงาน / 报告日期: ${new Date().toLocaleDateString('th-TH')} | โครงการ / 项目: Mira Villa</p>
+        <hr>
+        ${rows.map((r,i)=>{
+            const ai=r.ai||{};
+            return `<div style="margin-bottom:24px;padding:16px;border:1px solid #e2e8f0;border-radius:8px">
+              <b style="font-size:16px">${i+1}. ${this.esc(g(r,'item_name_th','Item_Name_TH'))} ${g(r,'item_name_cn','Item_Name_CN')?'/ '+this.esc(g(r,'item_name_cn','Item_Name_CN')):''}</b>
+              <div style="color:#64748b;font-size:13px;margin:4px 0">วันที่: ${this.fmtDate(g(r,'_date','purchase_date'))} | Invoice: ${this.esc(g(r,'invoice_no','Invoice_No'))} | ผู้ขาย: ${this.esc(g(r,'supplier_name','Supplier'))}</div>
+              <div style="color:#dc2626;font-size:13px">⚠️ จำนวน/金额: [ไม่แสดง / 未显示]</div>
+              ${ai.contract_clause?`<div class="clause">
+                <b>อ้างอิงสัญญา 合同条款: ${this.esc(ai.contract_clause)}</b>
+                ${ai.clause_text?`<div style="font-style:italic;margin:4px 0">"${this.esc(ai.clause_text)}"</div>`:''}
+                ${ai.explanation_th?`<div style="margin-top:6px">${this.esc(ai.explanation_th)}</div>`:''}
+                ${ai.explanation_cn?`<div style="font-size:12px;color:#475569">${this.esc(ai.explanation_cn)}</div>`:''}
+              </div>`:''}
+            </div>`;
+        }).join('')}
+        <div class="footer">
+          <hr>
+          รายงานนี้จัดทำโดยระบบ AI เพื่อให้ข้อมูลตามสัญญา ไม่ใช่การกล่าวหา<br>
+          本报告由AI系统根据合同条款生成，供双方参考确认，非指责文件。
+        </div>
+        </body></html>`);
+        win.document.close();
+        win.print();
+    },
+
         let html='';
         html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
           <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">ยอดรวม 总采购额</div></div>

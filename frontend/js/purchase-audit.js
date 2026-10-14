@@ -386,14 +386,98 @@ const PurchaseAudit = {
 
     _renderReport(d) {
         const records=d.records||[];
+        // Handle both DB field names (snake_case) and mapped names
+        const get = (r, ...keys) => { for(const k of keys) { if(r[k]!=null && r[k]!=='') return r[k]; } return ''; };
+        const getN = (r, ...keys) => { for(const k of keys) { if(r[k]!=null) return Number(r[k]); } return 0; };
+
         const deductRows=records.filter(r=>r.ai?.flags?.includes('deduct'));
         const dupRows=records.filter(r=>r.ai?.flags?.includes('duplicate'));
         const highRows=records.filter(r=>r.ai?.flags?.includes('price_high'));
-        const totalAmt=records.reduce((s,r)=>s+Number(r.Total_Price||0),0);
-        const deductAmt=deductRows.reduce((s,r)=>s+Number(r.Total_Price||0),0);
+        const totalAmt=records.reduce((s,r)=>s+getN(r,'Total_Price','total_price'),0);
+        const deductAmt=deductRows.reduce((s,r)=>s+getN(r,'Total_Price','total_price'),0);
         const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_Amount||0),0);
         const report=document.getElementById('pa-report');
         if(!report)return;
+
+        let html='';
+
+        // KPIs
+        html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
+          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">ยอดรวม 总采购额</div></div>
+          ${boqTotal>0?`<div class="pa-kpi ${totalAmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totalAmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">ใช้งบ 已用预算</div></div>`:''}
+          <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div></div>
+          <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ ใบซ้ำ 重复单据</div></div>
+          <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 ราคาสูง 价格偏高</div></div>
+        </div>`;
+
+        // Deduct section
+        if (deductRows.length) {
+            html+=`<div class="pa-sec" style="border:2px solid #fde047">
+              <h3 style="color:#92400e;font-size:16px">🚫 รายการที่ผู้รับเหมาควรรับผิดชอบ — ต้องเรียกเก็บคืน<br><small style="font-size:13px;color:#475569">应由建筑方承担、需追回款项 · ฿${this.fmt(deductAmt)}</small></h3>
+              <table class="pa-table"><thead><tr>
+                <th>วันที่ 日期</th><th>Invoice</th><th>ผู้ขาย 供货商</th><th>รายการ 品名</th>
+                <th style="text-align:right">฿</th><th>เหตุผล AI</th>
+              </tr></thead><tbody>
+              ${deductRows.map(r=>`<tr style="background:#fffbeb">
+                <td>${get(r,'Date','purchase_date')}</td>
+                <td style="font-family:monospace;font-size:11px">${this.esc(get(r,'Invoice_No','invoice_no'))}</td>
+                <td>${this.esc(get(r,'Supplier','supplier_name'))}</td>
+                <td>${this.esc(get(r,'Item_Name_TH','item_name_th'))} <span style="color:#94a3b8;font-size:11px">${this.esc(get(r,'Item_Name_CN','item_name_cn'))}</span></td>
+                <td style="text-align:right;font-weight:700;color:#92400e">฿${this.fmt(getN(r,'Total_Price','total_price'))}</td>
+                <td style="font-size:12px;color:#64748b">${this.esc(r.ai?.reason_th||'')} ${r.ai?.reason_cn?'/ '+this.esc(r.ai.reason_cn):''}</td>
+              </tr>`).join('')}
+              <tr style="background:#fef3c7;font-weight:700">
+                <td colspan="4" style="text-align:right">รวมทั้งหมดที่ต้องเรียกคืน 合计应追回</td>
+                <td style="text-align:right;color:#92400e;font-size:16px">฿${this.fmt(deductAmt)}</td>
+                <td></td>
+              </tr></tbody></table>
+            </div>`;
+        }
+
+        if (dupRows.length) {
+            html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ ใบเสร็จซ้ำ 重复单据</h3>
+              <table class="pa-table"><thead><tr><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th><th style="text-align:right">฿</th></tr></thead><tbody>
+              ${dupRows.map(r=>`<tr style="background:#fff5f5"><td style="font-family:monospace;font-size:11px">${this.esc(get(r,'Invoice_No','invoice_no'))}</td>
+                <td>${this.esc(get(r,'Supplier','supplier_name'))}</td>
+                <td>${this.esc(get(r,'Item_Name_TH','item_name_th')||get(r,'Item_Name_CN','item_name_cn'))}</td>
+                <td style="text-align:right;font-weight:700;color:#dc2626">฿${this.fmt(getN(r,'Total_Price','total_price'))}</td></tr>`).join('')}
+              </tbody></table></div>`;
+        }
+
+        // Full table
+        html+=`<div class="pa-sec"><h3>🧾 รายการทั้งหมด + ผล AI / 全部明细 + AI分析</h3>
+          <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
+            <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th>
+            <th style="text-align:right">฿</th><th>BOQ</th><th>ผล AI</th>
+          </tr></thead><tbody>
+          ${records.map(r=>{
+              const f=r.ai?.flags||[];
+              const badges=[
+                f.includes('deduct')?'<span class="pab2 deduct">🚫 หักคืน</span>':'',
+                f.includes('duplicate')?'<span class="pab2 dup">⚠️ ซ้ำ</span>':'',
+                f.includes('price_high')?'<span class="pab2 high">📈 สูง</span>':'',
+                (!f.length||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
+              ].filter(Boolean).join('');
+              const dateStr = get(r,'Date','purchase_date');
+              const total = getN(r,'Total_Price','total_price');
+              return `<tr>
+                <td style="white-space:nowrap;font-size:12px">${typeof dateStr==='object'?String(dateStr).slice(0,10):dateStr}</td>
+                <td style="font-family:monospace;font-size:11px;color:#64748b">${this.esc(get(r,'Invoice_No','invoice_no'))}</td>
+                <td>${this.esc(get(r,'Supplier','supplier_name'))}</td>
+                <td><div>${this.esc(get(r,'Item_Name_TH','item_name_th'))}</div><div style="font-size:11px;color:#94a3b8">${this.esc(get(r,'Item_Name_CN','item_name_cn'))}</div></td>
+                <td style="text-align:right;font-weight:600;color:${total<0?'#10b981':'#1e3a8a'}">฿${this.fmt(total)}</td>
+                <td style="font-size:11px;color:#2563eb">${r.ai?.boq_match?this.esc(r.ai.boq_match)+'<br><span style="color:#94a3b8">'+r.ai.boq_confidence+'%</span>':'—'}</td>
+                <td>${badges}</td>
+              </tr>`;
+          }).join('')}
+          <tr style="background:#f8fafc;font-weight:700">
+            <td colspan="4" style="text-align:right">ยอดรวม 合计</td>
+            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totalAmt)}</td>
+            <td colspan="2"></td>
+          </tr></tbody></table></div></div>`;
+
+        report.innerHTML=html;
+    },
 
         let html='';
 

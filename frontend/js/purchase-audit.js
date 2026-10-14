@@ -292,7 +292,6 @@ const PurchaseAudit = {
         } catch(_) {}
     },
 
-    // ─── AI Analysis ───
     async runAnalysis() {
         if (this.analyzing) return;
         this.analyzing=true;
@@ -307,7 +306,7 @@ const PurchaseAudit = {
         const log=m=>{const el=document.getElementById('pa-ai-log');if(el)el.textContent='🤖 '+m;};
         const setBar=p=>{const el=document.getElementById('pa-ai-bar');if(el)el.style.width=p+'%';};
 
-        try {
+        const doRun = async () => {
             const token=localStorage.getItem('authToken');
             const resp=await fetch(window.location.origin+'/api/projects/'+this.projectId+'/ai-analyze',
                 {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({boq:this.boq})});
@@ -333,16 +332,56 @@ const PurchaseAudit = {
                         const d=JSON.parse(data);
                         if(ev==='status'){log(d.message);setBar(60);}
                         if(ev==='result'){setBar(100);this._renderReport(d);}
-                        if(ev==='error'){log('❌ '+d.message);}
-                    }catch(_){}
+                        if(ev==='error'){
+                            const msg = d.message||'';
+                            if (msg.includes('503') || msg.includes('high demand') || msg.includes('Service Unavailable')) {
+                                throw new Error('__RETRY__:' + msg);
+                            }
+                            log('❌ '+msg);
+                        }
+                    }catch(ex){ if(ex.message.startsWith('__RETRY__')) throw ex; }
                 }
             }
-        }catch(e){
-            if(report)report.innerHTML=`<div style="color:#dc2626;padding:16px">❌ ${e.message}</div>`;
-        }finally{
-            this.analyzing=false;
-            if(btn)btn.disabled=false;
-        }
+        };
+
+        // Auto-retry with countdown
+        let retryCount = 0;
+        const maxRetry = 3;
+        const retry = async () => {
+            try {
+                await doRun();
+            } catch(e) {
+                if ((e.message||'').startsWith('__RETRY__') || (e.message||'').includes('503') || (e.message||'').includes('high demand')) {
+                    if (retryCount < maxRetry) {
+                        retryCount++;
+                        const wait = retryCount * 15; // 15s, 30s, 45s
+                        log(`⏳ AI ยุ่ง รอ ${wait} วินาที... / 模型繁忙，${wait}秒后自动重试 (${retryCount}/${maxRetry})`);
+                        setBar(5);
+                        for (let i=wait; i>0; i--) {
+                            await new Promise(r=>setTimeout(r,1000));
+                            log(`⏳ รอ ${i} วินาที... / 等待 ${i} 秒...`);
+                        }
+                        await retry();
+                    } else {
+                        if (report) report.innerHTML=`<div class="pa-sec" style="background:#fff5f5;border:1.5px solid #fca5a5">
+                            <div style="font-size:16px;font-weight:700;color:#dc2626;margin-bottom:8px">⏰ AI เซิร์ฟเวอร์ยุ่งมาก / AI服务器拥挤</div>
+                            <div style="font-size:13px;color:#475569;margin-bottom:12px">
+                                ลองใหม่ช่วงอื่น เช่น เช้าตรู่หรือกลางคืน · 建议在非高峰时间重试（早晨或深夜泰国时间）
+                            </div>
+                            <button onclick="PurchaseAudit.runAnalysis()" class="sb-btn primary">🔄 ลองใหม่ 重试</button>
+                        </div>`;
+                    }
+                } else {
+                    if (report) report.innerHTML=`<div style="color:#dc2626;padding:16px">❌ ${e.message}</div>`;
+                }
+            } finally {
+                this.analyzing=false;
+                if(btn)btn.disabled=false;
+            }
+        };
+
+        try { await retry(); }
+        catch(e) { this.analyzing=false; if(btn)btn.disabled=false; }
     },
 
     _renderReport(d) {

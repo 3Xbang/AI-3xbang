@@ -96,16 +96,48 @@ const DailyAssign = {
     close() { const p=document.getElementById('da-panel'); if(p) p.remove(); },
 
     async addProcess() {
-        // Load available processes from estimate/gantt
+        const SECTIONS = {
+            A:{zh:'前期准备',th:'งานเตรียมการ'},
+            B:{zh:'地基与基础',th:'งานฐานราก'},
+            C:{zh:'主体结构',th:'งานโครงสร้างหลัก'},
+            D:{zh:'屋面',th:'งานหลังคา'},
+            E:{zh:'机电',th:'งานระบบน้ำ-ไฟ'},
+            F:{zh:'装饰装修',th:'งานตกแต่งภายใน'},
+            G:{zh:'外立面',th:'งานผนังภายนอก'},
+            H:{zh:'室外工程',th:'งานภายนอกอาคาร'},
+            I:{zh:'验收与交付',th:'ตรวจรับและส่งมอบ'}
+        };
+
         const r = await apiRequest('/api/projects/'+this.projectId+'/estimate');
         const tasks = (r.data && r.data.tasks ? r.data.tasks : []).filter(t=>t.status!=='completed');
         if(!tasks.length){ alert('没有可以安排的工序了'); return; }
 
-        const opts = tasks.slice(0,80).map(t=>`<label class="da-opt-row"><input type="checkbox" value="${t.execId}" data-name="${this.esc(t.name+(t.floor!=null?' · '+t.floor+'层':''))}"> ${this.esc(t.name+(t.floor!=null?' · '+t.floor+'层':''))}</label>`).join('');
+        // Group by section (first char of key)
+        const groups = {};
+        tasks.forEach(t => {
+            const sec = t.key.charAt(0).toUpperCase();
+            if(!groups[sec]) groups[sec] = [];
+            groups[sec].push(t);
+        });
+
+        const secOrder = ['A','B','C','D','E','F','G','H','I'];
+        let opts = '';
+        secOrder.forEach(sec => {
+            const items = groups[sec];
+            if(!items || !items.length) return;
+            const s = SECTIONS[sec] || {zh:sec, th:''};
+            opts += `<div class="da-sec-head"><b>${s.th}</b> <small>${s.zh}</small></div>`;
+            items.forEach(t => {
+                const nm = (t.th||'') ? `<b>${t.th}</b> <small style="color:#64748b">${t.name}</small>` : t.name;
+                const floor = t.floor!=null ? ` <span class="da-floor-tag">ชั้น ${t.floor}</span>` : '';
+                opts += `<label class="da-opt-row"><input type="checkbox" value="${t.execId}" data-name="${this.esc(t.name+(t.floor!=null?' · '+t.floor+'层':''))}"> <span class="da-opt-nm">${nm}${floor}</span></label>`;
+            });
+        });
+
         const dlg = document.createElement('div'); dlg.className='sb-overlay';
-        dlg.innerHTML=`<div class="sb-dialog"><header><h3>选择要安排的工序</h3><button data-x>&times;</button></header>
-            <div class="sb-body" style="max-height:60vh;overflow-y:auto">${opts}</div>
-            <footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>确认添加</button></footer></div>`;
+        dlg.innerHTML=`<div class="sb-dialog" style="max-width:560px"><header style="background:#1e3a8a;color:#fff"><h3>📋 เลือกงานที่จะมอบหมาย <small style="opacity:.8;font-size:13px;font-weight:400">选择要安排的工序</small></h3><button data-x style="color:#fff;background:transparent;border:none;font-size:22px;cursor:pointer">&times;</button></header>
+            <div class="sb-body" style="max-height:65vh;overflow-y:auto;padding:0">${opts}</div>
+            <footer><button class="sb-btn" data-cancel>ยกเลิก 取消</button><button class="sb-btn primary" data-ok>✅ ยืนยัน 确认添加</button></footer></div>`;
         document.body.appendChild(dlg);
         dlg.querySelector('[data-x]').onclick=dlg.querySelector('[data-cancel]').onclick=()=>dlg.remove();
         dlg.querySelector('[data-ok]').onclick=async()=>{

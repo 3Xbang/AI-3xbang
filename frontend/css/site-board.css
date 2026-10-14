@@ -257,3 +257,14 @@ details[open] > .td-sum::before { content: '▾'; }
 /* ── Daily-assign 昨日情况条 ── */
 .da-yest { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 14px; font-size: 13px; color: #475569; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .da-yest-chip { background: #fef3c7; color: #92400e; border-radius: 10px; padding: 2px 8px; font-size: 12px; }
+
+/* ── 工序选择弹窗 分组样式 ── */
+.da-sec-head { background: #f1f5f9; padding: 8px 14px; font-size: 13px; color: #1e3a8a; border-top: 1px solid #e2e8f0; margin-top: 2px; position: sticky; top: 0; z-index: 2; }
+.da-sec-head b { font-size: 15px; margin-right: 6px; }
+.da-opt-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.da-opt-row:active { background: #f0f9ff; }
+.da-opt-row input[type=checkbox] { width: 20px; height: 20px; flex: 0 0 20px; cursor: pointer; accent-color: #2563eb; }
+.da-opt-nm { font-size: 14px; flex: 1; }
+.da-opt-nm b { display: block; font-size: 15px; color: #0f172a; }
+.da-opt-nm small { color: #64748b; }
+.da-floor-tag { background: #dbeafe; color: #1e40af; border-radius: 10px; padding: 1px 8px; font-size: 12px; margin-left: 4px; }

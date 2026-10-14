@@ -363,7 +363,17 @@
                 this.legacyRows = null;
                 this.estMap = {};
                 this._assignedTasks=[];
-                try{const _ar=await call('GET','/projects/'+this.projectId+'/daily-assignments?date='+new Date(Date.now()+7*3600000).toISOString().slice(0,10));this._assignedTasks=_ar.data||[];}catch(_){}
+                this._yesterdayTasks=[];
+                try{
+                    const todayBkk = new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+                    const yesterdayBkk = new Date(Date.now()+7*3600000-86400000).toISOString().slice(0,10);
+                    const [ar,yr] = await Promise.all([
+                        call('GET','/projects/'+this.projectId+'/daily-assignments?date='+todayBkk),
+                        call('GET','/projects/'+this.projectId+'/daily-assignments?date='+yesterdayBkk)
+                    ]);
+                    this._assignedTasks=ar.data||[];
+                    this._yesterdayTasks=yr.data||[];
+                }catch(_){}
                 if (r.data.planned) {
                     try { const e = await SiteEstimate.get(this.projectId, true); (e.tasks || []).forEach(x => { this.estMap[x.execId] = x; }); } catch (_) { /* 预计天数失败不影响看板 */ }
                     this.date = r.data.date;
@@ -427,6 +437,55 @@
         },
 
 
+        renderWorkBanner() {
+            const today = this._assignedTasks || [];
+            const yest  = this._yesterdayTasks || [];
+            const pid   = this.projectId;
+            const yDone = yest.filter(t => t.status === 'completed').length;
+            const isExec = PermissionManager.isExecutor();
+
+            if (isExec) {
+                // 执行者：直接显示今天的任务大卡片
+                if (!today.length) return `<div class="wb-banner wb-exec">
+                    <div class="wb-exec-title">👷 <b>งานของคุณวันนี้</b> <small>今天你的工作</small></div>
+                    <div class="wb-exec-empty">หัวหน้ายังไม่ได้มอบหมายงาน<br><small>主管还没有安排今天的工作</small></div>
+                </div>`;
+                return `<div class="wb-banner wb-exec">
+                    <div class="wb-exec-title">👷 <b>งานของคุณวันนี้</b> <small>今天你的工作 (${today.length})</small></div>
+                    ${today.map(t => {
+                        const nm = t.custom_title || t.process_name || '工作';
+                        const floor = t.floor_no != null ? `·${t.floor_no}层` : '';
+                        const isDone = t.status==='completed', isStart = t.status==='in_progress';
+                        return `<div class="wb-exec-task ${isDone?'done':''}">
+                            <div class="wb-exec-nm">${esc(nm+floor)}</div>
+                            <span class="wb-chip ${isDone?'c-done':isStart?'c-go':'c-wait'}">${isDone?'✅ เสร็จ':isStart?'🔄 กำลังทำ':'📋 รอทำ'}</span>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }
+
+            // 主管 / 经理
+            const todayN  = today.length;
+            const urgent  = todayN === 0;
+            const yestLine = yest.length
+                ? `<div class="wb-yest"><span>📊 เมื่อวาน <b style="color:#fff">${yDone}/${yest.length}</b> <small>昨日完成</small></span>
+                   ${yest.filter(t=>t.status!=='completed').map(t=>`<span class="wb-yest-chip">${esc(t.custom_title||t.process_name||'?')}</span>`).join('')}</div>`
+                : '';
+            return `<div class="wb-banner wb-sup ${urgent?'wb-urgent':'wb-ok'}">
+                ${yestLine}
+                <div class="wb-sup-row">
+                    <div class="wb-sup-status">
+                        ${urgent
+                            ? `<b class="wb-alert-txt">⚠️ ยังไม่ได้มอบหมายงานวันนี้</b><br><small>今天还没有工作安排</small>`
+                            : `<b class="wb-ok-txt">✅ มอบหมาย ${todayN} งาน</b><br><small>今天已安排 ${todayN} 项工作</small>`}
+                    </div>
+                    <button class="wb-arrange-btn" onclick="DailyAssign.open(${pid})">
+                        📋<br><b>มอบหมายงาน</b><br><small>工作安排</small>
+                    </button>
+                </div>
+            </div>`;
+        },
+
         renderPlanned() {
             const d = this.data;
             const doing = d.inProgress;
@@ -440,6 +499,9 @@
                     (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">录入团队</button>` : '') + `</div>`;
             }
             d.warnings.forEach(w => { html += `<div class="td-warn">⚠ ${esc(w.zh)}</div>`; });
+
+            // ═══ 角色专属工作安排 banner ═══
+            html += this.renderWorkBanner();
 
             // ═══ 今天到场几个人（顶部简单一行）═══
             if (hasTeam) {

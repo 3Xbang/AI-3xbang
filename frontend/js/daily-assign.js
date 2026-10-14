@@ -36,15 +36,29 @@ const DailyAssign = {
         const rows = this.tasks.map(t => this.taskRow(t)).join('') ||
             '<div class="td-empty" style="padding:16px">还没有安排。点下面的按钮添加。<br>ยังไม่มีงานที่มอบหมาย</div>';
 
+        // 加载昨日情况（异步，渲染后填入）
+        const yesterdayBkk = new Date(Date.now()+7*3600000-86400000).toISOString().slice(0,10);
+        apiRequest('/api/projects/'+this.projectId+'/daily-assignments?date='+yesterdayBkk)
+            .then(r => {
+                const yt = r.data||[], done = yt.filter(t=>t.status==='completed').length;
+                const el = document.getElementById('da-yest-bar');
+                if(!el||!yt.length) return;
+                el.innerHTML = `<div class="da-yest">📊 เมื่อวาน <small>昨日</small>：` +
+                    `<b style="color:${done===yt.length?'#16a34a':'#ea580c'}">${done}/${yt.length} เสร็จ</b>` +
+                    (done<yt.length ? `&nbsp;|&nbsp;ยังค้าง <small>未完成：</small>` + yt.filter(t=>t.status!=='completed').map(t=>`<span class="da-yest-chip">${t.custom_title||t.process_name||'?'}</span>`).join('') : ' ✅ ครบทุกงาน') +
+                    `</div>`;
+            }).catch(()=>{});
+
         panel.innerHTML = `
             <div class="da-header">
                 <div>
-                    <b>📋 安排工作 มอบหมายงาน</b>
+                    <b>📋 มอบหมายงาน</b> <small style="color:#64748b">工作安排</small>
                     <input type="date" id="da-date" value="${this.esc(this.date)}" style="margin-left:10px;padding:4px 8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
                 </div>
                 <button class="sb-btn" onclick="DailyAssign.close()">✕</button>
             </div>
-            <div class="da-sub">为 <b>${this.esc(this.date)}</b> 安排任务，工头今日现场会看到这些内容。</div>
+            <div id="da-yest-bar"></div>
+            <div class="da-sub">为 <b>${this.esc(this.date)}</b> 安排任务，执行者今日现场会看到。</div>
             <div id="da-list">${rows}</div>
             <div class="da-actions">
                 <button class="sb-btn primary" onclick="DailyAssign.addProcess()">+ 选工序 เลือกงาน</button>

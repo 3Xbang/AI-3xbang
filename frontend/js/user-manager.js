@@ -22,18 +22,26 @@ const userManager = {
     },
 
     roleLabel(role) {
-        return { manager:'👔 经理 ผู้จัดการ', purchaser:'📋 主管 ผู้ควบคุมงาน', executor:'👷 执行者 ผู้ปฏิบัติงาน' }[role] || role;
+        return {
+            manager:    '⚙️ 系统管理员 ผู้ดูแลระบบ',
+            owner:      '👑 业主 เจ้าของโครงการ',
+            supervisor: '🏗️ 工地主管 หัวหน้างาน',
+            foreman:    '🪚 工头 โฟร์แมน',
+            purchaser:  '🛒 采购员 เจ้าหน้าที่จัดซื้อ'
+        }[role] || role;
     },
     roleBadgeClass(role) {
-        return { manager:'um-badge-mgr', purchaser:'um-badge-pur', executor:'um-badge-exe' }[role] || '';
+        return { manager:'um-badge-mgr', owner:'um-badge-own', supervisor:'um-badge-sup', foreman:'um-badge-for', purchaser:'um-badge-pur' }[role] || '';
     },
     esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
 
     render() {
         const counts = { total: this.users.length,
-            manager:   this.users.filter(u=>u.role==='manager').length,
-            purchaser: this.users.filter(u=>u.role==='purchaser').length,
-            executor:  this.users.filter(u=>u.role==='executor').length };
+            manager:    this.users.filter(u=>u.role==='manager').length,
+            owner:      this.users.filter(u=>u.role==='owner').length,
+            supervisor: this.users.filter(u=>u.role==='supervisor').length,
+            foreman:    this.users.filter(u=>u.role==='foreman').length,
+            purchaser:  this.users.filter(u=>u.role==='purchaser').length };
 
         const rows = this.users.length ? this.users.map(u => `
             <tr>
@@ -44,7 +52,7 @@ const userManager = {
                 <td class="um-actions">
                     <button class="sb-btn small" onclick="userManager.showAssign(${u.id})">📋 分配项目</button>
                     <button class="sb-btn small" onclick="userManager.showEdit(${u.id})">✏️ 编辑</button>
-                    <button class="sb-btn small warn" onclick="userManager.confirmDelete(${u.id})">🗑️</button>
+                    ${u.role!=='manager' ? `<button class="sb-btn small warn" onclick="userManager.confirmDelete(${u.id})">🗑️</button>` : ''}
                 </td>
             </tr>`).join('')
             : '<tr><td colspan="5" class="td-empty">还没有用户</td></tr>';
@@ -52,9 +60,10 @@ const userManager = {
         document.getElementById('user-mgmt-body').innerHTML = `
             <div class="um-stats">
                 <div class="um-stat"><div class="um-stat-n">${counts.total}</div><div class="um-stat-l">全部用户</div></div>
-                <div class="um-stat"><div class="um-stat-n">${counts.manager}</div><div class="um-stat-l">👔 经理</div></div>
-                <div class="um-stat"><div class="um-stat-n">${counts.purchaser}</div><div class="um-stat-l">📋 主管</div></div>
-                <div class="um-stat"><div class="um-stat-n">${counts.executor}</div><div class="um-stat-l">👷 执行者</div></div>
+                <div class="um-stat"><div class="um-stat-n">${counts.owner}</div><div class="um-stat-l">👑 业主</div></div>
+                <div class="um-stat"><div class="um-stat-n">${counts.supervisor}</div><div class="um-stat-l">🏗️ 工地主管</div></div>
+                <div class="um-stat"><div class="um-stat-n">${counts.foreman}</div><div class="um-stat-l">🪚 工头</div></div>
+                <div class="um-stat"><div class="um-stat-n">${counts.purchaser}</div><div class="um-stat-l">🛒 采购员</div></div>
             </div>
             <div class="um-table-wrap">
                 <table class="um-table">
@@ -73,12 +82,13 @@ const userManager = {
             <div class="sb-field"><label>用户名 *</label><input id="um-username" type="text" placeholder="pakorn" autocomplete="off"></div>
             <div class="sb-field"><label>密码 * (最少6位)</label><input id="um-password" type="password" autocomplete="new-password"></div>
             <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" placeholder="Pakorn K."></div>
-            <div class="sb-field"><label>角色 *</label>
+            <div class="sb-field"><label>บทบาท 角色 *</label>
                 <select id="um-role">
-                    <option value="">— 选择角色 —</option>
-                    <option value="manager">👔 经理 ผู้จัดการ</option>
-                    <option value="purchaser">📋 主管 ผู้ควบคุมงาน</option>
-                    <option value="executor">👷 执行者 ผู้ปฏิบัติงาน</option>
+                    <option value="">— เลือกบทบาท 选择 —</option>
+                    <option value="owner">👑 เจ้าของโครงการ 业主</option>
+                    <option value="supervisor">🏗️ หัวหน้างาน 工地主管</option>
+                    <option value="foreman">🪚 โฟร์แมน 工头</option>
+                    <option value="purchaser">🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
                 </select>
             </div>`,
             '添加', async () => {
@@ -100,11 +110,13 @@ const userManager = {
             <div class="sb-field"><label>用户名</label><input value="${this.esc(u.username)}" disabled style="background:#f1f5f9;color:#94a3b8"></div>
             <div class="sb-field"><label>新密码（不填则不改）</label><input id="um-password" type="password" autocomplete="new-password"></div>
             <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" value="${this.esc(u.full_name||'')}"></div>
-            <div class="sb-field"><label>角色 *</label>
+            <div class="sb-field"><label>บทบาท 角色 *</label>
                 <select id="um-role">
-                    <option value="manager" ${u.role==='manager'?'selected':''}>👔 经理 ผู้จัดการ</option>
-                    <option value="purchaser" ${u.role==='purchaser'?'selected':''}>📋 主管 ผู้ควบคุมงาน</option>
-                    <option value="executor" ${u.role==='executor'?'selected':''}>👷 执行者 ผู้ปฏิบัติงาน</option>
+                    ${u.role==='manager' ? `<option value="manager" selected>⚙️ ผู้ดูแลระบบ 系统管理员</option>` : ''}
+                    <option value="owner" ${u.role==='owner'?'selected':''}>👑 เจ้าของโครงการ 业主</option>
+                    <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🏗️ หัวหน้างาน 工地主管</option>
+                    <option value="foreman" ${u.role==='foreman'?'selected':''}>🪚 โฟร์แมน 工头</option>
+                    <option value="purchaser" ${u.role==='purchaser'?'selected':''}>🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
                 </select>
             </div>`,
             '保存', async () => {

@@ -53,11 +53,11 @@ const ProjectDetail = {
     tabs() {
         const list = [];
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'เตรียมโครงการ', warn: true });
-        list.push({ v: 'site', icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
-        list.push({ v: 'processes', icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
-        list.push({ v: 'materials', icon: '🧱', zh: '材料设备', th: 'วัสดุและอุปกรณ์' });
-        list.push({ v: 'photos', icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
-        list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
+        if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
+        if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
+        if (PermissionManager.canViewMaterials())  list.push({ v: 'materials',icon: '🧱', zh: '材料设备', th: 'วัสดุและอุปกรณ์' });
+        if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
+        if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
         return list;
     },
 
@@ -102,6 +102,10 @@ const ProjectDetail = {
     // 显示子视图
     async showSubView(viewName) {
         if (viewName === 'prepare' && !PermissionManager.canManageProjects()) viewName = 'site';
+        // 采购员 landing: go to materials
+        if (viewName === 'site' && PermissionManager.isPurchaser()) viewName = 'materials';
+        // 业主 landing: go to overview
+        if (viewName === 'site' && PermissionManager.isOwner()) viewName = 'overview';
         this.currentView = viewName;
 
         document.querySelectorAll('.project-nav .nav-item').forEach(item => {

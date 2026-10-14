@@ -3,28 +3,27 @@ const pool = require('./config/db');
 
 // 角色权限矩阵 - 简化版，使用单一权限名称
 const PERMISSIONS = {
+    // 系统管理员 — 全权，唯一能管系统的角色
     manager: [
-        'view_all_projects',
-        'create_project',
-        'update_project',
-        'delete_project',
-        'manage_projects',
-        'purchase_material',
-        'assign_task',
-        'manage_users',
-        'view_all_data'
+        'view_all_projects', 'create_project', 'update_project', 'delete_project',
+        'manage_projects', 'purchase_material', 'assign_task', 'manage_users', 'view_all_data'
     ],
+    // 业主 — 只读，看进度/照片/总览
+    owner: [
+        'view_assigned_projects', 'view_all_data'
+    ],
+    // 工地主管 — 安排工作、采购、全项目数据
+    supervisor: [
+        'view_assigned_projects', 'manage_projects', 'purchase_material',
+        'assign_task', 'update_progress', 'view_all_data'
+    ],
+    // 工头 — 执行任务、更新进度、上传照片、点名
+    foreman: [
+        'view_assigned_projects', 'update_progress'
+    ],
+    // 采购员 — 只管材料采购
     purchaser: [
-        'view_assigned_projects',
-        'manage_projects',      // 可以查看所有项目数据（甘特图、工序、准备度等）
-        'purchase_material',
-        'assign_task',
-        'update_progress',
-        'view_all_data'
-    ],
-    executor: [
-        'view_assigned_projects',
-        'update_progress'
+        'view_assigned_projects', 'purchase_material', 'view_all_data'
     ]
 };
 

@@ -73,3 +73,10 @@
     gap: 6px;
     flex-wrap: wrap;
 }
+
+/* New role badges */
+.um-badge-own { background: #fef9c3; color: #854d0e; }   /* 业主 gold */
+.um-badge-sup { background: #dbeafe; color: #1e40af; }   /* 工地主管 blue */
+.um-badge-for { background: #dcfce7; color: #166534; }   /* 工头 green */
+.um-badge-pur { background: #fce7f3; color: #9d174d; }   /* 采购员 pink */
+.um-badge-mgr { background: #f1f5f9; color: #475569; }   /* 系统管理员 gray */

@@ -1,182 +1,122 @@
-// 权限管理模块
+// permissions.js — 5角色权限系统
+// manager(系统管理员), owner(业主), supervisor(工地主管), foreman(工头), purchaser(采购员)
+
 const PermissionManager = {
-    // 获取当前用户角色
+
     getCurrentUserRole() {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return user.role || null;
+        return (JSON.parse(localStorage.getItem('user') || '{}')).role || null;
     },
 
-    // 获取当前用户信息
     getCurrentUser() {
         return JSON.parse(localStorage.getItem('user') || '{}');
     },
 
-    // 检查是否是管理者
-    isManager() {
-        return this.getCurrentUserRole() === 'manager';
-    },
+    role() { return this.getCurrentUserRole(); },
 
-    // 检查是否是主管（旧称采购者）
-    isPurchaser() {
-        return this.getCurrentUserRole() === 'purchaser';
-    },
+    // ── 角色判断 ──
+    isManager()    { return this.role() === 'manager'; },
+    isOwner()      { return this.role() === 'owner'; },
+    isSupervisor() { return this.role() === 'supervisor'; },
+    isForeman()    { return this.role() === 'foreman'; },
+    isPurchaser()  { return this.role() === 'purchaser'; },
 
-    // 检查是否是执行者
-    isExecutor() {
-        return this.getCurrentUserRole() === 'executor';
-    },
+    // 兼容旧调用（原 isPurchaser 是 supervisor）
+    isExecutor()   { return this.isForeman(); },
 
-    // 检查是否可以管理用户 (仅管理者)
-    canManageUsers() {
-        return this.isManager();
-    },
+    // ── 权限判断 ──
 
-    // 检查是否可以管理项目 (仅管理者) — 写操作：创建/删除/改结构
-    canManageProjects() {
-        return this.isManager();
-    },
+    // 只有系统管理员可以管系统
+    canManageUsers()          { return this.isManager(); },
+    canManageProjects()       { return this.isManager(); },        // 创建/删除项目、生成计划
+    canManageProjectMembers() { return this.isManager(); },
 
-    // 检查是否可以查看项目完整内容 (管理者 + 采购者)
+    // 可以看项目完整内容（manager + owner + supervisor + purchaser）
     canViewProjectData() {
-        return this.isManager() || this.isPurchaser();
+        return ['manager','owner','supervisor','purchaser'].includes(this.role());
     },
 
-    // 检查是否可以管理项目成员 (仅管理者)
-    canManageProjectMembers() {
-        return this.isManager();
-    },
-
-    // 检查是否可以采购材料 (管理者或采购者)
-    canPurchaseMaterials() {
-        return this.isManager() || this.isPurchaser();
-    },
-
-    // 检查是否可以分配任务 (管理者或采购者)
+    // 可以分配工作（manager + supervisor）
     canAssignTasks() {
-        return this.isManager() || this.isPurchaser();
+        return this.isManager() || this.isSupervisor();
     },
 
-    // 检查是否可以查看所有项目 (管理者或采购者)
-    canViewAllProjects() {
-        return this.isManager() || this.isPurchaser();
+    // 可以采购材料（manager + supervisor + purchaser）
+    canPurchaseMaterials() {
+        return ['manager','supervisor','purchaser'].includes(this.role());
     },
 
-    // 检查是否只能查看分配的项目 (执行者)
-    canOnlyViewAssignedProjects() {
-        return this.isExecutor();
-    },
-
-    // 检查是否可以更新工序进度 (所有角色)
-    canUpdateProcessProgress() {
-        return true; // 所有角色都可以更新进度
-    },
-
-    // 检查是否可以上传照片 (所有角色)
+    // 可以上传照片（所有除 owner）
     canUploadPhotos() {
-        return true; // 所有角色都可以上传照片
+        return !this.isOwner();
     },
 
-    // 显示或隐藏元素基于权限
-    toggleElementByPermission(elementId, hasPermission) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.style.display = hasPermission ? '' : 'none';
-        }
+    // 可以更新工序进度（manager + supervisor + foreman）
+    canUpdateProcessProgress() {
+        return ['manager','supervisor','foreman'].includes(this.role());
     },
 
-    // 显示或隐藏多个元素基于权限
-    toggleElementsByPermission(selector, hasPermission) {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(element => {
-            element.style.display = hasPermission ? '' : 'none';
-        });
+    // 可以看甘特图/进度计划
+    canViewGantt() {
+        return ['manager','owner','supervisor','purchaser'].includes(this.role());
     },
 
-    // 禁用或启用元素基于权限
-    disableElementByPermission(elementId, hasPermission) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.disabled = !hasPermission;
-            if (!hasPermission) {
-                element.style.opacity = '0.5';
-                element.style.cursor = 'not-allowed';
-            }
-        }
+    // 可以看今日现场
+    canViewSite() {
+        return ['manager','owner','supervisor','foreman'].includes(this.role());
     },
 
-    // 显示权限拒绝消息
-    showPermissionDenied(message) {
-        const defaultMessage = t ? t('common.permissionDenied') : (
-            currentLang === 'zh' 
-                ? '抱歉，您没有权限执行此操作' 
-                : 'ขออภัย คุณไม่มีสิทธิ์ในการดำเนินการนี้'
-        );
-        
-        if (typeof app !== 'undefined' && app.showToast) {
-            app.showToast(message || defaultMessage, 'error');
-        } else {
-            alert(message || defaultMessage);
-        }
+    // 可以看材料设备
+    canViewMaterials() {
+        return ['manager','supervisor','purchaser'].includes(this.role());
     },
 
-    // 为按钮添加权限检查
-    addPermissionCheckToButton(buttonElement, hasPermission, deniedMessage) {
-        if (!buttonElement) return;
-
-        if (!hasPermission) {
-            buttonElement.style.display = 'none';
-            // 或者禁用按钮并添加提示
-            // buttonElement.disabled = true;
-            // buttonElement.title = deniedMessage || '无权限';
-            // buttonElement.style.opacity = '0.5';
-            // buttonElement.style.cursor = 'not-allowed';
-        }
+    // 可以看总览/报告
+    canViewOverview() {
+        return ['manager','owner','supervisor'].includes(this.role());
     },
 
-    // 初始化页面权限
-    initializePagePermissions() {
-        const role = this.getCurrentUserRole();
-        
-        // 用户管理菜单 - 仅管理者可见
-        this.toggleElementByPermission('nav-users', this.canManageUsers());
-        
-        // 采购材料按钮 - 管理者和采购者可见
-        this.toggleElementByPermission('btn-purchase-material', this.canPurchaseMaterials());
-        
-        // 新建项目按钮 - 仅管理者可见
-        const addProjectButtons = document.querySelectorAll('[onclick*="showProjectForm"]');
-        addProjectButtons.forEach(btn => {
-            btn.style.display = this.canManageProjects() ? '' : 'none';
-        });
+    // 旧兼容
+    canViewAllProjects()        { return this.isManager(); },
+    canOnlyViewAssignedProjects(){ return !this.isManager(); },
 
-        // 根据角色显示欢迎信息
-        console.log(`Permission Manager initialized for role: ${role}`);
-    },
-
-    // 获取角色显示名称（双语）
+    // ── 显示名称 ──
     getRoleDisplayName(role) {
-        const roleNames = {
-            manager: '管理者 ผู้จัดการ',
-            purchaser: '主管 ผู้ควบคุมงาน',
-            executor: '执行者 ผู้ปฏิบัติงาน'
-        };
-
-        return roleNames[role] || role;
+        return {
+            manager:    '系统管理员 ผู้ดูแลระบบ',
+            owner:      '业主 เจ้าของโครงการ',
+            supervisor: '工地主管 หัวหน้างาน',
+            foreman:    '工头 โฟร์แมน',
+            purchaser:  '采购员 เจ้าหน้าที่จัดซื้อ'
+        }[role] || role;
     },
 
-    // 检查并执行需要权限的操作
-    checkAndExecute(hasPermission, callback, deniedMessage) {
-        if (hasPermission) {
-            if (typeof callback === 'function') {
-                callback();
-            }
-        } else {
-            this.showPermissionDenied(deniedMessage);
-        }
+    getRoleBadgeIcon(role) {
+        return { manager:'⚙️', owner:'👑', supervisor:'🏗️', foreman:'🪚', purchaser:'🛒' }[role] || '👤';
+    },
+
+    // ── 初始化页面权限 ──
+    initializePagePermissions() {
+        const btn = document.getElementById('btn-user-mgmt');
+        if (btn) btn.style.display = this.canManageUsers() ? '' : 'none';
+        console.log('Role:', this.role());
+    },
+
+    // ── 工具方法 ──
+    toggleElementByPermission(id, ok) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = ok ? '' : 'none';
+    },
+    toggleElementsByPermission(sel, ok) {
+        document.querySelectorAll(sel).forEach(el => { el.style.display = ok ? '' : 'none'; });
+    },
+    showPermissionDenied(msg) {
+        const def = 'ไม่มีสิทธิ์ / 无权限执行此操作';
+        if (typeof app !== 'undefined' && app.showToast) app.showToast(msg || def, 'error');
+        else alert(msg || def);
+    },
+    addPermissionCheckToButton(btn, ok) {
+        if (btn && !ok) btn.style.display = 'none';
     }
 };
 
-// 在页面加载时初始化权限
-if (typeof window !== 'undefined') {
-    window.PermissionManager = PermissionManager;
-}
+window.PermissionManager = PermissionManager;

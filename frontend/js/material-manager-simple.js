@@ -85,8 +85,11 @@ const MaterialManager = {
     async renderReceipts(box) {
         box.innerHTML = '<div style="padding:16px;text-align:center;color:#64748b">กำลังโหลด... 加载中</div>';
         try {
-            // Sort ASC by date so we see chronological order
-            const r = await apiRequest('/api/purchase-records?limit=300&project_id=' + this.currentProjectId);
+            // If projectId is null, load all records across projects
+            const url = this.currentProjectId
+                ? '/api/purchase-records?limit=300&project_id=' + this.currentProjectId
+                : '/api/purchase-records?limit=500';
+            const r = await apiRequest(url);
             const rows = (r.data || []).sort((a,b)=>(a.purchase_date||'').localeCompare(b.purchase_date||''));
             if (!rows.length) {
                 box.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8">
@@ -215,7 +218,7 @@ const MaterialManager = {
             if (typeof app !== 'undefined') app.showLoading();
             const fd = new FormData();
             fd.append('csv', file);
-            fd.append('project_id', this.currentProjectId);
+            if (this.currentProjectId) fd.append('project_id', this.currentProjectId);
             const r = await fetch(window.location.origin + '/api/purchase-records/import-csv', {
                 method: 'POST',
                 headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') },

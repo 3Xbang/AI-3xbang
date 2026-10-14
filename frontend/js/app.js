@@ -77,6 +77,13 @@ const app = {
         const btnUserMgmt = document.getElementById('btn-user-mgmt');
         if (btnUserMgmt) btnUserMgmt.style.display = PermissionManager.canManageUsers() ? '' : 'none';
 
+        // 材料设备 + 采购分析 — 主管/采购员/管理员可见
+        const canSeeMaterials = ['manager','supervisor','purchaser'].includes(user.role);
+        const btnMat = document.getElementById('btn-materials');
+        if (btnMat) btnMat.style.display = canSeeMaterials ? '' : 'none';
+        const btnPur = document.getElementById('btn-purchase');
+        if (btnPur) btnPur.style.display = canSeeMaterials ? '' : 'none';
+
         // 初始化页面权限
         PermissionManager.initializePagePermissions();
     },
@@ -127,6 +134,15 @@ const app = {
                     userManager.init();
                 }
                 break;
+            case 'materials-global':
+                // 全局材料设备视图（跨项目）
+                const mgc = document.getElementById('materials-global-container');
+                if (mgc) { mgc.innerHTML = '<div id="materials-container"></div>'; }
+                MaterialManager.init(null);  // null = show all projects
+                break;
+            case 'purchase-global':
+                // 全局采购分析视图
+                if (typeof PurchaseAudit !== 'undefined') PurchaseAudit.init(null);
         }
     },
 

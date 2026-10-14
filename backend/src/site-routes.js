@@ -914,12 +914,21 @@ router.post('/purchase-records/import-csv', authenticate, requirePermission('pur
       if (ir.rowCount === 1) itemNew++;
     }
 
-    // Parse date (dd/mm/yyyy or yyyy-mm-dd)
+    // Parse date — handles ranges like "19-28/06/2026", "01-09/07/2026", "13/06/2026"
     let dateStr = null;
     if (purchaseDate) {
-      const dm = purchaseDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-      if (dm) dateStr = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`;
-      else dateStr = purchaseDate.slice(0,10);
+      // Extract first date from ranges like "19-28/06/2026" → "19/06/2026"
+      const cleaned = purchaseDate.trim().split(/\s/)[0]; // ignore trailing spaces/text
+      // Match: dd/mm/yyyy, dd-mm-yyyy, or range start "dd-dd/mm/yyyy" → take first part
+      const rangeM = cleaned.match(/^(\d{1,2})[-\/]\d{0,2}[\/\-](\d{1,2})[\/\-](\d{4})/);
+      const simpleM = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (rangeM) {
+        dateStr = `${rangeM[3]}-${rangeM[2].padStart(2,'0')}-${rangeM[1].padStart(2,'0')}`;
+      } else if (simpleM) {
+        dateStr = `${simpleM[3]}-${simpleM[2].padStart(2,'0')}-${simpleM[1].padStart(2,'0')}`;
+      } else if (/^\d{4}-\d{2}-\d{2}/.test(cleaned)) {
+        dateStr = cleaned.slice(0,10);
+      }
     }
 
     await pool.query(

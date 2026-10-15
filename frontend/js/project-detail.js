@@ -122,9 +122,33 @@ const ProjectDetail = {
                 break;
             case 'site':
                 container.innerHTML = '<div id="site-board-container"></div>';
-                // Plan A: Foreman/patrol get Daily Report; Managers/Supervisors get full Site Board
-                if (!PermissionManager.isManager() && !PermissionManager.isOwner() && !PermissionManager.isSupervisor()) {
-                    if (typeof DailyReport !== 'undefined') { await DailyReport.init(this.projectId); break; }
+                // Plan A: role-based view with manager toggle
+                const useDailyReport = !PermissionManager.isManager() && !PermissionManager.isOwner() && !PermissionManager.isSupervisor();
+                const forceDaily = localStorage.getItem('force_daily_report') === '1';
+                if ((useDailyReport || forceDaily) && typeof DailyReport !== 'undefined') {
+                    await DailyReport.init(this.projectId);
+                    // Add toggle button for managers to switch views
+                    if (PermissionManager.isManager() || PermissionManager.isSupervisor()) {
+                        const tog = document.createElement('button');
+                        tog.textContent = '🔄 Switch to Site Board View';
+                        tog.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+                        tog.onclick = () => { localStorage.removeItem('force_daily_report'); ProjectDetail.showSubView('site'); };
+                        document.body.appendChild(tog);
+                    }
+                    break;
+                }
+                if (PermissionManager.isManager() || PermissionManager.isSupervisor()) {
+                    // Add preview button for managers
+                    setTimeout(() => {
+                        if (!document.getElementById('daily-preview-btn')) {
+                            const btn = document.createElement('button');
+                            btn.id = 'daily-preview-btn';
+                            btn.textContent = '📋 Preview Daily Report Form';
+                            btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+                            btn.onclick = () => { localStorage.setItem('force_daily_report','1'); ProjectDetail.showSubView('site'); };
+                            document.body.appendChild(btn);
+                        }
+                    }, 500);
                 }
                 await SiteBoard.init(this.projectId);
                 break;

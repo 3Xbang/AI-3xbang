@@ -135,7 +135,7 @@ async function applyPlan(client, projectId, answers, opts) {
       continue;
     }
     const nameZh = t.zh + (t.floor != null ? ` · ${t.floor}层` : '');
-    const nameTh = t.th ? t.th + (t.floor != null ? ` · ชั้น ${t.floor}` : '') : '';
+    const nameTh = t.th ? t.th + (t.floor != null ? ` · Floor ${t.floor}` : '') : '';
     const n = await client.query(
       `INSERT INTO process_nodes (project_id, process_code, process_name, sequence_number, master_code, floor_no)
        VALUES ($1, $2, $3::jsonb, $4, $5, $6) RETURNING id`,

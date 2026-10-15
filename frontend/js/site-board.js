@@ -11,7 +11,7 @@
     const busy = on => { if (hasApp()) { on ? app.showLoading() : app.hideLoading(); } };
     const isManager = () => window.PermissionManager && PermissionManager.canManageProjects();
     const pctOf = x => Math.round((x.progress || 0) * 100);
-    const nm = x => esc(x.name ? getI18nField({ process_name: x.name }, 'process_name') : x.label);
+    const nm = x => esc(x.name ? (x.th ? x.name + ' ' + x.th : x.name) : (x.label || ''));
 
     let TRADES = {
         mach: { zh: '机械', th: 'Machinery' }, scaffold: { zh: '架子工', th: 'Scaffolding' }, rebar: { zh: '钢筋工', th: 'Rebar Work' },

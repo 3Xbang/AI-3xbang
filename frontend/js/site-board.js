@@ -413,7 +413,7 @@
                 `<a href="#" data-menu="refresh">🔄 刷新 Refresh</a></div></details>`;
             return `<div class="td-head"><div><h2 class="td-title">今日现场 <small class="td-th">Today's Site</small></h2>` +
                 `<div class="td-date"><input type="date" id="td-date" value="${esc(this.date || '')}">` +
-                (d && d.planned ? `<span class="td-sub">第 ${d.workingDay} 个工作日（周日休息）</span>` : '') + `</div></div>${menu}</div>`;
+                (d && d.planned ? `<span class="td-sub">第 ${d.workingDay} 个工作日 / Working Day ${d.workingDay} (Sun closed)</span>` : '') + `</div></div>${menu}</div>`;
         },
 
         render() {
@@ -478,7 +478,7 @@
             const urgent  = todayN === 0;
             const yestLine = yest.length
                 ? `<div class="wb-yest"><span>📊 Yesterday <b style="color:#fff">${yDone}/${yest.length}</b> <small>昨日完成</small></span>
-                   ${yest.filter(t=>t.status!=='completed').map(t=>`<span class="wb-yest-chip">${esc(t.custom_title||t.process_name||'?')}</span>`).join('')}</div>`
+                   ${yest.filter(t=>t.status!=='completed').map(t=>`<span class="wb-yest-chip">${esc(t.custom_title||getI18nField(t,'process_name')||'?')}</span>`).join('')}</div>`
                 : '';
             return `<div class="wb-banner wb-sup ${urgent?'wb-urgent':'wb-ok'}">
                 ${yestLine}
@@ -515,13 +515,13 @@
             // ═══ 今天到场几个人（顶部简单一行）═══
             if (hasTeam) {
                 const absent = new Set(d.absent);
-                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} tasksIn Progress · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} Present</span></div>`;
+                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日 / Working Day ${d.workingDay}</span><span class="fc-stat">${doing.length} tasks In Progress · ${readyN > 0 ? readyN + ' Can Start ·' : ''} ${here}/${d.team.length} Present</span></div>`;
             }
 
             // ═══ 第 1 步：点名 ═══
             html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b class="fc-th-label">Attendance</b><small class="fc-zh-sub">点名</small></div>`;
             if (!hasTeam) {
-                html += `<div class="fc-empty">先录入团队再点名</div>`;
+                html += `<div class="fc-empty">先录入团队再点名 / Enter team first</div>`;
             } else {
                 const absent = new Set(d.absent);
                 html += `<div class="fc-att-grid">` +
@@ -530,7 +530,7 @@
                         return `<button class="fc-att ${isAbsent ? 'absent' : (m.level === 'skilled' ? 'skilled' : 'helper')}" data-att="${m.id}">
                             <span class="fc-att-icon">${isAbsent ? '❌' : '✅'}</span>
                             <span class="fc-att-name">${esc(m.name)}</span>
-                            <span class="fc-att-status">${isAbsent ? '没来' : '到了'}</span>
+                            <span class="fc-att-status">${isAbsent ? '没来 Absent' : '到了 Present'}</span>
                         </button>`;
                     }).join('') + `</div>`;
             }
@@ -541,7 +541,7 @@
             if (doing.length) {
                 html += doing.map(x => this.cardDoing(x, true)).join('');
             } else {
-                html += `<div class="fc-empty">现在没有进行中的任务</div>`;
+                html += `<div class="fc-empty">现在没有进行中的任务 / No tasks in progress</div>`;
             }
             html += `</div>`;
 
@@ -568,7 +568,7 @@
             const rest = d.blocked.filter(b => !nearSet.has(b.key));
             if (rest.length) {
                 const groups = {};
-                rest.forEach(x => { const k = x.floor != null ? x.floor + '层' : '整栋'; (groups[k] = groups[k] || []).push(x); });
+                rest.forEach(x => { const k = x.floor != null ? 'Floor ' + x.floor : 'Whole Building'; (groups[k] = groups[k] || []).push(x); });
                 const names = Object.keys(groups).sort((a, b) => (parseInt(a) || 999) - (parseInt(b) || 999));
                 html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">…</span><b>其他在等待 Waiting Tasks</b><span class="fc-badge gray">${rest.length}</span></summary>` +
                     names.map(n => `<details class="td-grp" style="margin:4px 0"><summary style="padding:6px 0;cursor:pointer;font-weight:600">${esc(n)} (${groups[n].length})</summary>${groups[n].map(x => this.rowWaiting(x)).join('')}</details>`).join('') +
@@ -577,7 +577,7 @@
 
             if (d.idle.length) {
                 html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">👥</span><b>空闲的人 Available Workers</b><span class="fc-badge gray">${d.idle.length}</span></summary>` +
-                    d.idle.map(i => `<div class="td-row"><span class="td-chip free">${esc(i.name)}</span><span class="td-sub">${i.canBorrowTo.length ? '可去：' + i.canBorrowTo.map(esc).join('、') : '暂时没有合适的任务'}</span></div>`).join('') +
+                    d.idle.map(i => `<div class="td-row"><span class="td-chip free">${esc(i.name)}</span><span class="td-sub">${i.canBorrowTo.length ? 'Can go to: ' + i.canBorrowTo.map(esc).join(', ') : 'No suitable task at the moment'}</span></div>`).join('') +
                     `</details></div>`;
             }
             return html;
@@ -648,12 +648,12 @@
                     <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
                 </div>
                 ${estLine ? `<div class="fc-card-meta">${estLine}</div>` : ''}
-                ${sugPeople ? `<div class="fc-sug">💡 建议派：${sugPeople}</div>` : ''}
+                ${sugPeople ? `<div class="fc-sug">💡 Suggested: ${sugPeople}</div>` : ''}
                 ${sug && planned
                     ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ Start as Suggested</button>
                        <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">Start Work</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
                     : `<button class="fc-main-btn start" data-start="${x.execId}">▶ Start Work</button>
-                       ${planned ? `<div class="fc-secondary"><button class="fc-sec-btn" data-pick="${x.execId}">👷 选人再开工</button></div>` : ''}`
+                       ${planned ? `<div class="fc-secondary"><button class="fc-sec-btn" data-pick="${x.execId}">👷 Select & Start</button></div>` : ''}`
                 }
             </div>`;
         },

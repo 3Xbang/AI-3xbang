@@ -949,20 +949,14 @@ router.post('/purchase-records/import-csv', authenticate, requirePermission('pur
       }
     }
 
-    // Skip duplicates: same date + invoice + item → definitely duplicate
-    const exists = await pool.query(
-      `SELECT 1 FROM purchase_records WHERE project_id=$1 AND invoice_no=$2 AND item_name_cn=$3 AND (purchase_date=$4::date OR ($4 IS NULL AND purchase_date IS NULL)) LIMIT 1`,
-      [req.body.project_id||null, invoiceNo||null, nameCN, dateStr]);
-    if (exists.rows.length === 0) {
-      await pool.query(
+    // No dedup filter — all real purchase data gets imported as-is; AI analysis flags anomalies later
+    await pool.query(
         `INSERT INTO purchase_records (purchase_date, invoice_no, supplier_id, supplier_name, item_id, item_name_cn, item_name_th, item_category, qty, unit, unit_price, total_price, project_id, imported_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
         [dateStr, invoiceNo||null, suppCache[supplierName], supplierName, itemCache[itemKey], nameCN, nameTH||null, category||null, qty, unit, unitPrice, totalPrice, req.body.project_id||null, req.user.id]);
-      imported++;
-      await refreshPriceBenchmark(nameCN, unit);
-    }
+    imported++;
+    await refreshPriceBenchmark(nameCN, unit);
   }
-
   res.json({ success: true, data: { imported, suppliers_created: suppNew, items_created: itemNew } });
 }));
 

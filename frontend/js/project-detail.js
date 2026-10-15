@@ -282,7 +282,7 @@ const ProjectDetail = {
             const stuck = procs.filter(p => p.status === 'waiting_material' || p.status === 'weather_stop');
             if (stuck.length) {
                 sections.push(`<h4>停工中的工序（${stuck.length}）</h4><ul class="sb-list">` + stuck.map(p =>
-                    `<li>${esc(nameOf(p))} — ${p.status === 'waiting_material' ? '🟡 缺材料' : '⛅ 天气停工'}</li>`).join('') + '</ul>');
+                    `<li>${esc(nameOf(p))} — ${p.status === 'waiting_material' ? '🟡 缺材料 Missing Materials' : '⛅ 天气停工 Weather Stop'}</li>`).join('') + '</ul>');
             }
             const ovs = ovRes && ovRes.success ? ovRes.data : [];
             if (ovs.length) {
@@ -359,7 +359,7 @@ const ProjectDetail = {
             d.className = 'td-grp';
             if (active || (!openedOne && done < items.length)) { d.open = true; openedOne = true; }
             const s = document.createElement('summary');
-            s.innerHTML = `${k === 0 ? '整栋 / 基础 / 室外' : k + ' 层'} <span class="td-count">${done}/${items.length} 完成</span>`;
+            s.innerHTML = `${k === 0 ? '整栋 / Whole Building' : k + ' 层 / Floor ' + k} <span class="td-count">${done}/${items.length} 完成 Done</span>`;
             const g = document.createElement('div');
             g.className = 'processes-grid';
             items.forEach(x => g.appendChild(x.card));

@@ -109,25 +109,25 @@
     // ================= 团队名册 =================
     // 泰国现场不分细工种，只分这 7 大类（对应后端 COARSE）
     const COARSE = [
-        { k: 'rebar', d: '钢筋绑扎' },
-        { k: 'carpenter', d: '模板、橱柜、木地板' },
-        { k: 'scaffold', d: '脚手架' },
-        { k: 'concrete', d: '混凝土浇筑' },
-        { k: 'mason', d: '砌墙、抹灰、找平' },
-        { k: 'tiler', d: '墙砖、地砖、石材' },
-        { k: 'waterproof', d: '防水' },
-        { k: 'plumber', d: '给排水、洁具' },
-        { k: 'electrician', d: '强弱电、灯具开关' },
-        { k: 'painter', d: '腻子、刷漆' },
-        { k: 'ceiling', d: '龙骨、石膏板吊顶' },
-        { k: 'installer', d: '室内门、楼梯栏杆' },
-        { k: 'aluminum', d: '铝合金门窗、玻璃' },
-        { k: 'aircon', d: '空调安装' },
-        { k: 'welder', d: '屋架、钢结构、栏杆' },
-        { k: 'roof', d: '铁皮、瓦屋面' },
-        { k: 'mach', d: '挖机、吊车' },
-        { k: 'pool', d: '泳池' },
-        { k: 'landscape', d: '园林景观' }
+        { k: 'rebar', d: '钢筋绑扎 Rebar' },
+        { k: 'carpenter', d: '模板/木工 Carpenter' },
+        { k: 'scaffold', d: '脚手架 Scaffold' },
+        { k: 'concrete', d: '混凝土浇筑 Concrete' },
+        { k: 'mason', d: '砌墙/抹灰 Mason' },
+        { k: 'tiler', d: '贴砖 Tiler' },
+        { k: 'waterproof', d: '防水 Waterproof' },
+        { k: 'plumber', d: '水管/洁具 Plumber' },
+        { k: 'electrician', d: '强弱电 Electrician' },
+        { k: 'painter', d: '腻子/刷漆 Painter' },
+        { k: 'ceiling', d: '吊顶 Ceiling' },
+        { k: 'installer', d: '室内安装 Installer' },
+        { k: 'aluminum', d: '铝合金/玻璃 Aluminum' },
+        { k: 'aircon', d: '空调安装 Aircon' },
+        { k: 'welder', d: '钢结构/焊接 Welder' },
+        { k: 'roof', d: '屋面 Roofing' },
+        { k: 'mach', d: '挖机/吊车 Machinery' },
+        { k: 'pool', d: '泳池 Pool' },
+        { k: 'landscape', d: '园林景观 Landscape' }
     ].map(x => Object.assign({ zh: TRADES[x.k].zh, th: TRADES[x.k].th }, x));
     const coarseName = k => (TRADES[k] ? `${TRADES[k].zh} ${TRADES[k].th}` : k);
 
@@ -629,11 +629,11 @@
                 ` : ''}
 
                 <div class="fc-more-row">
-                    ${planned ? `<button class="fc-more-btn" data-pick="${x.execId}">👷 派人</button>` : ''}
-                    <button class="fc-more-btn" data-qty="${x.execId}">📐 工程量</button>
-                    <button class="fc-more-btn" data-hist="${x.execId}">📊 历史</button>
-                    <button class="fc-more-btn" data-subtasks="${x.execId}">📑 子任务</button>
-                    <button class="fc-more-btn" data-reset="${x.execId}" style="color:#dc2626">🔄 重置</button>
+                    ${planned ? `<button class="fc-more-btn" data-pick="${x.execId}">👷 派人 Assign</button>` : ''}
+                    <button class="fc-more-btn" data-qty="${x.execId}">📐 工程量 Qty</button>
+                    <button class="fc-more-btn" data-hist="${x.execId}">📊 历史 History</button>
+                    <button class="fc-more-btn" data-subtasks="${x.execId}">📑 子任务 Subtasks</button>
+                    <button class="fc-more-btn" data-reset="${x.execId}" style="color:#dc2626">🔄 重置 Reset</button>
                 </div>
             </div>`;
         },

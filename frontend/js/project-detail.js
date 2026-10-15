@@ -122,6 +122,10 @@ const ProjectDetail = {
                 break;
             case 'site':
                 container.innerHTML = '<div id="site-board-container"></div>';
+                // Plan A: Foreman/patrol get Daily Report; Managers/Supervisors get full Site Board
+                if (!PermissionManager.isManager() && !PermissionManager.isOwner() && !PermissionManager.isSupervisor()) {
+                    if (typeof DailyReport !== 'undefined') { await DailyReport.init(this.projectId); break; }
+                }
                 await SiteBoard.init(this.projectId);
                 break;
             case 'processes':

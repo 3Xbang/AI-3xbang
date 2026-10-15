@@ -1,4 +1,4 @@
-// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
+﻿// 现场安排相关的接口：项目申请表、生成计划、团队名册、出勤、现场看板、派工、开始工序、通知
 const express = require('express');
 const router = express.Router();
 const pool = require('./config/db');
@@ -1349,213 +1349,45 @@ ${RECORDS_TEXT}
   res.end();
 }));
 
-module.exports = router;
 
-// GET /projects/:projectId/ai-rules — 获取项目AI规则
-router.get('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), wrap(async (req, res) => {
-  const r = await pool.query('SELECT ai_rules FROM projects WHERE id=$1', [req.params.projectId]);
-  res.json({ success: true, data: { rules: r.rows[0]?.ai_rules || '' } });
+// ============ Daily Site Report — 施工日报 ============
+const DSR_MACHINERY = ['Backhoe','Tractor','Mobile Crane','Truck 6-wheel','Truck 10-wheel','Pump','Road Roller','Vibrator','Halb','Bar Bending Machine','Bar Cutting Machine'];
+const DSR_WORKERS   = ['Engineer','Foreman','Surveyor','Carpenter','Bender','Welder','Masonry','Electrician','Mechanic','Air-con Tech'];
+
+// GET — load today's report (or blank)
+router.get('/projects/:projectId/daily-report', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const date = req.query.date || new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+  const r = await pool.query(
+    'SELECT * FROM daily_site_reports WHERE project_id=$1 AND report_date=$2',
+    [req.params.projectId, date]);
+  res.json({success:true, data:r.rows[0]||null, config:{machinery:DSR_MACHINERY, workers:DSR_WORKERS}});
 }));
 
-// PUT /projects/:projectId/ai-rules — 保存项目AI规则
-router.put('/projects/:projectId/ai-rules', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async (req, res) => {
-  const { rules } = req.body;
-  // Add ai_rules column if not exists
-  await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
-  await pool.query('UPDATE projects SET ai_rules=$1 WHERE id=$2', [rules, req.params.projectId]);
-  res.json({ success: true });
+// PUT — save / upsert report
+router.put('/projects/:projectId/daily-report', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const {report_date,week_no,report_no,machinery,workers,performance,problems,weather_am,weather_pm,remark,foreman_signed} = req.body;
+  const date = report_date || new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+  await pool.query(`
+    INSERT INTO daily_site_reports
+      (project_id,report_date,week_no,report_no,machinery,workers,performance,problems,weather_am,weather_pm,remark,foreman_signed,submitted_by,updated_at)
+    VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8,$9,$10,$11,$12,$13,CURRENT_TIMESTAMP)
+    ON CONFLICT (project_id,report_date) DO UPDATE SET
+      week_no=EXCLUDED.week_no, report_no=EXCLUDED.report_no,
+      machinery=EXCLUDED.machinery, workers=EXCLUDED.workers, performance=EXCLUDED.performance,
+      problems=EXCLUDED.problems, weather_am=EXCLUDED.weather_am, weather_pm=EXCLUDED.weather_pm,
+      remark=EXCLUDED.remark, foreman_signed=EXCLUDED.foreman_signed,
+      submitted_by=EXCLUDED.submitted_by, updated_at=CURRENT_TIMESTAMP`,
+    [req.params.projectId,date,week_no||null,report_no||null,
+     JSON.stringify(machinery||{}),JSON.stringify(workers||{}),JSON.stringify(performance||[]),
+     problems||'',weather_am||'clear',weather_pm||'clear',remark||'',foreman_signed||false,req.user.id]);
+  res.json({success:true});
 }));
 
-// POST /projects/:projectId/ai-analyze — AI分析采购单据 (SSE streaming)
-router.post('/projects/:projectId/ai-analyze', authenticate, requireProjectAccess(), wrap(async (req, res) => {
-  const projectId = req.params.projectId;
-
-  // Set SSE headers for real-time streaming
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-
-  const send = (event, data) => {
-    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  };
-
-  try {
-    // Load purchase records
-    const pr = await pool.query(
-      `SELECT * FROM purchase_records WHERE project_id=$1 ORDER BY purchase_date ASC, id ASC`,
-      [projectId]);
-    const records = pr.rows;
-
-    if (!records.length) {
-      send('error', { message: 'ไม่มีข้อมูลใบเสร็จ 没有收据数据' });
-      res.end(); return;
-    }
-
-    send('status', { message: `กำลังวิเคราะห์ ${records.length} รายการ... / 正在分析 ${records.length} 条记录...` });
-
-    // Load BOQ
-    const boqRows = req.body.boq || [];  // BOQ passed from frontend
-
-    // Load project AI rules
-    await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
-    const projR = await pool.query('SELECT ai_rules FROM projects WHERE id=$1', [projectId]);
-    const customRules = projR.rows[0]?.ai_rules || '';
-
-    // Load price benchmarks
-    const pbR = await pool.query('SELECT item_name_cn, unit, avg_price, min_price, max_price FROM price_benchmarks ORDER BY sample_count DESC');
-    const prices = pbR.rows;
-
-    // Build AI prompt — strict mode: only flag deduct if contract rules explicitly say so
-    const hasContractRules = customRules && customRules.trim().length > 20;
-
-    const prompt = `
-${hasContractRules
-  ? `=== กฎจากสัญญา / 合同规定的责任条款 ===
-${customRules}
-
-⚠️ กฎเหล็ก / 铁律:
-- ให้ flag "deduct" เฉพาะเมื่อรายการนั้น **ทั้งหมด 100%** เป็นความรับผิดชอบของผู้รับเหมา
-- ถ้ารายการมีวัสดุหลายอย่างรวมกัน (เช่น "เหล็ก+ลวดเชื่อม+โคม") และบางส่วนเป็นของเจ้าของ → ใช้ status "mixed_review" อย่า flag deduct
-- 只有该条目 100% 全部是乙方责任才标 deduct；若该行包含多种材料混合（部分甲方/部分乙方），标 mixed_review 而非 deduct
-- ถ้าสงสัย → "normal" หรือ "mixed_review" ไม่ใช่ deduct
-- 有疑问 = normal/mixed_review，绝不是 deduct`
-  : `⚠️ ยังไม่มีกฎจากสัญญา / 尚未上传合同规则
-- ห้าม flag รายการใดเป็น "deduct" เด็ดขาด
-- 严禁标记任何 deduct，合同未上传时无法判断乙方责任
-- เฉพาะตรวจสอบ: ใบซ้ำ (duplicate) และราคาผิดปกติ (price_high/price_low) เท่านั้น`
-}
-
-=== ราคาอ้างอิง / 参考价格 ===
-${prices.slice(0, 20).map(p => `${p.item_name_cn} (${p.unit}): เฉลี่ย/均价 ฿${p.avg_price}, ต่ำสุด/最低 ฿${p.min_price}, สูงสุด/最高 ฿${p.max_price}`).join('\n')}
-
-${boqRows.length ? `=== BOQ งบประมาณ / 预算 ===
-${boqRows.slice(0, 50).map(b => `${b.Description} (${b.Category}): ${b.Quantity} ${b.Unit} × ฿${b.Supply_Unit_Price} = ฿${b.Total_Amount}`).join('\n')}` : ''}
-
-=== ใบเสร็จที่ต้องวิเคราะห์ / 需要分析的收据 ===
-${records.map(r => `[${r.id}] ${r.purchase_date||''} | Invoice: ${r.invoice_no||'-'} | ผู้ขาย: ${r.supplier_name||''} | รายการ: ${r.item_name_th||''} ${r.item_name_cn||''} | ${r.qty} ${r.unit} | ฿${r.unit_price}/หน่วย | รวม: ฿${r.total_price}`).join('\n')}
-
-=== คำสั่ง / 指令 ===
-วิเคราะห์ทุกรายการ ตอบเป็น JSON array เท่านั้น ห้ามมีข้อความอื่น:
-[
-  {
-    "id": <id>,
-    "status": "normal" | "deduct" | "mixed_review" | "duplicate" | "price_high" | "price_low",
-    "flags": [],
-    "boq_match": "ชื่อ BOQ หรือ null",
-    "boq_confidence": 0-100,
-    "reason_th": "เหตุผลสั้นๆ",
-    "reason_cn": "简短理由",
-    "deduct_reason": "เหตุผลหักคืน (เฉพาะ deduct เท่านั้น — ต้องมั่นใจ 100%)",
-    "mixed_items": "ระบุว่ารายการไหนในบรรทัดนี้เป็นของเจ้าของ / ของผู้รับเหมา (เฉพาะ mixed_review)",
-    "contract_clause": "ข้อสัญญา (เฉพาะ deduct ที่มีกฎอ้างอิงได้)",
-    "clause_text": "ข้อความสัญญาโดยย่อ",
-    "explanation_th": "คำอธิบายให้ผู้รับเหมาเข้าใจ",
-    "explanation_cn": "向乙方解释原因"
-  }
-]
-ตอบ JSON เท่านั้น ไม่ต้องมี markdown code block`;
-
-    send('status', { message: 'กำลังส่งข้อมูลให้ AI... / 正在调用AI...' });
-
-    const client = getAIClient();
-    let fullResponse = '';
-
-    const stream = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || 'tngtech/deepseek-r1t2-chimera:free',
-      messages: [{ role: 'user', content: prompt }],
-      stream: true,
-      max_tokens: 4000
-    });
-
-    send('status', { message: 'AI กำลังวิเคราะห์... / AI正在分析...' });
-
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content || '';
-      if (delta) {
-        fullResponse += delta;
-        send('chunk', { text: delta });
-      }
-    }
-
-    // Parse AI response
-    try {
-      const jsonStr = fullResponse.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-      const results = JSON.parse(jsonStr);
-
-      // ===== HARD FILTER: if no contract rules, strip ALL deduct flags (AI cannot override this) =====
-      if (!hasContractRules) {
-        results.forEach(r => {
-          r.flags = (r.flags || []).filter(f => f !== 'deduct');
-          if (r.status === 'deduct' || r.status === 'mixed_review') r.status = 'normal';
-          delete r.deduct_reason;
-          delete r.contract_clause;
-          delete r.clause_text;
-          delete r.explanation_th;
-          delete r.explanation_cn;
-          delete r.mixed_items;
-        });
-      }
-
-      // ===== MIXED ITEM DETECTION: items containing BOTH main materials AND consumables =====
-      // These cannot be fully deducted — AI always flags the whole amount incorrectly
-      const MAIN_MATERIALS = ['钢筋','螺纹钢','圆钢','商品混凝土','水泥30','水泥20',
-        '碎石','砂石','砖块','模板木','黑膜胶合板','预制楼板','预制板',
-        'PVC管','C型钢','方管','圆管','角钢','工字钢','防蚊网',
-        '瓷砖','空心砖','红砖','电线','水管',
-        '小石','石+沙','石头','沙子'];
-      const CONSUMABLES_TH = ['ลวดเชื่อม','ใบตัด','สกรู','ตะปู','น้ำยาถอดแบบ','กาว'];
-      const CONSUMABLES_CN = ['焊条','切割片','螺丝','钉子','脱模剂','铁桶','胶水'];
-
-      results.forEach(r => {
-        if (r.status !== 'deduct') return;
-        const rec = records.find(x => x.id === r.id);
-        if (!rec) return;
-        const cn = (rec.item_name_cn || '').toLowerCase();
-        const th = (rec.item_name_th || '').toLowerCase();
-        const hasMain = MAIN_MATERIALS.some(kw => cn.includes(kw.toLowerCase()) || th.includes(kw.toLowerCase()));
-        const hasCons = CONSUMABLES_CN.some(kw => cn.includes(kw)) || CONSUMABLES_TH.some(kw => th.includes(kw));
-        if (hasMain && hasCons) {
-          r.status = 'mixed_review';
-          r.flags = (r.flags || []).filter(f => f !== 'deduct');
-          r.mixed_items = (r.mixed_items || `包含甲方主材+乙方消耗品，无法整笔扣除，请要求承包方出具分项收据`);
-        }
-      });
-
-      // Map analysis results back to purchase records
-      const mapped = records.map(rec => {
-        const ai = results.find(a => a.id === rec.id) || {};
-        return { ...rec, ai };
-      });
-      send('result', { records: mapped, total: records.length });
-    } catch(e) {
-      send('error', { message: 'AI ตอบกลับไม่ถูกรูปแบบ: ' + fullResponse.slice(0, 200) });
-    }
-
-  } catch(e) {
-    send('error', { message: e.message });
-  }
-  res.end();
-}));
-
-
-// -- GET /projects/:id/deduction-agreements --
-router.get('/projects/:projectId/deduction-agreements', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
-  const r = await pool.query('SELECT invoice_no, item_name_cn FROM deduction_agreements WHERE project_id=$1',[req.params.projectId]);
+// GET list — last 30 reports
+router.get('/projects/:projectId/daily-reports', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const r = await pool.query(
+    'SELECT id,report_date::text,foreman_signed,weather_am,weather_pm FROM daily_site_reports WHERE project_id=$1 ORDER BY report_date DESC LIMIT 30',
+    [req.params.projectId]);
   res.json({success:true, data:r.rows});
-}));
-
-// -- POST /projects/:id/deduction-agreements --
-router.post('/projects/:projectId/deduction-agreements', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async(req,res)=>{
-  const {invoice_no, item_name_cn, notes} = req.body;
-  await pool.query('INSERT INTO deduction_agreements (project_id, invoice_no, item_name_cn, agreed_by, notes) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (project_id,invoice_no,item_name_cn) DO UPDATE SET agreed_at=CURRENT_TIMESTAMP, agreed_by=$4, notes=$5',[req.params.projectId, invoice_no, item_name_cn, req.user.id, notes||null]);
-  res.json({success:true});
-}));
-
-// -- DELETE /projects/:id/deduction-agreements --
-router.delete('/projects/:projectId/deduction-agreements', authenticate, requireProjectAccess(), requirePermission('manage_projects'), wrap(async(req,res)=>{
-  const {invoice_no, item_name_cn} = req.body;
-  await pool.query('DELETE FROM deduction_agreements WHERE project_id=$1 AND invoice_no=$2 AND item_name_cn=$3',[req.params.projectId, invoice_no, item_name_cn]);
-  res.json({success:true});
 }));
 module.exports = router;

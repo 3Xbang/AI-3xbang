@@ -36,9 +36,23 @@ const photoManager = {
         const dateStr = dt ? dt.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'}) + ' ' + dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
         const uploader = this.esc(p.uploader_name || p.uploaded_by || '?');
         const reason = p.reason ? `<div class="ph-reason">📝 ${this.esc(p.reason)}</div>` : '';
+
+        // Show edit/delete: admin can manage any photo, others only their own
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const isManager = PermissionManager.isManager();
+        const isOwn = p.uploaded_by === currentUser.username;
+        const canManage = isManager || isOwn;
+
+        const actions = canManage ? `
+            <div class="ph-actions">
+                <button class="ph-btn-edit" onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" title="แก้ไขเหตุผล 编辑理由">✏️</button>
+                <button class="ph-btn-del" onclick="photoManager.deletePhoto(${p.id})" title="ลบ 删除">🗑️</button>
+            </div>` : '';
+
         return `<div class="ph-card">
             <div class="ph-img" style="background-image:url('${p.photo_url}')" onclick="photoManager.viewPhoto('${p.photo_url}')">
                 <div class="ph-overlay"></div>
+                ${actions}
             </div>
             <div class="ph-meta">
                 <div class="ph-who">👤 <b>${uploader}</b></div>
@@ -132,6 +146,50 @@ const photoManager = {
             } catch(e) {
                 if (typeof app !== 'undefined') app.hideLoading();
                 alert('อัปโหลดไม่สำเร็จ / 上传失败：' + e.message);
+            }
+        };
+    },
+
+    async deletePhoto(photoId) {
+        if (!confirm('ลบรูปนี้? / 确认删除这张照片？')) return;
+        try {
+            await apiRequest('/api/photos/' + photoId, { method: 'DELETE' });
+            if (typeof app !== 'undefined' && app.showToast) app.showToast('ลบแล้ว 已删除', 'success');
+            await this.loadPhotos();
+        } catch(e) {
+            alert('ลบไม่สำเร็จ 删除失败：' + e.message);
+        }
+    },
+
+    editReason(photoId, currentReason) {
+        const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
+        dlg.innerHTML = `<div class="sb-dialog" style="max-width:420px">
+            <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+                <b>✏️ แก้ไขเหตุผล 编辑理由</b>
+                <button data-x style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
+            </header>
+            <div class="sb-body">
+                <div style="font-size:13px;color:#475569;margin-bottom:6px">เหตุผล/คำอธิบาย 理由/说明</div>
+                <input type="text" id="edit-reason-input" value="${this.esc(currentReason)}" 
+                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
+            </div>
+            <footer>
+                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
+                <button class="sb-btn primary" data-ok>💾 บันทึก 保存</button>
+            </footer></div>`;
+        document.body.appendChild(dlg);
+        dlg.querySelector('#edit-reason-input').focus();
+        const close = () => dlg.remove();
+        dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
+        dlg.querySelector('[data-ok]').onclick = async () => {
+            const reason = dlg.querySelector('#edit-reason-input').value.trim();
+            try {
+                await apiRequest('/api/photos/' + photoId, { method: 'PUT', body: JSON.stringify({ reason }) });
+                if (typeof app !== 'undefined' && app.showToast) app.showToast('บันทึกแล้ว 已保存', 'success');
+                close();
+                await this.loadPhotos();
+            } catch(e) {
+                alert('บันทึกไม่สำเร็จ 保存失败：' + e.message);
             }
         };
     },

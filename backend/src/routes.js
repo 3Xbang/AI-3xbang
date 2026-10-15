@@ -689,7 +689,42 @@ router.get('/photos/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ ���Ͽ�ӿ� ============
+// PUT /photos/:id — edit reason (admin: any photo; others: own only)
+router.put('/photos/:id', authenticate, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT uploaded_by, project_id FROM photos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ success: false, message: 'Photo not found' });
+    const p = r.rows[0];
+    const isManager = req.user.role === 'manager';
+    if (!isManager && p.uploaded_by !== req.user.username) {
+      return res.status(403).json({ success: false, message: '只能编辑自己上传的照片 / ลบได้เฉพาะรูปของตัวเอง' });
+    }
+    const { reason } = req.body;
+    await pool.query('UPDATE photos SET reason=$1 WHERE id=$2', [reason || '', req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /photos/:id — admin: any photo; others: own only
+router.delete('/photos/:id', authenticate, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT uploaded_by, project_id FROM photos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ success: false, message: 'Photo not found' });
+    const p = r.rows[0];
+    const isManager = req.user.role === 'manager';
+    if (!isManager && p.uploaded_by !== req.user.username) {
+      return res.status(403).json({ success: false, message: '只能删除自己上传的照片 / ลบได้เฉพาะรูปของตัวเอง' });
+    }
+    await pool.query('DELETE FROM photos WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
 // ��ȡ���Ͽ��б�
 router.get('/material-library', authenticate, async (req, res) => {
   try {

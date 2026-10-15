@@ -176,24 +176,32 @@ function getI18nField(obj, fieldName) {
     
     const field = obj[fieldName];
     
-    // 如果是 JSON 对象，返回 "中文 English" 格式
+    // 如果是 JSON 对象，只返回中文（th字段是数据库中的泰语，不显示）
     if (field && typeof field === 'object') {
         const zh = field.zh || '';
-        const th = field.th || '';
-        return zh && th ? `${zh} ${th}` : (zh || th);
+        return zh || field.th || '';
     }
     
-    // 否则直接返回
+    // 否则直接返回（过滤掉泰语字符及其前缀分隔符）
+    if (typeof field === 'string') {
+        return field
+            .replace(/\s*•\s*[\u0E00-\u0E7F][^•]*/g, '') // Remove "• Thai text..." segments
+            .replace(/[\u0E00-\u0E7F]+\s*/g, '')           // Remove remaining Thai chars
+            .replace(/\s*•\s*$/, '')                        // Remove trailing bullet
+            .replace(/\s{2,}/g, ' ')                        // Collapse spaces
+            .trim();
+    }
     return field || '';
 }
 
-// 获取单位文本（双语）
+// 获取单位文本（只返回中文，剥离泰语）
 function getUnitText(unit) {
     if (!unit) return '';
     if (typeof unit === 'object') {
-        const zh = unit.zh || '';
-        const th = unit.th || '';
-        return zh && th ? `${zh} ${th}` : (zh || th);
+        return unit.zh || unit.th || '';
+    }
+    if (typeof unit === 'string') {
+        return unit.replace(/[\u0E00-\u0E7F]+\s*/g, '').trim();
     }
     return unit;
 }

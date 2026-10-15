@@ -345,7 +345,7 @@
     };
 
     const SiteBoard = {
-        projectId: null, date: null, data: null, assign: {}, legacyRows: null,
+        projectId: null, date: null, data: null, assign: {}, externalTeams: {}, legacyRows: null,
 
         async init(projectId) {
             this.projectId = projectId;
@@ -364,6 +364,9 @@
                 this.estMap = {};
                 this._assignedTasks=[];
                 this._yesterdayTasks=[];
+                // Restore external teams from localStorage
+                const extKey = `ext_teams_${this.projectId}_${this.data.date||this.date||new Date(Date.now()+7*3600000).toISOString().slice(0,10)}`;
+                try { this.externalTeams = JSON.parse(localStorage.getItem(extKey)||'{}'); } catch(_) { this.externalTeams = {}; }
                 try{
                     const todayBkk = new Date(Date.now()+7*3600000).toISOString().slice(0,10);
                     const yesterdayBkk = new Date(Date.now()+7*3600000-86400000).toISOString().slice(0,10);
@@ -392,10 +395,12 @@
         usedIds() { const s = new Set(); Object.values(this.assign).forEach(a => a.forEach(i => s.add(i))); return s; },
         member(id) { return (this.data.team || []).find(x => x.id === id); },
         peopleChips(execId, removable) {
+            const ext = this.externalTeams && this.externalTeams[execId];
+            const extChip = ext ? `<span class="fc-chip ext" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">🏗️ ${esc(ext.name||'外派团队')} ${ext.skilled?ext.skilled+'技工':''}${ext.helper?' '+ext.helper+'普工':''}</span>` : '';
             return (this.assign[execId] || []).map(i => {
                 const m = this.member(i);
                 return `<span class="td-chip ${m && m.level === 'skilled' ? 'skilled' : ''}">${esc(m ? m.name : '#' + i)}${removable ? ` <a href="#" data-rm="${execId}:${i}" title="移除">✕</a>` : ''}</span>`;
-            }).join('');
+            }).join('') + extChip;
         },
         floorTag(x) { return x.floor != null ? `<span class="td-tag">${x.floor}层</span>` : ''; },
 
@@ -727,22 +732,61 @@
         async commit() {
             const payload = {};
             Object.keys(this.assign).forEach(k => { if (this.assign[k].length) payload[k] = this.assign[k]; });
-            await this.run(() => call('PUT', `/projects/${this.projectId}/site-assignments`, { date: this.date, assignments: payload }), '已保存 บันทึกแล้ว');
+            // Persist external teams to localStorage
+            const key = `ext_teams_${this.projectId}_${this.date||new Date(Date.now()+7*3600000).toISOString().slice(0,10)}`;
+            if (this.externalTeams && Object.keys(this.externalTeams).length) {
+                try { localStorage.setItem(key, JSON.stringify(this.externalTeams)); } catch(_) {}
+            } else {
+                try { localStorage.removeItem(key); } catch(_) {}
+            }
+            await this.run(() => call('PUT', `/projects/${this.projectId}/site-assignments`, {
+                date: this.date,
+                assignments: payload,
+                externalTeams: this.externalTeams || {}
+            }), '已保存 บันทึกแล้ว');
         },
         pickPeople(execId) {
             const d = this.data, used = this.usedIds(), cur = new Set(this.assign[execId] || []), absent = new Set(d.absent);
-            if (!d.team.length) { toast('请先添加团队成员 กรุณาเพิ่มสมาชิกทีม', 'error'); return; }
-            const opts = d.team.map(m => {
+            const curExt = (this.externalTeams && this.externalTeams[execId]) || { name:'', skilled:0, helper:0 };
+            const opts = (d.team.length ? d.team.map(m => {
                 const taken = used.has(m.id) && !cur.has(m.id), off = absent.has(m.id);
                 return `<label class="td-pickrow"><input type="checkbox" value="${m.id}" ${cur.has(m.id) ? 'checked' : ''} ${taken || off ? 'disabled' : ''}> <b>${esc(m.name)}</b> ` +
                     `<span class="td-tag">${m.level === 'skilled' ? '技工' : '普工'}</span> <span class="td-sub">${esc(m.skills.map(s => (TRADES[s] ? TRADES[s].zh : '什么都能帮')).join('、'))}</span>` +
                     `${taken ? ' <span class="td-tag gray">已派到别处</span>' : ''}${off ? ' <span class="td-tag warn">今天没来</span>' : ''}</label>`;
-            }).join('');
+            }).join('') : '<div style="color:#94a3b8;padding:8px 0;font-size:13px">暂无注册团队成员</div>') +
+            `<div style="margin-top:14px;padding-top:12px;border-top:1.5px solid #e2e8f0">
+                <div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:8px">🏗️ ทีมงานภายนอก / 外派团队</div>
+                <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center">
+                    <input id="ext-name" type="text" placeholder="ชื่อทีมงาน / 队伍名称" value="${esc(curExt.name)}"
+                        style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
+                    <div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">ช่าง 技工</div>
+                        <input id="ext-skilled" type="number" min="0" value="${curExt.skilled||0}"
+                            style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;text-align:center">
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">ผู้ช่วย 普工</div>
+                        <input id="ext-helper" type="number" min="0" value="${curExt.helper||0}"
+                            style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;text-align:center">
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:6px">กรอกเฉพาะเมื่อมีทีมภายนอกมาช่วยงานนี้ / 仅当有外包人员参与本工序时填写</div>
+            </div>`;
             const dlg = overlay('选择人员 เลือกคนงาน', opts, '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>确定 ตกลง</button>', true);
             dlg.q('[data-cancel]').onclick = dlg.close;
             dlg.q('[data-ok]').onclick = () => {
                 const ids = dlg.qa('input[type=checkbox]:checked').map(x => Number(x.value));
                 if (ids.length) this.assign[execId] = ids; else delete this.assign[execId];
+                // Save external team info
+                const extName = (dlg.q('#ext-name').value || '').trim();
+                const extSkilled = parseInt(dlg.q('#ext-skilled').value) || 0;
+                const extHelper = parseInt(dlg.q('#ext-helper').value) || 0;
+                if (!this.externalTeams) this.externalTeams = {};
+                if (extName || extSkilled || extHelper) {
+                    this.externalTeams[execId] = { name: extName, skilled: extSkilled, helper: extHelper };
+                } else {
+                    delete this.externalTeams[execId];
+                }
                 dlg.close(); this.commit();
             };
         },

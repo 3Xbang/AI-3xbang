@@ -91,6 +91,7 @@ const MaterialManager = {
                 : '/api/purchase-records?limit=500';
             const r = await apiRequest(url);
             const rows = (r.data || []).sort((a,b)=>(a.purchase_date||'').localeCompare(b.purchase_date||''));
+            this._lastRows = rows; // save for edit dialog
             if (!rows.length) {
                 box.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8">
                     <div style="font-size:40px;margin-bottom:8px">🧾</div>
@@ -131,6 +132,7 @@ const MaterialManager = {
                 <th style="padding:9px 14px;border-bottom:2px solid #e2e8f0;text-align:right;color:#475569;white-space:nowrap">จำนวน 数量</th>
                 <th style="padding:9px 14px;border-bottom:2px solid #e2e8f0;text-align:right;color:#475569;white-space:nowrap">ราคา/หน่วย ฿</th>
                 <th style="padding:9px 14px;border-bottom:2px solid #e2e8f0;text-align:right;color:#475569;white-space:nowrap">รวม ฿</th>
+                <th style="padding:9px 10px;border-bottom:2px solid #e2e8f0;text-align:center;color:#475569;white-space:nowrap">操作</th>
               </tr></thead>
               <tbody>`;
 
@@ -151,7 +153,7 @@ const MaterialManager = {
 
                 // Date group header row
                 html += `<tr>
-                  <td colspan="6" style="padding:7px 14px;background:${bg};border-top:1.5px solid #e2e8f0;border-bottom:1px solid #edf0f3">
+                  <td colspan="7" style="padding:7px 14px;background:${bg};border-top:1.5px solid #e2e8f0;border-bottom:1px solid #edf0f3">
                     <span style="font-weight:700;color:#334155;font-size:13px">📅 ${dateLabel}</span>
                     <span style="color:#94a3b8;font-size:12px;margin-left:8px">${dayRows.length} รายการ</span>
                     <span style="float:right;color:#475569;font-size:12px">฿${fmt(dayTotal)}</span>
@@ -174,13 +176,17 @@ const MaterialManager = {
                       <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-size:12px;color:#475569">${r.qty!=null&&r.qty!=0?r.qty+' '+(r.unit||''):''}</td>
                       <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-size:12px;color:#475569">${r.unit_price>0?'฿'+fmt2(r.unit_price):'—'}</td>
                       <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-weight:600;color:${isCredit?'#10b981':'#1e3a8a'}">฿${fmt(total)}</td>
+                      <td style="padding:6px 8px;border-bottom:${borderBottom};text-align:center;white-space:nowrap">
+                        <button onclick="MaterialManagerSimple.editRecord(${r.id})" title="แก้ไข 编辑" style="background:#f1f5f9;border:none;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:13px;margin-right:3px">✏️</button>
+                        <button onclick="MaterialManagerSimple.deleteRecord(${r.id})" title="ลบ 删除" style="background:#fee2e2;border:none;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:13px;color:#dc2626">🗑️</button>
+                      </td>
                     </tr>`;
                 });
             });
 
             // Grand total
             html += `<tr style="background:#f8fafc">
-              <td colspan="5" style="padding:9px 14px;border-top:2px solid #e2e8f0;text-align:right;font-weight:700;color:#475569">ยอดรวม 合计</td>
+              <td colspan="6" style="padding:9px 14px;border-top:2px solid #e2e8f0;text-align:right;font-weight:700;color:#475569">ยอดรวม 合计</td>
               <td style="padding:9px 14px;border-top:2px solid #e2e8f0;text-align:right;font-weight:700;color:#1e3a8a;font-size:15px">฿${fmt(totalAmt)}</td>
             </tr>`;
 
@@ -207,6 +213,79 @@ const MaterialManager = {
             <button class="btn btn-primary" onclick="MaterialManager.showAddForm()">+ 添加材料</button>
         </div>
         <div class="materials-list">${this.materials.map(m => this.renderMaterialCard(m)).join('')}</div>`;
+    },
+
+    async deleteRecord(id) {
+        if (!confirm('ลบรายการนี้? / 确认删除这条记录？')) return;
+        try {
+            await apiRequest('/api/purchase-records/' + id, { method: 'DELETE' });
+            if (typeof app !== 'undefined' && app.showToast) app.showToast('ลบแล้ว 已删除', 'success');
+            const box = document.getElementById('mm-tab-content');
+            if (box) await this.renderReceipts(box);
+        } catch(e) { alert('ลบไม่สำเร็จ：' + e.message); }
+    },
+
+    editRecord(id) {
+        // Find record in current data
+        const r = (this._lastRows || []).find(x => x.id === id);
+        if (!r) { alert('ไม่พบข้อมูล / 找不到记录'); return; }
+        const esc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
+        dlg.innerHTML = `<div class="sb-dialog" style="max-width:540px">
+            <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+                <b>✏️ แก้ไขรายการ 编辑记录 #${id}</b>
+                <button data-x style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
+            </header>
+            <div class="sb-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div><label style="font-size:12px;color:#475569">วันที่ 日期</label>
+                    <input id="er-date" type="date" value="${esc((r.purchase_date||'').slice(0,10))}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">Invoice No.</label>
+                    <input id="er-inv" type="text" value="${esc(r.invoice_no||'')}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">ผู้ขาย 供货商</label>
+                    <input id="er-sup" type="text" value="${esc(r.supplier_name||'')}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">ชื่อสินค้า 中文品名</label>
+                    <input id="er-cn" type="text" value="${esc(r.item_name_cn||'')}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">ชื่อสินค้า ภาษาไทย</label>
+                    <input id="er-th" type="text" value="${esc(r.item_name_th||'')}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">หน่วย 单位</label>
+                    <input id="er-unit" type="text" value="${esc(r.unit||'')}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">จำนวน 数量</label>
+                    <input id="er-qty" type="number" step="any" value="${r.qty||0}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div><label style="font-size:12px;color:#475569">ราคา/หน่วย 单价 ฿</label>
+                    <input id="er-price" type="number" step="any" value="${r.unit_price||0}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+                <div style="grid-column:1/-1"><label style="font-size:12px;color:#475569">รวม 合计 ฿ <small>(ปล่อยว่างถ้าต้องการคำนวณอัตโนมัติ / 留空自动计算)</small></label>
+                    <input id="er-total" type="number" step="any" value="${r.total_price||0}" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:14px"></div>
+            </div>
+            <footer>
+                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
+                <button class="sb-btn primary" data-ok>💾 บันทึก 保存</button>
+            </footer></div>`;
+        document.body.appendChild(dlg);
+        const close = () => dlg.remove();
+        dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
+        dlg.querySelector('[data-ok]').onclick = async () => {
+            const okBtn = dlg.querySelector('[data-ok]');
+            if (okBtn.disabled) return;
+            okBtn.disabled = true; okBtn.textContent = '⏳ บันทึก...';
+            try {
+                const body = {
+                    purchase_date: dlg.querySelector('#er-date').value || null,
+                    invoice_no: dlg.querySelector('#er-inv').value,
+                    supplier_name: dlg.querySelector('#er-sup').value,
+                    item_name_cn: dlg.querySelector('#er-cn').value,
+                    item_name_th: dlg.querySelector('#er-th').value,
+                    unit: dlg.querySelector('#er-unit').value,
+                    qty: parseFloat(dlg.querySelector('#er-qty').value) || 0,
+                    unit_price: parseFloat(dlg.querySelector('#er-price').value) || 0,
+                    total_price: parseFloat(dlg.querySelector('#er-total').value) || null
+                };
+                await apiRequest('/api/purchase-records/' + id, { method: 'PUT', body: JSON.stringify(body) });
+                if (typeof app !== 'undefined' && app.showToast) app.showToast('บันทึกแล้ว 已保存', 'success');
+                close();
+                const box = document.getElementById('mm-tab-content');
+                if (box) await this.renderReceipts(box);
+            } catch(e) { okBtn.disabled=false; okBtn.textContent='💾 บันทึก 保存'; alert('บันทึกไม่สำเร็จ：'+e.message); }
+        };
     },
 
     async uploadReceipts(input) {

@@ -1042,6 +1042,28 @@ router.post('/purchase-records', authenticate, requirePermission('purchase_mater
   res.json({ success: true, data: r.rows[0] });
 }));
 
+// PUT /purchase-records/:id — edit a single record
+router.put('/purchase-records/:id', authenticate, requirePermission('purchase_material'), wrap(async (req, res) => {
+  const { id } = req.params;
+  const { invoice_no, supplier_name, item_name_cn, item_name_th, qty, unit, unit_price, total_price, purchase_date } = req.body;
+  const totalCalc = total_price != null ? total_price : (qty||0) * (unit_price||0);
+  await pool.query(
+    `UPDATE purchase_records SET
+       invoice_no=$1, supplier_name=$2, item_name_cn=$3, item_name_th=$4,
+       qty=$5, unit=$6, unit_price=$7, total_price=$8, purchase_date=$9
+     WHERE id=$10`,
+    [invoice_no||null, supplier_name, item_name_cn, item_name_th||null,
+     qty||0, unit, unit_price||0, totalCalc, purchase_date||null, id]);
+  if (item_name_cn && unit) await refreshPriceBenchmark(item_name_cn, unit);
+  res.json({ success: true });
+}));
+
+// DELETE /purchase-records/:id — delete a single record
+router.delete('/purchase-records/:id', authenticate, requirePermission('purchase_material'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM purchase_records WHERE id=$1', [req.params.id]);
+  res.json({ success: true });
+}));
+
 // ============================================================
 // AI 采购分析 + 收据识别 (Google Gemini)
 // ============================================================

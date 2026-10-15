@@ -389,10 +389,10 @@ const dailyTasksManager = {
     // 获取状态文本
     getStatusText(status) {
         const statusTexts = {
-            'normal': '正常',
-            'waiting_material': '等待材料',
-            'weather_stop': '天气停工',
-            'problem': '其他问题'
+            'normal': '正常 Normal',
+            'waiting_material': '等待材料 Waiting for Materials',
+            'weather_stop': '天气停工 Weather Stop',
+            'problem': '其他问题 Other Issue'
         };
         return statusTexts[status] || status || '-';
     }

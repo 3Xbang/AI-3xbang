@@ -170,40 +170,31 @@ function t(key) {
     return value || key;
 }
 
-// 获取双语字段（用于数据库返回的 JSON 字段）
+// 获取双语字段：返回 "zh th" 合并格式
 function getI18nField(obj, fieldName) {
     if (!obj) return '';
-    
+
     const field = obj[fieldName];
-    
-    // 如果是 JSON 对象，只返回中文（th字段是数据库中的泰语，不显示）
+
+    // Bilingual object: return "zh th" combined
     if (field && typeof field === 'object') {
         const zh = field.zh || '';
-        return zh || field.th || '';
+        const th = field.th || '';
+        if (zh && th) return `${zh} ${th}`;
+        return zh || th || '';
     }
-    
-    // 否则直接返回（过滤掉泰语字符及其前缀分隔符）
-    if (typeof field === 'string') {
-        return field
-            .replace(/\s*•\s*[\u0E00-\u0E7F][^•]*/g, '') // Remove "• Thai text..." segments
-            .replace(/[\u0E00-\u0E7F]+\s*/g, '')           // Remove remaining Thai chars
-            .replace(/\s*•\s*$/, '')                        // Remove trailing bullet
-            .replace(/\s{2,}/g, ' ')                        // Collapse spaces
-            .trim();
-    }
+
+    // Plain string: return as-is (will already be bilingual after other fixes)
+    if (typeof field === 'string') return field;
+
     return field || '';
 }
 
-// 获取单位文本（只返回中文，剥离泰语）
+// 获取单位文本
 function getUnitText(unit) {
     if (!unit) return '';
-    if (typeof unit === 'object') {
-        return unit.zh || unit.th || '';
-    }
-    if (typeof unit === 'string') {
-        return unit.replace(/[\u0E00-\u0E7F]+\s*/g, '').trim();
-    }
-    return unit;
+    if (typeof unit === 'object') return unit.zh || unit.th || '';
+    return String(unit);
 }
 
 console.log('✓ 双语 i18n 系统已加载');

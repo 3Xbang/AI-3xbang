@@ -97,15 +97,15 @@ const DailyAssign = {
 
     async addProcess() {
         const SECTIONS = {
-            A:{zh:'前期准备',th:'Preparation Work',      color:'#64748b', bg:'#f1f5f9'},
-            B:{zh:'地基与基础',th:'Foundation Work',       color:'#b45309', bg:'#fef3c7'},
-            C:{zh:'主体结构',th:'Main Structure',  color:'#1d4ed8', bg:'#dbeafe'},
-            D:{zh:'屋面',th:'Roof Work',              color:'#15803d', bg:'#dcfce7'},
-            E:{zh:'机电',th:'MEP Work',         color:'#7c3aed', bg:'#ede9fe'},
+            A:{zh:'前期准备',th:'Preliminary Works',      color:'#64748b', bg:'#f1f5f9'},
+            B:{zh:'地基与基础',th:'Foundation Works',       color:'#b45309', bg:'#fef3c7'},
+            C:{zh:'主体结构',th:'Structural Work',  color:'#1d4ed8', bg:'#dbeafe'},
+            D:{zh:'屋面',th:'Roofing',              color:'#15803d', bg:'#dcfce7'},
+            E:{zh:'机电',th:'MEP Works',         color:'#7c3aed', bg:'#ede9fe'},
             F:{zh:'装饰装修',th:'Interior Finishing',    color:'#c2410c', bg:'#ffedd5'},
-            G:{zh:'外立面',th:'Exterior Wall',       color:'#0e7490', bg:'#cffafe'},
-            H:{zh:'室外工程',th:'Exterior Work',   color:'#065f46', bg:'#d1fae5'},
-            I:{zh:'验收与交付',th:'Inspection & Handover',color:'#374151', bg:'#f9fafb'}
+            G:{zh:'外立面',th:'External Facade',       color:'#0e7490', bg:'#cffafe'},
+            H:{zh:'室外工程',th:'External Works',   color:'#065f46', bg:'#d1fae5'},
+            I:{zh:'验收与交付',th:'Completion & Handover',color:'#374151', bg:'#f9fafb'}
         };
 
         const r = await apiRequest('/api/projects/'+this.projectId+'/estimate');

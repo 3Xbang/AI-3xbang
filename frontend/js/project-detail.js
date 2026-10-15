@@ -286,7 +286,7 @@ const ProjectDetail = {
             }
             const ovs = ovRes && ovRes.success ? ovRes.data : [];
             if (ovs.length) {
-                const sev = { high: '高', medium: '中', low: '低' };
+                const sev = { high: '高 High', medium: '中 Medium', low: '低 Low' };
                 sections.push(`<h4>最近的提前开工（${ovs.length}）</h4><ul class="sb-list">` + ovs.slice(0, 5).map(o =>
                     `<li>${esc(nameOf(o))} · 风险${sev[o.severity] || ''} · ${esc(o.decided_by_name || '')} · ${esc(o.created_at)}<br><span class="sb-sub">原因：${esc(o.reason)}</span></li>`).join('') + '</ul>');
             }

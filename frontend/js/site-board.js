@@ -396,7 +396,7 @@
         member(id) { return (this.data.team || []).find(x => x.id === id); },
         peopleChips(execId, removable) {
             const ext = this.externalTeams && this.externalTeams[execId];
-            const extChip = ext ? `<span class="fc-chip ext" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">🏗️ ${esc(ext.name||'外派团队')} ${ext.skilled?ext.skilled+'技工':''}${ext.helper?' '+ext.helper+'普工':''}</span>` : '';
+            const extChip = ext ? `<span class="fc-chip ext" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">🏗️ ${esc(ext.name||'外派团队')} ${ext.skilled?ext.skilled+'技工 Skilled':''}${ext.helper?' '+ext.helper+'普工 Helper':''}</span>` : '';
             return (this.assign[execId] || []).map(i => {
                 const m = this.member(i);
                 return `<span class="td-chip ${m && m.level === 'skilled' ? 'skilled' : ''}">${esc(m ? m.name : '#' + i)}${removable ? ` <a href="#" data-rm="${execId}:${i}" title="移除">✕</a>` : ''}</span>`;
@@ -751,7 +751,7 @@
             const opts = (d.team.length ? d.team.map(m => {
                 const taken = used.has(m.id) && !cur.has(m.id), off = absent.has(m.id);
                 return `<label class="td-pickrow"><input type="checkbox" value="${m.id}" ${cur.has(m.id) ? 'checked' : ''} ${taken || off ? 'disabled' : ''}> <b>${esc(m.name)}</b> ` +
-                    `<span class="td-tag">${m.level === 'skilled' ? '技工' : '普工'}</span> <span class="td-sub">${esc(m.skills.map(s => (TRADES[s] ? TRADES[s].zh : '什么都能帮')).join('、'))}</span>` +
+                    `<span class="td-tag">${m.level === 'skilled' ? '技工 Skilled' : '普工 Helper'}</span> <span class="td-sub">${esc(m.skills.map(s => (TRADES[s] ? TRADES[s].zh : '什么都能帮')).join('、'))}</span>` +
                     `${taken ? ' <span class="td-tag gray">已派到别处</span>' : ''}${off ? ' <span class="td-tag warn">今天没来</span>' : ''}</label>`;
             }).join('') : '<div style="color:#94a3b8;padding:8px 0;font-size:13px">暂无注册团队成员</div>') +
             `<div style="margin-top:14px;padding-top:12px;border-top:1.5px solid #e2e8f0">
@@ -823,7 +823,7 @@
             await this.run(async () => {
                 const r = await SiteStart.start(execId, reason);
                 toast('已提前开始，并通知了上级和老板 Started early, notified supervisor and owner', 'warning');
-                if (r.data.override) alert('提前开始已记录\n风险等级：' + { high: '高', medium: '中', low: '低' }[r.data.override.severity]);
+                if (r.data.override) alert('提前开始已记录\n风险等级：' + { high: '高 High', medium: '中 Medium', low: '低 Low' }[r.data.override.severity]);
             });
         },
 
@@ -937,7 +937,7 @@
             dlg.q('[data-ok]').onclick = async () => {
                 const q = parseFloat(dlg.q('#qd-q').value);
                 if (!(q > 0)) { toast('请填写大于 0 的数量', 'error'); return; }
-                try { busy(true); await call('PUT', `/process-execution/${execId}/plan`, { planned_quantity: q, quantity_unit: dlg.q('#qd-u').value.trim() }); dlg.close(); toast('已保存'); await this.refresh(); }
+                try { busy(true); await call('PUT', `/process-execution/${execId}/plan`, { planned_quantity: q, quantity_unit: dlg.q('#qd-u').value.trim() }); dlg.close(); toast('已保存 Saved'); await this.refresh(); }
                 catch (e) { toast(e.message, 'error'); } finally { busy(false); }
             };
         },
@@ -947,7 +947,7 @@
                 const r = await call('GET', `/process-execution/${execId}/progress-history`);
                 busy(false);
                 const rows = r.data || [];
-                const st = { normal: '正常', waiting_material: '等材料', weather_stop: '天气停工', problem: '其他问题' };
+                const st = { normal: '正常 Normal', waiting_material: '等材料 Waiting for Materials', weather_stop: '天气停工 Weather Stop', problem: '其他问题 Other Issue' };
                 const noteOf = n => { try { const o = typeof n === 'string' ? JSON.parse(n) : n; return (o && (o.zh || o.th)) || ''; } catch (_) { return String(n || ''); } };
                 overlay('进度历史 History', rows.length ? `<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="text-align:left;color:#64748b"><th>日期</th><th>完成量</th><th>累计</th><th>%</th><th>状态</th><th>备注</th></tr>` +
                     rows.map(h => `<tr style="border-top:1px solid #f1f5f9"><td>${esc(String(h.date).slice(0, 10))}</td><td>${esc(h.quantity_completed)} ${esc(h.unit || '')}</td><td>${esc(h.total_completed)}</td><td>${Math.round(h.completion_percentage)}</td><td>${esc(st[h.work_status] || h.work_status || '')}</td><td>${esc(noteOf(h.notes))}</td></tr>`).join('') + '</table>'
@@ -957,7 +957,7 @@
 
         async showOverrides(projectId) {
             const r = await call('GET', `/projects/${projectId}/overrides`);
-            const sev = { high: '高', medium: '中', low: '低' };
+            const sev = { high: '高 High', medium: '中 Medium', low: '低 Low' };
             const body = r.data.length ? r.data.map(o =>
                 `<div class="sb-noti"><div class="sb-title">${esc(getI18nField({ process_name: o.process_name }, 'process_name'))} <span class="sb-sev-${o.severity}">风险${sev[o.severity]}</span></div>` +
                 `<div class="sb-sub">${esc(o.created_at)} · ${esc(o.decided_by_name || '')}</div><pre>原因：${esc(o.reason)}\n未满足：${(o.unmet || []).map(u => esc(u.zh)).join('；')}</pre></div>`).join('')

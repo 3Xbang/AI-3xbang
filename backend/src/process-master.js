@@ -11,15 +11,15 @@
 // 目前只支持钢筋混凝土框架结构（structure = 'rc_frame'）。
 
 const SECTIONS = {
-  A: { zh: '前期准备', th: 'งานเตรียมการ' },
-  B: { zh: '地基与基础', th: 'งานฐานราก' },
-  C: { zh: '主体结构', th: 'งานโครงสร้างหลัก' },
-  D: { zh: '屋面', th: 'งานหลังคา' },
-  E: { zh: '机电', th: 'งานระบบน้ำ-ไฟ' },
-  F: { zh: '装饰装修', th: 'งานตกแต่งภายใน' },
-  G: { zh: '外立面', th: 'งานผนังภายนอก' },
-  H: { zh: '室外工程', th: 'งานภายนอกอาคาร' },
-  I: { zh: '验收与交付', th: 'ตรวจรับและส่งมอบ' }
+  A: { zh: '前期准备', th: 'Preliminary Works' },
+  B: { zh: '地基与基础', th: 'Foundation Works' },
+  C: { zh: '主体结构', th: 'Structural Work' },
+  D: { zh: '屋面', th: 'Roofing' },
+  E: { zh: '机电', th: 'MEP Works' },
+  F: { zh: '装饰装修', th: 'Interior Finishing' },
+  G: { zh: '外立面', th: 'External Facade' },
+  H: { zh: '室外工程', th: 'External Works' },
+  I: { zh: '验收与交付', th: 'Completion & Handover' }
 };
 
 // ---------- 前置规则写法 ----------
@@ -53,121 +53,121 @@ function D(code, zh, th, sec, scope, unit, cond, preds, legacy, floorCond) {
 }
 
 // A 前期准备
-D('A01', '施工放线与定位', 'วางผังและกำหนดจุด', 'A', 'once', '项', null, []);
-D('A02', '临时设施（围挡、工棚、临水临电）', 'สิ่งก่อสร้างชั่วคราว', 'A', 'once', '项', null, []);
-D('A03', '场地清理与平整', 'ปรับระดับพื้นที่', 'A', 'once', 'm²', null, [P('A01', 'once'), P('A02', 'once')], ['FND-01-01']);
+D('A01', '施工放线与定位', 'Site Layout & Setting Out', 'A', 'once', '项', null, []);
+D('A02', '临时设施（围挡、工棚、临水临电）', 'Temporary Facilities', 'A', 'once', '项', null, []);
+D('A03', '场地清理与平整', 'Site Clearing & Grading', 'A', 'once', 'm²', null, [P('A01', 'once'), P('A02', 'once')], ['FND-01-01']);
 
 // B 地基与基础
-D('B01', '基坑开挖', 'ขุดหลุมฐานราก', 'B', 'once', 'm³', null, [P('A03', 'once')], ['FND-01-02', 'N01_EXCAVATION']);
-D('B02', '桩基施工与检测', 'ตอกเสาเข็ม', 'B', 'once', '根', is('foundation', 'pile'), [P('B01', 'once')]);
-D('B03', '地基处理（换填夯实）', 'บำบัดชั้นดิน', 'B', 'once', 'm²', is('soft_soil', true), [P('B01', 'once')], ['FND-01-03']);
-D('B04', '混凝土垫层', 'ชั้นคอนกรีตรอง', 'B', 'once', 'm³', null, [P('B01', 'once'), P('B02', 'once'), P('B03', 'once')], ['FND-01-04']);
-D('B05', '基础防水', 'กันซึมฐานราก', 'B', 'once', 'm²',
+D('B01', '基坑开挖', 'Foundation Excavation', 'B', 'once', 'm³', null, [P('A03', 'once')], ['FND-01-02', 'N01_EXCAVATION']);
+D('B02', '桩基施工与检测', 'Pile Foundation & Testing', 'B', 'once', '根', is('foundation', 'pile'), [P('B01', 'once')]);
+D('B03', '地基处理（换填夯实）', 'Ground Treatment & Compaction', 'B', 'once', 'm²', is('soft_soil', true), [P('B01', 'once')], ['FND-01-03']);
+D('B04', '混凝土垫层', 'Concrete Blinding', 'B', 'once', 'm³', null, [P('B01', 'once'), P('B02', 'once'), P('B03', 'once')], ['FND-01-04']);
+D('B05', '基础防水', 'Foundation Waterproofing', 'B', 'once', 'm²',
   { any: [is('basement', true), is('high_water', true)] }, [P('B04', 'once')], ['FND-01-05']);
-D('B06', '基础钢筋绑扎', 'ผูกเหล็กฐานราก', 'B', 'once', 't', null, [P('B04', 'once'), P('B05', 'once')]);
-D('B07', '基础模板', 'แบบหล่อฐานราก', 'B', 'once', 'm²', null, [P('B04', 'once')]);
-D('B08', '基础混凝土浇筑', 'เทคอนกรีตฐานราก', 'B', 'once', 'm³', null, [P('B06', 'once'), P('B07', 'once')], ['FND-01-06', 'N02_FOUNDATION']);
-D('B09', '基础养护与拆模', 'บ่มคอนกรีตและถอดแบบ', 'B', 'once', '项', null, [P('B08', 'once', { lag: 7 })]);
-D('B10', '基坑回填', 'กลบถมดิน', 'B', 'once', 'm³', null, [P('B09', 'once')]);
-D('B11', '地下室结构', 'โครงสร้างชั้นใต้ดิน', 'B', 'once', 'm³', is('basement', true), [P('B08', 'once')]);
+D('B06', '基础钢筋绑扎', 'Foundation Rebar Binding', 'B', 'once', 't', null, [P('B04', 'once'), P('B05', 'once')]);
+D('B07', '基础模板', 'Foundation Formwork', 'B', 'once', 'm²', null, [P('B04', 'once')]);
+D('B08', '基础混凝土浇筑', 'Foundation Concrete Pour', 'B', 'once', 'm³', null, [P('B06', 'once'), P('B07', 'once')], ['FND-01-06', 'N02_FOUNDATION']);
+D('B09', '基础养护与拆模', 'Foundation Curing & Formwork Removal', 'B', 'once', '项', null, [P('B08', 'once', { lag: 7 })]);
+D('B10', '基坑回填', 'Foundation Backfill', 'B', 'once', 'm³', null, [P('B09', 'once')]);
+D('B11', '地下室结构', 'Basement Structure', 'B', 'once', 'm³', is('basement', true), [P('B08', 'once')]);
 
 // C 主体结构（按层）
-D('C12', '脚手架搭设与拆除', 'ตั้งนั่งร้าน', 'C', 'each', 'm²', null, [P('B09', 'first'), P('C06', 'below')]);
-D('C01', '柱钢筋绑扎', 'ผูกเหล็กเสา', 'C', 'each', 't', null,
+D('C12', '脚手架搭设与拆除', 'Scaffolding Erection & Removal', 'C', 'each', 'm²', null, [P('B09', 'first'), P('C06', 'below')]);
+D('C01', '柱钢筋绑扎', 'Column Rebar Binding', 'C', 'each', 't', null,
   [P('C12'), P('B09', 'first'), P('B11', 'first'), P('C06', 'below', { lag: 7 })], ['STR-02-01']);
-D('C02', '柱模板安装', 'แบบหล่อเสา', 'C', 'each', 'm²', null, [SS('C01', 50)], ['STR-02-02']);
-D('C03', '柱混凝土浇筑', 'เทคอนกรีตเสา', 'C', 'each', 'm³', null, [P('C01'), P('C02')], ['STR-02-03']);
-D('C04', '梁板模板安装', 'แบบหล่อคาน-พื้น', 'C', 'each', 'm²', null, [P('C03', 'same', { lag: 2 })], ['STR-02-05']);
-D('C05', '梁板钢筋绑扎', 'ผูกเหล็กคาน-พื้น', 'C', 'each', 't', null, [P('C04')], ['STR-02-04']);
-D('C06', '梁板混凝土浇筑', 'เทคอนกรีตคาน-พื้น', 'C', 'each', 'm³', null, [P('C05'), P('E01')], ['STR-02-06']);
-D('C07', '梁板养护与拆模', 'บ่มคอนกรีตและถอดแบบ', 'C', 'each', '项', null, [P('C06', 'same', { lag: 14 })]);
-D('C08', '楼梯施工', 'บันได', 'C', 'each', '步', gt('stairs', 0), [P('C04')], ['STR-02-07'], fis('stairs_up', true));
-D('C09', '砖墙/砌块砌筑', 'ก่ออิฐ', 'C', 'each', 'm³', null, [P('C07')], ['MAS-03-01', 'N08_WALL_PARTITION']);
-D('C10', '构造柱施工', 'เสาโครงสร้างเสริม', 'C', 'each', 'm³', null, [SS('C09', 50)], ['MAS-03-02']);
-D('C11', '圈梁与过梁', 'คานรัดผนัง', 'C', 'each', 'm', null, [P('C09')], ['MAS-03-03']);
-D('C13', '阳台、雨棚、挑檐', 'ระเบียง/กันสาด', 'C', 'each', 'm²', gt('balconies', 0), [SS('C04', 30)], [], fgt('balconies', 0));
+D('C02', '柱模板安装', 'Column Formwork', 'C', 'each', 'm²', null, [SS('C01', 50)], ['STR-02-02']);
+D('C03', '柱混凝土浇筑', 'Column Concrete Pour', 'C', 'each', 'm³', null, [P('C01'), P('C02')], ['STR-02-03']);
+D('C04', '梁板模板安装', 'Beam & Slab Formwork', 'C', 'each', 'm²', null, [P('C03', 'same', { lag: 2 })], ['STR-02-05']);
+D('C05', '梁板钢筋绑扎', 'Beam & Slab Rebar Binding', 'C', 'each', 't', null, [P('C04')], ['STR-02-04']);
+D('C06', '梁板混凝土浇筑', 'Beam & Slab Concrete Pour', 'C', 'each', 'm³', null, [P('C05'), P('E01')], ['STR-02-06']);
+D('C07', '梁板养护与拆模', 'Beam & Slab Curing & Formwork Removal', 'C', 'each', '项', null, [P('C06', 'same', { lag: 14 })]);
+D('C08', '楼梯施工', 'Staircase Construction', 'C', 'each', '步', gt('stairs', 0), [P('C04')], ['STR-02-07'], fis('stairs_up', true));
+D('C09', '砖墙/砌块砌筑', 'Brick/Block Masonry', 'C', 'each', 'm³', null, [P('C07')], ['MAS-03-01', 'N08_WALL_PARTITION']);
+D('C10', '构造柱施工', 'Tie Column Construction', 'C', 'each', 'm³', null, [SS('C09', 50)], ['MAS-03-02']);
+D('C11', '圈梁与过梁', 'Ring Beam & Lintel', 'C', 'each', 'm', null, [P('C09')], ['MAS-03-03']);
+D('C13', '阳台、雨棚、挑檐', 'Balcony, Canopy & Overhangs', 'C', 'each', 'm²', gt('balconies', 0), [SS('C04', 30)], [], fgt('balconies', 0));
 
 // D 屋面
-D('D01', '屋面结构层（平屋面）', 'โครงสร้างหลังคาแบน', 'D', 'once', 'm²', inn('roof', ['flat', 'both']), [P('C06', 'top')], ['STR-02-08', 'N04_ROOF_FRAME']);
-D('D02', '屋架安装（坡屋面，钢/木）', 'ติดตั้งโครงหลังคาลาด', 'D', 'once', 'm²', inn('roof', ['pitched', 'both']), [P('C07', 'top')]);
-D('D03', '屋面找坡找平', 'ปรับลาดน้ำหลังคา', 'D', 'once', 'm²', null, [P('D01', 'once'), P('D02', 'once')]);
-D('D04', '屋面保温隔热', 'ฉนวนกันร้อนหลังคา', 'D', 'once', 'm²', is('roof_insulation', true), [P('D03', 'once')]);
-D('D05', '屋面防水', 'กันซึมหลังคา', 'D', 'once', 'm²', null, [P('D03', 'once'), P('D04', 'once')], ['STR-02-09']);
-D('D06', '屋面面层（瓦/地砖/涂料）', 'ปูผิวหลังคา', 'D', 'once', 'm²', null, [P('D05', 'once')]);
-D('D07', '屋面排水（天沟、落水管）', 'รางน้ำและท่อระบายน้ำหลังคา', 'D', 'once', 'm', null, [P('D06', 'once')]);
-D('D08', '屋面蓄水或淋水试验', 'ทดสอบกันซึมหลังคา', 'D', 'once', '项', null, [P('D05', 'once', { lag: 2 })]);
+D('D01', '屋面结构层（平屋面）', 'Flat Roof Structural Layer', 'D', 'once', 'm²', inn('roof', ['flat', 'both']), [P('C06', 'top')], ['STR-02-08', 'N04_ROOF_FRAME']);
+D('D02', '屋架安装（坡屋面，钢/木）', 'Pitched Roof Frame Installation', 'D', 'once', 'm²', inn('roof', ['pitched', 'both']), [P('C07', 'top')]);
+D('D03', '屋面找坡找平', 'Roof Slope & Screed', 'D', 'once', 'm²', null, [P('D01', 'once'), P('D02', 'once')]);
+D('D04', '屋面保温隔热', 'Roof Insulation', 'D', 'once', 'm²', is('roof_insulation', true), [P('D03', 'once')]);
+D('D05', '屋面防水', 'Roof Waterproofing', 'D', 'once', 'm²', null, [P('D03', 'once'), P('D04', 'once')], ['STR-02-09']);
+D('D06', '屋面面层（瓦/地砖/涂料）', 'Roof Finish Layer', 'D', 'once', 'm²', null, [P('D05', 'once')]);
+D('D07', '屋面排水（天沟、落水管）', 'Roof Drainage', 'D', 'once', 'm', null, [P('D06', 'once')]);
+D('D08', '屋面蓄水或淋水试验', 'Roof Water Test', 'D', 'once', '项', null, [P('D05', 'once', { lag: 2 })]);
 
 // E 机电
-D('E01', '梁板内水电预埋', 'ฝังท่อในพื้นคาน', 'E', 'each', 'm²', null, [P('C04')]);
-D('E14', '墙体开槽布管预埋（线管、86盒）', 'เดินท่อน้ำและไฟ', 'E', 'each', 'm²', null, [SS('C09', 50)], ['N05_MEP_ROUGH']);
-D('E02', '空调管线预埋', 'ฝังท่อแอร์', 'E', 'each', '点', inn('aircon', ['split', 'central']), [SS('C09', 50)]);
-D('E03', '给水管道安装', 'ติดตั้งท่อน้ำประปา', 'E', 'each', 'm', null, [P('E14')], ['MEP-06-01'], fgt('wet', 0));
-D('E04', '排水管道安装', 'ติดตั้งท่อระบายน้ำ', 'E', 'each', 'm', null, [P('E14')], ['MEP-06-02'], fgt('wet', 0));
-D('E05', '强电线路敷设与穿线', 'เดินสายไฟ', 'E', 'each', 'm', null, [P('E14'), P('F02')], ['MEP-06-03']);
-D('E06', '弱电线路敷设', 'เดินสายสัญญาณ', 'E', 'each', 'm', null, [P('E14'), P('F02')], ['MEP-06-04']);
-D('E07', '配电箱及总配电安装', 'ติดตั้งตู้ไฟหลัก', 'E', 'once', '套', null, [P('F02', 'first')]);
-D('E08', '水电隐蔽验收', 'ตรวจงานซ่อนน้ำไฟ', 'E', 'each', '项', null,
+D('E01', '梁板内水电预埋', 'MEP Conduit in Slab', 'E', 'each', 'm²', null, [P('C04')]);
+D('E14', '墙体开槽布管预埋（线管、86盒）', 'Wall Conduit & Box Roughing-in', 'E', 'each', 'm²', null, [SS('C09', 50)], ['N05_MEP_ROUGH']);
+D('E02', '空调管线预埋', 'AC Conduit Roughing-in', 'E', 'each', '点', inn('aircon', ['split', 'central']), [SS('C09', 50)]);
+D('E03', '给水管道安装', 'Water Supply Pipe Installation', 'E', 'each', 'm', null, [P('E14')], ['MEP-06-01'], fgt('wet', 0));
+D('E04', '排水管道安装', 'Drainage Pipe Installation', 'E', 'each', 'm', null, [P('E14')], ['MEP-06-02'], fgt('wet', 0));
+D('E05', '强电线路敷设与穿线', 'Power Wiring', 'E', 'each', 'm', null, [P('E14'), P('F02')], ['MEP-06-03']);
+D('E06', '弱电线路敷设', 'Low-Voltage Wiring', 'E', 'each', 'm', null, [P('E14'), P('F02')], ['MEP-06-04']);
+D('E07', '配电箱及总配电安装', 'Distribution Board Installation', 'E', 'once', '套', null, [P('F02', 'first')]);
+D('E08', '水电隐蔽验收', 'MEP Concealed Works Inspection', 'E', 'each', '项', null,
   [P('E01'), P('E14'), P('E03'), P('E04'), P('E02')], ['N06_MEP_HIDDEN']);
-D('E09', '防雷与接地', 'สายดินและล่อฟ้า', 'E', 'once', '项', null, [P('C07', 'top')]);
-D('E10', '水泵、水箱安装', 'ปั๊มน้ำและถังน้ำ', 'E', 'once', '套', is('water_supply', 'tank'), [P('E03', 'first')]);
-D('E11', '热水系统安装', 'ระบบน้ำร้อน', 'E', 'each', '套', not('hot_water', 'none'), [P('E03'), P('F04')], [], fgt('wet', 0));
-D('E12', '空调设备安装', 'ติดตั้งแอร์', 'E', 'each', '台', inn('aircon', ['split', 'central']), [P('E02'), P('F15'), P('F16')]);
-D('E13', '电梯安装', 'ติดตั้งลิฟต์', 'E', 'once', '台', is('elevator', true), [P('C07', 'top')]);
+D('E09', '防雷与接地', 'Lightning Protection & Earthing', 'E', 'once', '项', null, [P('C07', 'top')]);
+D('E10', '水泵、水箱安装', 'Pump & Water Tank Installation', 'E', 'once', '套', is('water_supply', 'tank'), [P('E03', 'first')]);
+D('E11', '热水系统安装', 'Hot Water System Installation', 'E', 'each', '套', not('hot_water', 'none'), [P('E03'), P('F04')], [], fgt('wet', 0));
+D('E12', '空调设备安装', 'Air Conditioning Installation', 'E', 'each', '台', inn('aircon', ['split', 'central']), [P('E02'), P('F15'), P('F16')]);
+D('E13', '电梯安装', 'Elevator Installation', 'E', 'once', '台', is('elevator', true), [P('C07', 'top')]);
 
 // F 装饰装修（按层）
-D('F01', '墙面基层处理', 'เตรียมผิวผนัง', 'F', 'each', 'm²', null, [P('C09'), P('E08')], ['FIN-01-01']);
-D('F02', '内墙抹灰', 'ฉาบปูนผนังใน', 'F', 'each', 'm²', null, [P('F01')], ['FIN-01-02', 'N09_PLASTERING']);
-D('F03', '天花抹灰', 'ฉาบปูนเพดาน', 'F', 'each', 'm²', null, [P('F01')], ['FIN-01-04']);
-D('F04', '卫生间、厨房、阳台防水', 'กันซึมห้องน้ำ', 'F', 'each', 'm²', gt('wet_rooms', 0), [P('E04'), P('F02')], ['SAN-07-01', 'N07_WATERPROOF'], fgt('wet', 0));
-D('F05', '闭水试验', 'ทดสอบการกันซึม', 'F', 'each', '项', gt('wet_rooms', 0), [P('F04', 'same', { lag: 2 })], [], fgt('wet', 0));
-D('F06', '地面找平层', 'ปรับระดับพื้น', 'F', 'each', 'm²', null, [P('F05'), P('F02')], ['FLR-02-01']);
-D('F07', '墙砖铺贴', 'ปูกระเบื้องผนัง', 'F', 'each', 'm²', gt('wet_rooms', 0), [P('F05')], ['WAL-04-04'], fgt('wet', 0));
-D('F08', '地砖铺贴', 'ปูกระเบื้องพื้น', 'F', 'each', 'm²', null, [P('F06', 'same', { lag: 3 }), P('F07')], ['FLR-02-02', 'N10_TILING']);
-D('F09', '石材地面', 'ปูหินพื้น', 'F', 'each', 'm²', is('floor_finish', 'stone'), [P('F06')], ['FLR-02-04']);
-D('F10', '吊顶龙骨', 'โครงเหล็กเพดาน', 'F', 'each', 'm²', not('ceiling', 'none'), [P('F02'), P('E05'), P('F03')], ['CLG-03-01', 'N11_CEILING']);
-D('F11', '石膏板吊顶', 'เพดานยิปซั่ม', 'F', 'each', 'm²', inn('ceiling', ['gypsum', 'aluminum_wet']), [P('F10')], ['CLG-03-02']);
-D('F12', '铝扣板吊顶（厨卫）', 'เพดานอลูมิเนียม', 'F', 'each', 'm²', is('ceiling', 'aluminum_wet'), [P('F10')], ['CLG-03-03']);
-D('F13', '墙面找平', 'ปรับระดับผนัง', 'F', 'each', 'm²', null, [P('F02', 'same', { lag: 7 })], ['WAL-04-01']);
-D('F14', '腻子批刮', 'โป๊วผนัง', 'F', 'each', 'm²', null, [P('F13'), P('F11'), P('F12')], ['WAL-04-02']);
-D('F15', '乳胶漆涂刷', 'ทาสีน้ำ', 'F', 'each', 'm²', inn('wall_finish', ['paint', 'mixed']), [P('F14')], ['WAL-04-03', 'N12_PAINTING']);
-D('F16', '墙纸粘贴', 'ติดวอลเปเปอร์', 'F', 'each', 'm²', inn('wall_finish', ['wallpaper', 'mixed']), [P('F14')], ['WAL-04-05']);
-D('F17', '木地板安装', 'ปูพื้นไม้', 'F', 'each', 'm²', is('floor_finish', 'wood'), [P('F15'), P('F16')], ['FLR-02-03']);
-D('F18', '门窗框安装', 'ติดตั้งวงกบ', 'F', 'each', '樘', null, [P('C09')], ['DOR-05-01', 'N13_DOOR_WINDOW']);
-D('F19', '门扇安装', 'ติดตั้งบานประตู', 'F', 'each', '樘', null, [P('F15'), P('F16')], ['DOR-05-02']);
-D('F20', '窗扇安装', 'ติดตั้งบานหน้าต่าง', 'F', 'each', '樘', null, [P('F18')], ['DOR-05-03']);
-D('F21', '玻璃安装', 'ติดตั้งกระจก', 'F', 'each', 'm²', null, [P('F20')], ['DOR-05-04']);
-D('F22', '入户门与防盗门安装', 'ประตูทางเข้าหลัก', 'F', 'once', '樘', null, [P('F02', 'first')]);
-D('F23', '踢脚线', 'บัวพื้น', 'F', 'each', 'm', null, [P('F17'), P('F08')]);
-D('F24', '楼梯栏杆与扶手', 'ราวบันได', 'F', 'each', 'm', gt('stairs', 0), [P('C08'), P('F15'), P('F16')], [], fis('stairs_up', true));
-D('F25', '固定家具/衣柜', 'ตู้บิลท์อิน', 'F', 'each', 'm', is('fixed_furniture', true), [P('F15'), P('F16')]);
-D('F26', '卫生洁具安装', 'ติดตั้งสุขภัณฑ์', 'F', 'each', '套', gt('bathrooms_total', 0), [P('F07'), P('F08'), P('F15'), P('F16')], ['SAN-07-02', 'N14_SANITARY'], fgt('bathrooms', 0));
-D('F27', '淋浴房安装', 'ติดตั้งฝักบัว', 'F', 'each', '套', is('shower_room', true), [P('F26')], ['SAN-07-03'], fgt('bathrooms', 0));
-D('F28', '橱柜安装', 'ติดตั้งตู้ครัว', 'F', 'each', 'm', is('cabinet', true), [P('F08'), P('F15'), P('F16')], ['KIT-07-04'], fgt('kitchens', 0));
-D('F29', '台面安装', 'ติดตั้งเคาน์เตอร์', 'F', 'each', 'm', is('cabinet', true), [P('F28')], ['KIT-07-05'], fgt('kitchens', 0));
-D('F30', '灯具安装', 'ติดตั้งโคมไฟ', 'F', 'each', '盏', null, [P('F15'), P('F16'), P('E05')], ['MEP-06-05', 'N15_LIGHTING']);
-D('F31', '开关插座安装', 'ติดตั้งสวิตช์ปลั๊ก', 'F', 'each', '个', null, [P('F15'), P('F16'), P('E05')], ['MEP-06-06']);
+D('F01', '墙面基层处理', 'Wall Surface Preparation', 'F', 'each', 'm²', null, [P('C09'), P('E08')], ['FIN-01-01']);
+D('F02', '内墙抹灰', 'Internal Wall Plastering', 'F', 'each', 'm²', null, [P('F01')], ['FIN-01-02', 'N09_PLASTERING']);
+D('F03', '天花抹灰', 'Ceiling Plastering', 'F', 'each', 'm²', null, [P('F01')], ['FIN-01-04']);
+D('F04', '卫生间、厨房、阳台防水', 'Wet Area Waterproofing', 'F', 'each', 'm²', gt('wet_rooms', 0), [P('E04'), P('F02')], ['SAN-07-01', 'N07_WATERPROOF'], fgt('wet', 0));
+D('F05', '闭水试验', 'Water Ponding Test', 'F', 'each', '项', gt('wet_rooms', 0), [P('F04', 'same', { lag: 2 })], [], fgt('wet', 0));
+D('F06', '地面找平层', 'Floor Screed', 'F', 'each', 'm²', null, [P('F05'), P('F02')], ['FLR-02-01']);
+D('F07', '墙砖铺贴', 'Wall Tile Laying', 'F', 'each', 'm²', gt('wet_rooms', 0), [P('F05')], ['WAL-04-04'], fgt('wet', 0));
+D('F08', '地砖铺贴', 'Floor Tile Laying', 'F', 'each', 'm²', null, [P('F06', 'same', { lag: 3 }), P('F07')], ['FLR-02-02', 'N10_TILING']);
+D('F09', '石材地面', 'Stone Flooring', 'F', 'each', 'm²', is('floor_finish', 'stone'), [P('F06')], ['FLR-02-04']);
+D('F10', '吊顶龙骨', 'Ceiling Frame', 'F', 'each', 'm²', not('ceiling', 'none'), [P('F02'), P('E05'), P('F03')], ['CLG-03-01', 'N11_CEILING']);
+D('F11', '石膏板吊顶', 'Gypsum Board Ceiling', 'F', 'each', 'm²', inn('ceiling', ['gypsum', 'aluminum_wet']), [P('F10')], ['CLG-03-02']);
+D('F12', '铝扣板吊顶（厨卫）', 'Aluminum Ceiling (Wet Areas)', 'F', 'each', 'm²', is('ceiling', 'aluminum_wet'), [P('F10')], ['CLG-03-03']);
+D('F13', '墙面找平', 'Wall Leveling', 'F', 'each', 'm²', null, [P('F02', 'same', { lag: 7 })], ['WAL-04-01']);
+D('F14', '腻子批刮', 'Putty Application', 'F', 'each', 'm²', null, [P('F13'), P('F11'), P('F12')], ['WAL-04-02']);
+D('F15', '乳胶漆涂刷', 'Emulsion Paint', 'F', 'each', 'm²', inn('wall_finish', ['paint', 'mixed']), [P('F14')], ['WAL-04-03', 'N12_PAINTING']);
+D('F16', '墙纸粘贴', 'Wallpaper Installation', 'F', 'each', 'm²', inn('wall_finish', ['wallpaper', 'mixed']), [P('F14')], ['WAL-04-05']);
+D('F17', '木地板安装', 'Timber Flooring', 'F', 'each', 'm²', is('floor_finish', 'wood'), [P('F15'), P('F16')], ['FLR-02-03']);
+D('F18', '门窗框安装', 'Door & Window Frame Installation', 'F', 'each', '樘', null, [P('C09')], ['DOR-05-01', 'N13_DOOR_WINDOW']);
+D('F19', '门扇安装', 'Door Leaf Installation', 'F', 'each', '樘', null, [P('F15'), P('F16')], ['DOR-05-02']);
+D('F20', '窗扇安装', 'Window Sash Installation', 'F', 'each', '樘', null, [P('F18')], ['DOR-05-03']);
+D('F21', '玻璃安装', 'Glass Installation', 'F', 'each', 'm²', null, [P('F20')], ['DOR-05-04']);
+D('F22', '入户门与防盗门安装', 'Main Entrance & Security Door', 'F', 'once', '樘', null, [P('F02', 'first')]);
+D('F23', '踢脚线', 'Skirting Board', 'F', 'each', 'm', null, [P('F17'), P('F08')]);
+D('F24', '楼梯栏杆与扶手', 'Stair Balustrade & Handrail', 'F', 'each', 'm', gt('stairs', 0), [P('C08'), P('F15'), P('F16')], [], fis('stairs_up', true));
+D('F25', '固定家具/衣柜', 'Built-in Furniture/Wardrobe', 'F', 'each', 'm', is('fixed_furniture', true), [P('F15'), P('F16')]);
+D('F26', '卫生洁具安装', 'Sanitary Fixture Installation', 'F', 'each', '套', gt('bathrooms_total', 0), [P('F07'), P('F08'), P('F15'), P('F16')], ['SAN-07-02', 'N14_SANITARY'], fgt('bathrooms', 0));
+D('F27', '淋浴房安装', 'Shower Enclosure Installation', 'F', 'each', '套', is('shower_room', true), [P('F26')], ['SAN-07-03'], fgt('bathrooms', 0));
+D('F28', '橱柜安装', 'Kitchen Cabinet Installation', 'F', 'each', 'm', is('cabinet', true), [P('F08'), P('F15'), P('F16')], ['KIT-07-04'], fgt('kitchens', 0));
+D('F29', '台面安装', 'Countertop Installation', 'F', 'each', 'm', is('cabinet', true), [P('F28')], ['KIT-07-05'], fgt('kitchens', 0));
+D('F30', '灯具安装', 'Light Fixture Installation', 'F', 'each', '盏', null, [P('F15'), P('F16'), P('E05')], ['MEP-06-05', 'N15_LIGHTING']);
+D('F31', '开关插座安装', 'Switch & Socket Installation', 'F', 'each', '个', null, [P('F15'), P('F16'), P('E05')], ['MEP-06-06']);
 
 // G 外立面
-D('G05', '外墙吊篮或外脚手', 'นั่งร้านผนังนอก', 'G', 'once', 'm²', null, [P('C07', 'first')]);
-D('G01', '外墙抹灰', 'ฉาบปูนผนังนอก', 'G', 'each', 'm²', null, [P('C09'), P('F18'), P('G05', 'once')], ['FIN-01-03']);
-D('G02', '外墙保温', 'ฉนวนผนังนอก', 'G', 'each', 'm²', is('exterior_insulation', true), [P('G01')]);
-D('G03', '外墙面层（涂料/外墙砖/石材）', 'ผิวสำเร็จผนังนอก', 'G', 'each', 'm²', null, [P('G01', 'same', { lag: 7 }), P('G02')]);
-D('G04', '外门窗收口与打胶', 'ยาแนวขอบหน้าต่างนอก', 'G', 'each', 'm', null, [P('G03')]);
+D('G05', '外墙吊篮或外脚手', 'External Scaffolding', 'G', 'once', 'm²', null, [P('C07', 'first')]);
+D('G01', '外墙抹灰', 'External Wall Plastering', 'G', 'each', 'm²', null, [P('C09'), P('F18'), P('G05', 'once')], ['FIN-01-03']);
+D('G02', '外墙保温', 'External Wall Insulation', 'G', 'each', 'm²', is('exterior_insulation', true), [P('G01')]);
+D('G03', '外墙面层（涂料/外墙砖/石材）', 'External Wall Finish', 'G', 'each', 'm²', null, [P('G01', 'same', { lag: 7 }), P('G02')]);
+D('G04', '外门窗收口与打胶', 'External Window Sealing', 'G', 'each', 'm', null, [P('G03')]);
 
 // H 室外工程
-D('H01', '化粪池与污水处理', 'บ่อเกรอะและบำบัดน้ำเสีย', 'H', 'once', '套', null, [P('B10', 'once')]);
-D('H02', '室外给排水管网', 'ท่อน้ำและระบายน้ำภายนอก', 'H', 'once', 'm', null, [P('H01', 'once')]);
-D('H03', '围墙与大门', 'กำแพงและประตูรั้ว', 'H', 'once', 'm', is('fence', true), [P('G04', 'top')]);
-D('H04', '道路与铺装', 'ถนนและลานพื้น', 'H', 'once', 'm²', is('road', true), [P('H02', 'once')]);
-D('H05', '庭院景观与绿化', 'สวนและภูมิทัศน์', 'H', 'once', 'm²', is('landscape', true), [P('H04', 'once'), P('H02', 'once')]);
-D('H06', '泳池', 'สระว่ายน้ำ', 'H', 'once', '项', is('pool', true), [P('B10', 'once')]);
+D('H01', '化粪池与污水处理', 'Septic Tank & Sewage Treatment', 'H', 'once', '套', null, [P('B10', 'once')]);
+D('H02', '室外给排水管网', 'External Water & Drainage Network', 'H', 'once', 'm', null, [P('H01', 'once')]);
+D('H03', '围墙与大门', 'Perimeter Wall & Gate', 'H', 'once', 'm', is('fence', true), [P('G04', 'top')]);
+D('H04', '道路与铺装', 'Road & Paving', 'H', 'once', 'm²', is('road', true), [P('H02', 'once')]);
+D('H05', '庭院景观与绿化', 'Landscaping & Greenery', 'H', 'once', 'm²', is('landscape', true), [P('H04', 'once'), P('H02', 'once')]);
+D('H06', '泳池', 'Swimming Pool', 'H', 'once', '项', is('pool', true), [P('B10', 'once')]);
 
 // I 验收与交付
-D('I01', '分层竣工检查与整改清单', 'ตรวจรับแต่ละชั้น', 'I', 'each', '项', null,
+D('I01', '分层竣工检查与整改清单', 'Floor-by-Floor Completion Inspection', 'I', 'each', '项', null,
   [P('F26'), P('F30'), P('F31'), P('F19'), P('F21'), P('F23'), P('G04')]);
-D('I02', '竣工清洁', 'ทำความสะอาดและตรวจรับ', 'I', 'once', 'm²', null, [P('I01', 'all')], ['N16_CLEANING']);
-D('I03', '竣工验收与移交', 'ตรวจรับงานและส่งมอบ', 'I', 'once', '项', null, [P('I02', 'once')]);
-D('I04', '整改与保修登记', 'แก้ไขและขึ้นทะเบียนรับประกัน', 'I', 'once', '项', null, [P('I03', 'once')]);
+D('I02', '竣工清洁', 'Final Cleaning', 'I', 'once', 'm²', null, [P('I01', 'all')], ['N16_CLEANING']);
+D('I03', '竣工验收与移交', 'Final Acceptance & Handover', 'I', 'once', '项', null, [P('I02', 'once')]);
+D('I04', '整改与保修登记', 'Rectification & Warranty Registration', 'I', 'once', '项', null, [P('I03', 'once')]);
 
 // ---------- 项目申请表答案（含默认值） ----------
 const DEFAULT_PROFILE = {

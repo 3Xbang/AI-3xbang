@@ -1,155 +1,155 @@
-// 双语显示配置 (中文 + 泰语)
+// 双语显示配置 (中文 + English)
 const translations = {
     app: {
         title: 'Mira Villa',
-        subtitle: '建筑项目管理系统 ระบบจัดการโครงการก่อสร้าง'
+        subtitle: '建筑项目管理系统 Construction Project Management System'
     },
     nav: {
-        projects: '项目管理 จัดการโครงการ',
-        processes: '工序进度 ความคืบหน้างาน',
-        materials: '材料管理 จัดการวัสดุ',
-        photos: '现场照片 รูปถ่ายหน้างาน',
-        dailyTasks: '今日任务 งานวันนี้',
-        users: '用户管理 ผู้ใช้งาน'
+        projects: '项目管理 Project Management',
+        processes: '工序进度 Process Progress',
+        materials: '材料管理 Material Management',
+        photos: '现场照片 Site Photos',
+        dailyTasks: '今日任务 Today\'s Tasks',
+        users: '用户管理 User Management'
     },
     common: {
-        logout: '退出 ออกจากระบบ',
-        save: '保存 บันทึก',
-        cancel: '取消 ยกเลิก',
-        delete: '删除 ลบ',
-        edit: '编辑 แก้ไข',
-        confirm: '确认 ยืนยัน',
-        confirmDelete: '确认删除 ยืนยันลบ',
-        loading: '加载中... กำลังโหลด...',
-        success: '成功 สำเร็จ',
-        error: '错误 ผิดพลาด',
-        notes: '备注 หมายเหตุ',
-        noData: '暂无数据 ไม่มีข้อมูล',
-        add: '添加 เพิ่ม',
-        remove: '移除 ลบออก',
-        close: '关闭 ปิด',
-        submit: '提交 ส่ง',
-        back: '返回 กลับ',
-        next: '下一步 ถัดไป',
-        create: '创建 สร้าง',
-        fillRequired: '请填写必填项 กรุณากรอกข้อมูลที่จำเป็น',
-        updateError: '更新失败 อัพเดทไม่สำเร็จ'
+        logout: '退出 Logout',
+        save: '保存 Save',
+        cancel: '取消 Cancel',
+        delete: '删除 Delete',
+        edit: '编辑 Edit',
+        confirm: '确认 Confirm',
+        confirmDelete: '确认删除 Confirm Delete',
+        loading: '加载中... Loading...',
+        success: '成功 Success',
+        error: '错误 Error',
+        notes: '备注 Notes',
+        noData: '暂无数据 No Data',
+        add: '添加 Add',
+        remove: '移除 Remove',
+        close: '关闭 Close',
+        submit: '提交 Submit',
+        back: '返回 Back',
+        next: '下一步 Next',
+        create: '创建 Create',
+        fillRequired: '请填写必填项 Please fill in required fields',
+        updateError: '更新失败 Update failed'
     },
     quantities: {
-        instruction: '说明 คำอธิบาย',
-        instructionText: '请填写下列工程量数据 กรุณากรอกปริมาณงานด้านล่าง',
-        enterData: '输入工程量 กรอกปริมาณงาน',
-        calculationResult: '计算结果 ผลการคำนวณ',
-        notSupported: '该工序未预设字段，使用通用输入 งานนี้ไม่มีช่องกรอกที่กำหนดไว้ ใช้การกรอกทั่วไป',
-        quantity: '工程量 ปริมาณงาน',
-        enterQuantity: '请输入数量 กรุณากรอกจำนวน',
-        unit: '单位 หน่วย',
-        unitPlaceholder: '如 m²、m³、个 เช่น m², m³, ชิ้น',
-        unitExample: '如 m²、m³、个 เช่น m², m³, ชิ้น',
-        validQuantityError: '请输入大于0的数量 กรุณากรอกจำนวนที่มากกว่า 0',
-        updateSuccess: '工程量已保存 บันทึกปริมาณงานแล้ว'
+        instruction: '说明 Description',
+        instructionText: '请填写下列工程量数据 Please enter the quantity data below',
+        enterData: '输入工程量 Enter Quantity',
+        calculationResult: '计算结果 Calculation Result',
+        notSupported: '该工序未预设字段，使用通用输入 No predefined fields for this task, using general input',
+        quantity: '工程量 Quantity',
+        enterQuantity: '请输入数量 Please enter quantity',
+        unit: '单位 Unit',
+        unitPlaceholder: '如 m²、m³、个 e.g. m², m³, pcs',
+        unitExample: '如 m²、m³、个 e.g. m², m³, pcs',
+        validQuantityError: '请输入大于0的数量 Please enter a quantity greater than 0',
+        updateSuccess: '工程量已保存 Quantity saved'
     },
     dashboard: {
-        title: '项目概览 แดชบอร์ดโครงการ',
-        noProjects: '暂无项目 ยังไม่มีโครงการ',
-        noProjectsDesc: '开始创建第一个项目 เริ่มต้นสร้างโครงการแรกของคุณ',
-        myProjects: '我的项目 โครงการของฉัน'
+        title: '项目概览 Project Dashboard',
+        noProjects: '暂无项目 No Projects',
+        noProjectsDesc: '开始创建第一个项目 Start by creating your first project',
+        myProjects: '我的项目 My Projects'
     },
     projectDetail: {
-        overview: '项目概览 ภาพรวมโครงการ',
-        settings: '项目设置 ตั้งค่าโครงการ'
+        overview: '项目概览 Project Overview',
+        settings: '项目设置 Project Settings'
     },
     overview: {
-        totalProcesses: '总工序数 จำนวนงานทั้งหมด',
-        completedProcesses: '已完成 เสร็จแล้ว',
-        inProgress: '进行中 กำลังดำเนินการ',
-        teamMembers: '团队成员 สมาชิกทีม'
+        totalProcesses: '总工序数 Total Processes',
+        completedProcesses: '已完成 Completed',
+        inProgress: '进行中 In Progress',
+        teamMembers: '团队成员 Team Members'
     },
     projects: {
-        title: '项目管理 จัดการโครงการ',
-        add: '新建项目 สร้างโครงการใหม่',
-        name: '项目名称 ชื่อโครงการ',
-        code: '项目编号 รหัสโครงการ',
-        description: '项目描述 คำอธิบาย',
-        location: '项目地址 ที่ตั้งโครงการ',
-        startDate: '开始日期 วันเริ่ม',
-        endDate: '结束日期 วันสิ้นสุด',
-        client: '业主 เจ้าของ',
-        progress: '进度 ความคืบหน้า',
-        manager: '项目经理 ผู้จัดการโครงการ',
-        create: '创建项目 สร้างโครงการ',
-        edit: '编辑项目 แก้ไขโครงการ',
-        delete: '删除项目 ลบโครงการ',
-        confirmDelete: '确认删除项目？ ยืนยันลบโครงการ?',
-        createSuccess: '项目创建成功 สร้างโครงการสำเร็จ',
-        updateSuccess: '项目更新成功 อัพเดทโครงการสำเร็จ',
-        deleteSuccess: '项目删除成功 ลบโครงการสำเร็จ',
-        loadError: '加载项目失败 โหลดโครงการไม่สำเร็จ',
-        basicInfo: '基本信息 ข้อมูลพื้นฐาน',
-        selectProcesses: '选择工序 เลือกงาน',
-        processes: '工序 งาน',
-        addProcess: '添加工序 เพิ่มงาน',
-        noProcesses: '暂无工序 ยังไม่มีงาน',
-        noProcessesDesc: '开始添加第一个工序 เริ่มต้นเพิ่มงานแรก',
-        addFirst: '添加第一个工序 เพิ่มงานแรก',
+        title: '项目管理 Project Management',
+        add: '新建项目 Create New Project',
+        name: '项目名称 Project Name',
+        code: '项目编号 Project Code',
+        description: '项目描述 Project Description',
+        location: '项目地址 Project Location',
+        startDate: '开始日期 Start Date',
+        endDate: '结束日期 End Date',
+        client: '业主 Owner',
+        progress: '进度 Progress',
+        manager: '项目经理 Project Manager',
+        create: '创建项目 Create Project',
+        edit: '编辑项目 Edit Project',
+        delete: '删除项目 Delete Project',
+        confirmDelete: '确认删除项目？ Confirm delete project?',
+        createSuccess: '项目创建成功 Project created successfully',
+        updateSuccess: '项目更新成功 Project updated successfully',
+        deleteSuccess: '项目删除成功 Project deleted successfully',
+        loadError: '加载项目失败 Failed to load project',
+        basicInfo: '基本信息 Basic Info',
+        selectProcesses: '选择工序 Select Tasks',
+        processes: '工序 Task',
+        addProcess: '添加工序 Add Task',
+        noProcesses: '暂无工序 No Tasks',
+        noProcessesDesc: '开始添加第一个工序 Start adding the first task',
+        addFirst: '添加第一个工序 Add First Task',
         status: {
-            active: '进行中 กำลังดำเนินการ',
-            completed: '已完成 เสร็จแล้ว',
-            paused: '已暂停 หยุดชั่วคราว',
-            planning: '规划中 กำลังวางแผน'
+            active: '进行中 In Progress',
+            completed: '已完成 Completed',
+            paused: '已暂停 Paused',
+            planning: '规划中 Planning'
         }
     },
     processes: {
-        title: '工序进度 ความคืบหน้างาน',
-        addProcess: '添加工序 เพิ่มงาน',
-        noProcesses: '暂无工序 ยังไม่มีงาน',
-        noProcessesDesc: '开始添加工序 เริ่มเพิ่มงาน',
-        addFirst: '添加第一个工序 เพิ่มงานแรก',
-        processCode: '工序编号 รหัสงาน',
-        startSuccess: '工序已开始 เริ่มงานแล้ว',
-        completeSuccess: '工序已完成 งานเสร็จสมบูรณ์',
-        notFound: '未找到工序 ไม่พบงาน',
+        title: '工序进度 Process Progress',
+        addProcess: '添加工序 Add Task',
+        noProcesses: '暂无工序 No Tasks',
+        noProcessesDesc: '开始添加工序 Start adding tasks',
+        addFirst: '添加第一个工序 Add First Task',
+        processCode: '工序编号 Task Code',
+        startSuccess: '工序已开始 Task started',
+        completeSuccess: '工序已完成 Task completed',
+        notFound: '未找到工序 Task not found',
         status: {
-            not_started: '未开始 ยังไม่เริ่ม',
-            in_progress: '进行中 กำลังดำเนินการ',
-            waiting_material: '等待材料 รอวัสดุ',
-            weather_stop: '天气停工 หยุดเพราะสภาพอากาศ',
-            completed: '已完成 เสร็จแล้ว',
-            paused: '已暂停 หยุดชั่วคราว'
+            not_started: '未开始 Not Started',
+            in_progress: '进行中 In Progress',
+            waiting_material: '等待材料 Waiting for Materials',
+            weather_stop: '天气停工 Weather Stop',
+            completed: '已完成 Completed',
+            paused: '已暂停 Paused'
         }
     },
     scheduling: {
-        schedule: '计划 แผนงาน',
-        dependencies: '依赖 งานที่เกี่ยวข้อง',
-        days: '天 วัน',
-        plannedStartDate: '计划开始 วันเริ่มตามแผน',
-        plannedEndDate: '计划完成 วันสิ้นสุดตามแผน',
-        plannedDuration: '计划工期 ระยะเวลาตามแผน'
+        schedule: '计划 Plan',
+        dependencies: '依赖 Dependencies',
+        days: '天 Days',
+        plannedStartDate: '计划开始 Planned Start',
+        plannedEndDate: '计划完成 Planned End',
+        plannedDuration: '计划工期 Planned Duration'
     },
     materials: {
-        title: '材料管理 จัดการวัสดุ',
-        materialList: '材料列表 รายการวัสดุ',
-        addMaterial: '添加材料 เพิ่มวัสดุ',
-        noMaterials: '暂无材料 ไม่มีวัสดุ',
-        purchased: '采购 สั่งซื้อ',
-        received: '到货 เข้าคลัง',
-        used: '已用 ใช้แล้ว',
-        stock: '库存 คงเหลือ'
+        title: '材料管理 Material Management',
+        materialList: '材料列表 Material List',
+        addMaterial: '添加材料 Add Material',
+        noMaterials: '暂无材料 No Materials',
+        purchased: '采购 Purchased',
+        received: '到货 Received',
+        used: '已用 Used',
+        stock: '库存 Stock'
     },
     daily: {
-        title: '今日任务 งานวันนี้',
-        updateProgress: '更新进度 อัพเดทความคืบหน้า',
-        viewSubtasks: '查看子任务 ดูงานย่อย',
-        currentProgress: '当前完成度 ความคืบหน้าปัจจุบัน',
-        newProgress: '新的完成度 ความคืบหน้าใหม่ (%)',
-        progressNotes: '进度说明 หมายเหตุความคืบหน้า'
+        title: '今日任务 Today\'s Tasks',
+        updateProgress: '更新进度 Update Progress',
+        viewSubtasks: '查看子任务 View Subtasks',
+        currentProgress: '当前完成度 Current Progress',
+        newProgress: '新的完成度 New Progress (%)',
+        progressNotes: '进度说明 Progress Notes'
     },
     users: {
-        title: '用户管理 จัดการผู้ใช้',
-        username: '用户名 ชื่อผู้ใช้',
-        password: '密码 รหัสผ่าน',
-        role: '角色 บทบาท',
-        addUser: '添加用户 เพิ่มผู้ใช้'
+        title: '用户管理 Manage Users',
+        username: '用户名 Username',
+        password: '密码 Password',
+        role: '角色 Role',
+        addUser: '添加用户 Add User'
     }
 };
 
@@ -176,7 +176,7 @@ function getI18nField(obj, fieldName) {
     
     const field = obj[fieldName];
     
-    // 如果是 JSON 对象，返回 "中文 ไทย" 格式
+    // 如果是 JSON 对象，返回 "中文 English" 格式
     if (field && typeof field === 'object') {
         const zh = field.zh || '';
         const th = field.th || '';

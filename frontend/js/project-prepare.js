@@ -1,4 +1,4 @@
-// 项目准备：把“开工前要做的事”排成步骤清单，显示每一步是否完成，并给出下一步按钮。
+﻿// 项目准备：把“开工前要做的事”排成步骤清单，显示每一步是否完成，并给出下一步按钮。
 // 前 3 步（申请表、团队、生成工序）必须完成才能开工；后 2 步（工程量、账号）可以边做边补。
 const ProjectPrepare = {
     projectId: null,
@@ -7,32 +7,32 @@ const ProjectPrepare = {
 
     STEPS: {
         drawings: {
-            zh: '图纸上传', th: 'อัปโหลดแบบก่อสร้าง', optional: true,
+            zh: '图纸上传', th: 'Upload Construction Drawings', optional: true,
             why: '上传设计图纸（PDF 或图片）。工头和老板都能在系统里查看，不需要到处找文件。',
             btn: '上传图纸', run: pid => ProjectPrepare.openDrawings(pid)
         },
         boq: {
-            zh: '工程量清单 BOQ', th: 'ปริมาณงาน (BOQ)', optional: true,
+            zh: '工程量清单 BOQ', th: 'Quantity (BOQ)', optional: true,
             why: '有报价单就上传（Excel .xlsx 或 PDF），系统自动识别楼层、套数、卫生间等，帮你填好申请表。没有就跳过，手动填。',
             btn: '上传 BOQ（自动识别）', run: pid => ProjectPrepare.openBoqExtract(pid)
         },
         profile: {
-            zh: '项目申请表', th: 'แบบฟอร์มโครงการ',
+            zh: '项目申请表', th: 'Project Form',
             why: '告诉系统这栋楼是什么样：几层、几套、有几个卫生间、屋顶和装修做法。BOQ上传后已自动填好部分内容。',
             btn: '填写 / 确认申请表', run: pid => SiteProfile.open(pid)
         },
         team: {
-            zh: '施工团队与工种', th: 'ทีมงานและประเภทช่าง',
+            zh: '施工团队与工种', th: 'Teams & Trade Types',
             why: '按班组填：班组名称、大工几个人、大工会干什么、普工几个人。不需要一个个录名字。',
             btn: '录入 / 修改团队', run: pid => SiteTeam.open(pid)
         },
         plan: {
-            zh: '生成工序计划', th: 'สร้างแผนงาน',
+            zh: '生成工序计划', th: 'Create Work Plan',
             why: '系统按申请表自动生成每层的工序和先后顺序。先预览，确认后再生成。',
             btn: '预览并生成工序', run: pid => SiteProfile.open(pid), needs: ['profile']
         },
         accounts: {
-            zh: '系统账号与权限', th: 'บัญชีผู้ใช้และสิทธิ์', optional: true,
+            zh: '系统账号与权限', th: 'Accounts & Permissions', optional: true,
             why: '决定哪些账号能进这个项目（老板、主管、采购、工头）。注意这里不是现场工人。',
             btn: '管理账号', run: pid => projectMembers.showMembersModal(pid, getI18nField(ProjectDetail.project, 'name'))
         }
@@ -90,11 +90,11 @@ const ProjectPrepare = {
         const miss = this.data.missing.map(k => `「${this.STEPS[k].zh}」`).join('、');
         const banner = this.data.ready
             ? `<div class="pp-banner ok"><b>准备完成，可以开工了 ✅</b><br>前 3 步都已完成。工程量和账号可以边做边补。` +
-              `<div style="margin-top:8px"><button class="sb-btn primary" data-go="site">进入今日现场 ไปหน้างานวันนี้</button></div></div>`
+              `<div style="margin-top:8px"><button class="sb-btn primary" data-go="site">进入今日现场 Go to Today's Site</button></div></div>`
             : `<div class="pp-banner todo"><b>还没准备好</b><br>还差：${miss}。完成这些步骤后，才能在“今日现场”里安排工作。</div>`;
 
         box.innerHTML = `<div class="pp-wrap">
-            <div class="td-head"><div><h2 class="td-title">项目准备 <small class="td-th">เตรียมโครงการ</small></h2>
+            <div class="td-head"><div><h2 class="td-title">项目准备 <small class="td-th">Project Prep</small></h2>
             <div class="td-sub">按顺序做。前 3 步必须完成，后 2 步可以边做边补。</div></div>
             <button class="sb-btn" data-refresh>🔄 刷新</button></div>
             ${banner}${cards}</div>`;
@@ -107,7 +107,7 @@ const ProjectPrepare = {
     // 弹窗关闭后自动刷新完成度
     async openDrawings(pid) {
         const d = document.createElement('div'); d.className='sb-overlay';
-        d.innerHTML = '<div class="sb-dialog"><header><h3>📐 图纸上传 อัปโหลดแบบก่อสร้าง</h3><button data-x>&times;</button></header>' +
+        d.innerHTML = '<div class="sb-dialog"><header><h3>📐 图纸上传 Upload Construction Drawings</h3><button data-x>&times;</button></header>' +
             '<div class="sb-body">' +
             '<div class="sb-note">支持 PDF、JPG、PNG 格式，最大 50MB 每个文件。上传后工头可以在手机上查看。</div>' +
             '<div id="draw-list" style="margin:10px 0"></div>' +

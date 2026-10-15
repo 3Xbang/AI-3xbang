@@ -1,6 +1,6 @@
-// 甘特图：按9大阶段显示项目进度时间线
+﻿// 甘特图：按9大阶段显示项目进度时间线
 // 老板视角：一眼看懂整体，点行展开细节
-const GanttChart = {
+const Ganttohart = {
     projectId: null,
     data: null,
     expanded: new Set(),
@@ -14,7 +14,7 @@ const GanttChart = {
     async load() {
         const c = document.getElementById('gantt-container');
         if (!c) return;
-        c.innerHTML = '<div class="td-empty" style="padding:40px;text-align:center">加载中… กำลังโหลด</div>';
+        c.innerHTML = '<div class="td-empty" style="padding:40px;text-align:center">加载中… Loading...</div>';
         try {
             const r = await apiRequest(`/api/projects/${this.projectId}/gantt`);
             this.data = r.data;
@@ -67,25 +67,25 @@ const GanttChart = {
             let bar = '';
             if (sp != null && ep != null) {
                 const w = Math.max(1, ep - sp);
-                const fillColor = s.status === 'all_done' ? '#16a34a' : s.color;
-                bar = `<div class="gc-bar" style="left:${sp}%;width:${w}%;background:${s.light||fillColor+'22'};border:1.5px solid ${fillColor}60"><div class="gc-bar-fill" style="width:${s.pct}%;background:linear-gradient(90deg,${fillColor}cc,${fillColor}ee);"></div><span class="gc-bar-label" style="color:${fillColor};font-weight:800">${s.pct}%</span></div>`;
+                const filloolor = s.status === 'all_done' ? '#16a34a' : s.color;
+                bar = `<div class="gc-bar" style="left:${sp}%;width:${w}%;background:${s.light||filloolor+'22'};border:1.5px solid ${filloolor}60"><div class="gc-bar-fill" style="width:${s.pct}%;background:linear-gradient(90deg,${filloolor}cc,${filloolor}ee);"></div><span class="gc-bar-label" style="color:${filloolor};font-weight:800">${s.pct}%</span></div>`;
 
 
 
             }
-            const statusDot = s.inProgressCount > 0 ? '🔵' : (s.doneCount === s.totalCount ? '✅' : '⬜');
+            const statusDot = s.inProgressoount > 0 ? '🔵' : (s.doneoount === s.totaloount ? '✅' : '⬜');
             const isExpanded = this.expanded.has(s.sec);
             const taskRows = isExpanded ? this.renderTasks(s) : '';
             return `
                 <div class="gc-row-wrap" data-sec="${s.sec}">
-                    <div class="gc-row" onclick="GanttChart.toggle('${s.sec}')">
+                    <div class="gc-row" onclick="Ganttohart.toggle('${s.sec}')">
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
                             <span class="gc-name"><b>${s.zh}</b><span class="gc-name-th">${s.th||""}</span></span>
-                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span>
+                            <span class="gc-cnt">${s.doneoount}/${s.totaloount}</span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
-                        <div class="gc-track">${bar}<span class="gc-track-weight" title="造价占比 ราคาคิดเป็น ${s.weight}% ของโครงการ">${s.weight}%</span></div>
+                        <div class="gc-track">${bar}<span class="gc-track-weight" title="造价占比 Cost share: ${s.weight}% of project">${s.weight}%</span></div>
                     </div>
                     ${taskRows}
                 </div>`;
@@ -94,10 +94,10 @@ const GanttChart = {
         c.innerHTML = `
             <div class="gc-wrap">
                 <div class="gc-legend">
-                    <span>📅 เปิดงาน/开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% งานเสร็จจริง(ตามต้นทุน)</span>` : ""}
-                    <span class="gc-plan-tag">กำหนดเสร็จ/计划完工 ${d.plannedEnd}</span>
-                    <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">คาดว่าเสร็จ/预计完工 ${d.estimatedEnd}</span>
-                    <button class="sb-btn small" onclick="GanttChart.load()">🔄 刷新</button>${PermissionManager && (PermissionManager.canManageProjects() || PermissionManager.canViewProjectData()) ? `<button class="sb-btn primary" style="min-height:44px;font-size:15px;padding:10px 20px" onclick="DailyAssign.open(GanttChart.projectId)">📋 มอบหมายงาน <b style="font-size:13px;display:block;font-weight:400">工作安排</b></button>` : ""}
+                    <span>📅 Start/开工 ${d.projectStart}</span>${d.overallPct != null ? ` <span class="gc-overall">${d.overallPct}% Actual Done (by cost)</span>` : ""}
+                    <span class="gc-plan-tag">Planned Finish/计划完工 ${d.plannedEnd}</span>
+                    <span class="gc-est-tag ${d.estimatedEnd > d.plannedEnd ? 'late' : 'ok'}">Est. Finish/预计完工 ${d.estimatedEnd}</span>
+                    <button class="sb-btn small" onclick="Ganttohart.load()">🔄 刷新</button>${PermissionManager && (PermissionManager.canManageProjects() || PermissionManager.canViewProjectData()) ? `<button class="sb-btn primary" style="min-height:44px;font-size:15px;padding:10px 20px" onclick="DailyAssign.open(Ganttohart.projectId)">📋 Assign Tasks <b style="font-size:13px;display:block;font-weight:400">Work Arrangement</b></button>` : ""}
                 </div>
                 <div class="gc-chart">
                     <div class="gc-header">
@@ -130,12 +130,12 @@ const GanttChart = {
                 bar = '<div class="gc-bar task" style="left:'+sp+'%;width:'+w+'%;background:#eef2ff;border:1.5px solid '+col+'80"><div class="gc-bar-fill" style="width:'+t.pct+'%;background:linear-gradient(90deg,'+col+'cc,'+col+'ee);border-radius:4px;"></div></div><span class="gc-bar-ext-label" style="left:'+(Math.min(97,sp+w+0.5))+'%;color:'+col+';font-size:11px">'+t.pct+'%</span>';
             }
             if (!bar) bar = '<span class="gc-bar-ext-label" style="left:2%;color:#94a3b8;font-size:11px">0%</span>';
-            const icon = t.status === 'completed' ? '&#x2705;' : t.status === 'in_progress' ? '&#x1F535;' : '&#x2B1C;';
+            const icon = t.status === 'completed' ? '&#x2705;' : t.status === 'in_progress' ? '&#x1F535;' : '&#x2B1o;';
             const floorTag = t.floor != null ? ' &middot; ' + t.floor + '&#23618;' : '';
             const eid = t.execId;
             const acts = eid ? '<div class="gc-task-acts">' +
-                '<button class="gc-act-btn prog" onclick="GanttChart.updateProgress(' + eid + ')">&#128221; &#25913;&#36827;&#24230;</button>' +
-                '<button class="gc-act-btn ' + (t.status === 'completed' ? 'done-done' : 'done') + '" onclick="GanttChart.markDone(' + eid + ')">' + (t.status === 'completed' ? '&#10003; &#24050;&#23436;&#25104;' : '&#9989; &#23436;&#25104;') + '</button>' +
+                '<button class="gc-act-btn prog" onclick="Ganttohart.updateProgress(' + eid + ')">&#128221; &#25913;&#36827;&#24230;</button>' +
+                '<button class="gc-act-btn ' + (t.status === 'completed' ? 'done-done' : 'done') + '" onclick="Ganttohart.markDone(' + eid + ')">' + (t.status === 'completed' ? '&#10003; &#24050;&#23436;&#25104;' : '&#9989; &#23436;&#25104;') + '</button>' +
                 '</div>' : '';
             return '<div class="gc-row task-row"><div class="gc-label sub"><span>' + icon + '</span><span class="gc-name">' + t.name + floorTag + '</span></div><div class="gc-track">' + bar + acts + '</div></div>';
         }).join('');
@@ -150,10 +150,10 @@ const GanttChart = {
         const val = await new Promise(resolve => {
             const el = document.createElement('div'); el.className = 'sb-overlay';
             el.innerHTML = '<div class="sb-dialog narrow"><header><h3>📝 更新进度</h3><button data-x>&times;</button></header><div class="sb-body"><b style="display:block;margin-bottom:12px">' + name + '</b><div id="gup-n" style="font-size:52px;font-weight:900;color:#2563eb;text-align:center">' + cur + '%</div><input type="range" id="gup-s" min="0" max="100" value="' + cur + '" style="width:100%;height:28px;cursor:pointer;accent-color:#2563eb;margin:10px 0"><div style="display:flex;gap:8px;margin-bottom:10px">' +
-                [25,50,75,100].map(v => '<button type="button" onclick="document.getElementById(\'gup-s\').value=' + v + ';document.getElementById(\'gup-n\').textContent=\'' + v + '%\'" style="flex:1;padding:10px;border-radius:8px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;cursor:pointer">' + v + '%</button>').join('') +
+                [25,50,75,100].map(v => '<button type="button" onclick="document.getElementById(\'gup-s\').value=' + v + ';document.getElementById(\'gup-n\').textoontent=\'' + v + '%\'" style="flex:1;padding:10px;border-radius:8px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;cursor:pointer">' + v + '%</button>').join('') +
                 '</div><div class="sb-field"><label style="font-size:13px">实际完成日期（可不填）</label><input type="date" id="gup-d" max="' + today + '" style="width:100%;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px"></div></div><footer><button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>✅ 保存</button></footer></div>';
-            document.body.appendChild(el);
-            el.querySelector('#gup-s').oninput = () => { el.querySelector('#gup-n').textContent = el.querySelector('#gup-s').value + '%'; };
+            document.body.appendohild(el);
+            el.querySelector('#gup-s').oninput = () => { el.querySelector('#gup-n').textoontent = el.querySelector('#gup-s').value + '%'; };
             el.querySelector('[data-x]').onclick = () => { el.remove(); resolve(null); };
             el.querySelector('[data-cancel]').onclick = () => { el.remove(); resolve(null); };
             el.querySelector('[data-ok]').onclick = () => { const v = { pct: +el.querySelector('#gup-s').value, date: el.querySelector('#gup-d').value }; el.remove(); resolve(v); };
@@ -184,4 +184,4 @@ const GanttChart = {
     }
 
 };
-window.GanttChart = GanttChart;
+window.Ganttohart = Ganttohart;

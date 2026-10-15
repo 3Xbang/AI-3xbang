@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira Villa | ระบบจัดการโครงการก่อสร้าง</title>
+    <title>Mira Villa | Construction Project Management System</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/project-dashboard.css">
     <link rel="stylesheet" href="css/project-detail.css">
@@ -30,18 +30,18 @@
         <div class="login-container">
             <div class="logo">
                 <h1>Mira Villa</h1>
-                <p>建筑项目管理系统 ระบบจัดการโครงการก่อสร้าง</p>
+                <p>建筑项目管理系统 Construction Project Management System</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
-                    <label>用户名 ชื่อผู้ใช้</label>
+                    <label>用户名 Username</label>
                     <input type="text" id="username" required>
                 </div>
                 <div class="form-group">
-                    <label>密码 รหัสผ่าน</label>
+                    <label>密码 Password</label>
                     <input type="password" id="password" required>
                 </div>
-                <button type="submit" class="btn-primary">登录 เข้าสู่ระบบ</button>
+                <button type="submit" class="btn-primary">登录 Login</button>
                 <div id="login-error" class="error-message"></div>
             </form>
         </div>
@@ -57,7 +57,7 @@
             <div class="header-right">
                 <span id="user-name"></span>
                 <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">👥 用户管理</button>
-                <button onclick="app.logout()" class="btn-link">退出 ออกจากระบบ</button>
+                <button onclick="app.logout()" class="btn-link">退出 Logout</button>
             </div>
         </header>
 
@@ -77,10 +77,10 @@
             <div id="users-view" class="view">
                 <div class="td-head" style="padding:12px 16px;border-bottom:1px solid #e2e8f0">
                     <div>
-                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">← 返回 กลับ</button>
-                        <h2 class="td-title">👥 用户管理 <small class="td-th">จัดการผู้ใช้</small></h2>
+                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">← 返回 Back</button>
+                        <h2 class="td-title">👥 用户管理 <small class="td-th">Manage Users</small></h2>
                     </div>
-                    <button class="sb-btn primary" onclick="userManager.showAdd()">➕ 添加用户 เพิ่มผู้ใช้</button>
+                    <button class="sb-btn primary" onclick="userManager.showAdd()">➕ 添加用户 Add User</button>
                 </div>
                 <div id="user-mgmt-body" style="padding:16px;max-width:900px;margin:0 auto">
                     <div class="td-empty">加载中…</div>
@@ -98,29 +98,29 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/i18n.js?v=105"></script>
-    <script src="js/permissions.js?v=103"></script>
+    <script src="js/i18n.js?v=106"></script>
+    <script src="js/permissions.js?v=104"></script>
     <script src="js/api.js?v=103"></script>
-    <script src="js/project-dashboard.js?v=103"></script>
-    <script src="js/project-detail.js?v=117"></script>
-    <script src="js/process-manager.js?v=102"></script>
+    <script src="js/project-dashboard.js?v=104"></script>
+    <script src="js/project-detail.js?v=118"></script>
+    <script src="js/process-manager.js?v=103"></script>
     <script src="js/process-scheduling.js?v=102"></script>
-    <script src="js/app.js?v=105"></script>
+    <script src="js/app.js?v=106"></script>
     <script src="js/subtask-templates.js?v=102"></script>
-    <script src="js/process-enhancements.js?v=109"></script>
+    <script src="js/process-enhancements.js?v=110"></script>
     <script src="js/quantities.js?v=102"></script>
     <script src="js/project-enhancements.js?v=102"></script>
     <script src="js/daily-tasks.js?v=102"></script>
-    <script src="js/photo-manager.js?v=109"></script>
-    <script src="js/material-manager-simple.js?v=104"></script>
-    <script src="js/user-manager.js?v=103"></script>
-    <script src="js/project-members.js?v=104"></script>
-    <script src="js/task-assignment.js?v=102"></script>
-    <script src="js/gantt.js?v=3"></script>
-    <script src="js/daily-assign.js?v=6"></script>
-    <script src="js/site-board.js?v=32"></script>
-    <script src="js/purchase-audit.js?v=10"></script>
-    <script src="js/purchase-db.js?v=3"></script>
-    <script src="js/project-prepare.js?v=5"></script>
+    <script src="js/photo-manager.js?v=110"></script>
+    <script src="js/material-manager-simple.js?v=105"></script>
+    <script src="js/user-manager.js?v=104"></script>
+    <script src="js/project-members.js?v=105"></script>
+    <script src="js/task-assignment.js?v=103"></script>
+    <script src="js/gantt.js?v=4"></script>
+    <script src="js/daily-assign.js?v=7"></script>
+    <script src="js/site-board.js?v=33"></script>
+    <script src="js/purchase-audit.js?v=11"></script>
+    <script src="js/purchase-db.js?v=4"></script>
+    <script src="js/project-prepare.js?v=6"></script>
 </body>
 </html>

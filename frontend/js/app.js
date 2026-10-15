@@ -1,13 +1,13 @@
-
+﻿
 // 获取状态双语文本
 function getStatusText(status) {
     const statusTexts = {
-        'not_started': '未开始 ยังไม่เริ่ม',
-        'in_progress': '进行中 กำลังดำเนินการ',
-        'waiting_material': '等待材料 รอวัสดุ',
-        'weather_stop': '天气停工 หยุดเพราะสภาพอากาศ',
-        'completed': '已完成 เสร็จแล้ว',
-        'paused': '已暂停 หยุดชั่วคราว'
+        'not_started': '未开始 Not Started',
+        'in_progress': '进行中 In Progress',
+        'waiting_material': '等待材料 Waiting for Materials',
+        'weather_stop': '天气停工 Weather Stop',
+        'completed': '已完成 Completed',
+        'paused': '已暂停 Paused'
     };
     return statusTexts[status] || status;
 }
@@ -185,7 +185,7 @@ const app = {
                 ${canManageMembers ? `
                     <div class="project-actions">
                         <button class="btn btn-small" onclick="event.stopPropagation(); projectMembers.showMembersModal(${project.id}, '${project.name?.zh || project.name}')">
-                            👥 ${t('projects.members')}
+                            �� ${t('projects.members')}
                         </button>
                     </div>
                 ` : ''}
@@ -232,8 +232,8 @@ const app = {
                     <input type="date" id="project-end-date">
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
-                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 Cancel"}</button>
+                    <button type="submit" class="btn-primary">${"保存 Save"}</button>
                 </div>
             </form>
         `);
@@ -348,12 +348,12 @@ const app = {
                         <span class="progress-text">${percentage}%</span>
                     </div>
                     <div class="task-info">
-                        ${task.assigned_workers ? `<div>👷 ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
-                        ${task.planned_quantity ? `<div>📊 ${t('daily.todayPlan')}: ${task.planned_quantity} ${unit}</div>` : ''}
+                        ${task.assigned_workers ? `<div>�� ${JSON.parse(task.assigned_workers).length || 0} ${t('daily.workers')}</div>` : ''}
+                        ${task.planned_quantity ? `<div>�� ${t('daily.todayPlan')}: ${task.planned_quantity} ${unit}</div>` : ''}
                         ${task.today_completed ? `<div>✅ ${t('daily.todayCompleted')}: ${task.today_completed} ${unit}</div>` : ''}
                     </div>
                     <div class="task-actions">
-                        <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">查看子任务 ดูงานย่อย</button>
+                        <button class="btn-sm btn-secondary" onclick="event.stopPropagation(); app.showSubtasks(${task.id})">查看子任务 View Subtasks</button>
                         <button class="btn-sm btn-primary" onclick="event.stopPropagation(); app.showProgressForm(${task.id}, '${task.quantity_unit || ''}')">${t('daily.updateProgress')}</button>
                     </div>
                 </div>
@@ -387,8 +387,8 @@ const app = {
                     <textarea id="progress-notes" rows="3" placeholder="${t('common.notes')}..."></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
-                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 Cancel"}</button>
+                    <button type="submit" class="btn-primary">${"保存 Save"}</button>
                 </div>
             </form>
         `);
@@ -480,10 +480,10 @@ const app = {
                         ${process.actual_end_date ? `<div><strong>完成:</strong> ${process.actual_end_date}</div>` : ''}
                     </div>
                     <div class="process-actions">
-                        <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">查看子任务 ดูงานย่อย</button>
+                        <button class="btn-sm btn-secondary" onclick="app.showSubtasks(${process.id})">查看子任务 View Subtasks</button>
                         ${canAssignTask ? `
                             <button class="btn-sm btn-primary" onclick="taskAssignment.showAssignModal(${process.id}, '${process.process_code}', '${getI18nField(process, 'process_name')}')">
-                                📋 分配任务 มอบหมายงาน
+                                �� 分配任务 Assign Tasks
                             </button>
                         ` : ''}
                     </div>
@@ -603,7 +603,7 @@ const app = {
                         </div>
                     </div>
                     <div class="subtask-footer">
-                        ${subtask.estimated_quantity ? `<span>📊 ${subtask.estimated_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
+                        ${subtask.estimated_quantity ? `<span>�� ${subtask.estimated_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
                         ${subtask.actual_quantity ? `<span>✅ ${subtask.actual_quantity} ${getUnitText(subtask.unit || '')}</span>` : ''}
                         <div class="subtask-actions">
                             <button class="btn-xs btn-primary" onclick="event.stopPropagation(); app.showUpdateSubtaskForm(${subtask.id}, ${processExecutionId})">
@@ -652,8 +652,8 @@ const app = {
                     </select>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
-                    <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
+                    <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 Cancel"}</button>
+                    <button type="submit" class="btn-primary">${"保存 Save"}</button>
                 </div>
             </form>
         `);
@@ -723,8 +723,8 @@ const app = {
                         <textarea id="update-subtask-notes" rows="3" placeholder="${t('common.notes')}...">${getI18nField(subtask, 'notes') || ''}</textarea>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 ยกเลิก"}</button>
-                        <button type="submit" class="btn-primary">${"保存 บันทึก"}</button>
+                        <button type="button" class="btn-secondary" onclick="app.closeModal()">${"取消 Cancel"}</button>
+                        <button type="submit" class="btn-primary">${"保存 Save"}</button>
                     </div>
                 </form>
             `);

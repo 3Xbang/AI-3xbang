@@ -1,4 +1,4 @@
-// 现场安排：项目申请表、团队名册、现场看板、提前开始确认、通知
+﻿// 现场安排：项目申请表、团队名册、现场看板、提前开始确认、通知
 // 对应后端接口见 backend/src/site-routes.js。泰文请当地同事核对。
 (function () {
     'use strict';
@@ -14,15 +14,15 @@
     const nm = x => esc(x.name ? getI18nField({ process_name: x.name }, 'process_name') : x.label);
 
     let TRADES = {
-        mach: { zh: '机械', th: 'เครื่องจักร' }, scaffold: { zh: '架子工', th: 'ช่างนั่งร้าน' }, rebar: { zh: '钢筋工', th: 'ช่างเหล็ก' },
-        carpenter: { zh: '木工', th: 'ช่างไม้' }, concrete: { zh: '混凝土工', th: 'ช่างคอนกรีต' }, mason: { zh: '瓦工/抹灰', th: 'ช่างปูน' },
-        tiler: { zh: '贴砖工', th: 'ช่างปูกระเบื้อง' }, waterproof: { zh: '防水工', th: 'ช่างกันซึม' }, plumber: { zh: '水工', th: 'ช่างประปา' },
-        electrician: { zh: '电工', th: 'ช่างไฟฟ้า' }, painter: { zh: '油漆工', th: 'ช่างทาสี' }, installer: { zh: '安装工', th: 'ช่างติดตั้ง' },
-        general: { zh: '普工/杂工', th: 'คนงานทั่วไป' }, roof: { zh: '屋面工', th: 'ช่างหลังคา' },
-        ceiling: { zh: '吊顶工', th: 'ช่างฝ้าเพดาน' }, aluminum: { zh: '铝门窗/玻璃工', th: 'ช่างอลูมิเนียมและกระจก' }, aircon: { zh: '空调工', th: 'ช่างแอร์' },
-        welder: { zh: '焊工/铁工', th: 'ช่างเชื่อม' }, pool: { zh: '泳池工', th: 'ช่างสระว่ายน้ำ' }, landscape: { zh: '园林工', th: 'ช่างจัดสวน' }
+        mach: { zh: '机械', th: 'Machinery' }, scaffold: { zh: '架子工', th: 'Scaffolding' }, rebar: { zh: '钢筋工', th: 'Rebar Work' },
+        carpenter: { zh: '木工', th: 'Carpentry' }, concrete: { zh: '混凝土工', th: 'Concrete Work' }, mason: { zh: '瓦工/抹灰', th: 'Masonry/Plastering' },
+        tiler: { zh: '贴砖工', th: 'Tiling' }, waterproof: { zh: '防水工', th: 'Waterproofing' }, plumber: { zh: '水工', th: 'Plumbing' },
+        electrician: { zh: '电工', th: 'Electrical' }, painter: { zh: '油漆工', th: 'Painting' }, installer: { zh: '安装工', th: 'Installation' },
+        general: { zh: '普工/杂工', th: 'General Labor' }, roof: { zh: '屋面工', th: 'Roofing' },
+        ceiling: { zh: '吊顶工', th: 'Ceiling Work' }, aluminum: { zh: '铝门窗/玻璃工', th: 'Aluminum & Glass' }, aircon: { zh: '空调工', th: 'Air Conditioning' },
+        welder: { zh: '焊工/铁工', th: 'Welding/Steel' }, pool: { zh: '泳池工', th: 'Pool Work' }, landscape: { zh: '园林工', th: 'Landscaping' }
     };
-    const tradeName = k => (k === '*' ? '什么都能帮 ช่วยได้ทุกงาน' : TRADES[k] ? `${TRADES[k].zh} ${TRADES[k].th}` : k);
+    const tradeName = k => (k === '*' ? '什么都能帮 Can help with anything' : TRADES[k] ? `${TRADES[k].zh} ${TRADES[k].th}` : k);
 
     function overlay(title, body, footer, narrow) {
         const el = document.createElement('div');
@@ -43,17 +43,17 @@
             busy(false);
             return new Promise(resolve => {
                 const reasons = (info.reasons || []).map(r => `<li>${esc(r.zh)}</li>`).join('');
-                const d = overlay('现在还不能开始 ยังเริ่มงานไม่ได้',
-                    `<div class="sb-note">${esc(info.task || '')}<br>还有这些条件没满足 เงื่อนไขที่ยังไม่ครบ：<ul class="sb-list">${reasons}</ul></div>` +
-                    `<div class="sb-field"><label>如果现场确实要提前开始，请写明原因 ถ้าจำเป็นต้องเริ่มก่อน กรุณาระบุเหตุผล *</label>` +
+                const d = overlay('现在还不能开始 Cannot Start Yet',
+                    `<div class="sb-note">${esc(info.task || '')}<br>还有这些条件没满足 Unmet conditions：<ul class="sb-list">${reasons}</ul></div>` +
+                    `<div class="sb-field"><label>如果现场确实要提前开始，请写明原因 If you must start early, please state the reason *</label>` +
                     `<textarea id="sb-force-reason" rows="3" placeholder="例如：业主要求提前交付，已和监理确认"></textarea>` +
-                    `<div class="hint">提前开始会记录你的名字和原因，并通知你的上级和老板 ระบบจะบันทึกชื่อและเหตุผล และแจ้งหัวหน้ากับเจ้าของ</div></div>`,
-                    `<button class="sb-btn" data-cancel>先不开始 ยกเลิก</button><button class="sb-btn warn" data-ok>仍要提前开始 เริ่มก่อน</button>`, true);
+                    `<div class="hint">提前开始会记录你的名字和原因，并通知你的上级和老板 System will record your name and reason, and notify supervisor and owner</div></div>`,
+                    `<button class="sb-btn" data-cancel>先不开始 Cancel</button><button class="sb-btn warn" data-ok>仍要提前开始 Start Early</button>`, true);
                 d.q('[data-cancel]').onclick = () => { d.close(); resolve(null); };
                 d.q('[data-x]').onclick = () => { d.close(); resolve(null); };
                 d.q('[data-ok]').onclick = () => {
                     const v = d.q('#sb-force-reason').value.trim();
-                    if (!v) { toast('请先写明原因 กรุณาระบุเหตุผล', 'error'); return; }
+                    if (!v) { toast('请先写明原因 Please state the reason', 'error'); return; }
                     d.close(); resolve(v);
                 };
             });
@@ -72,9 +72,9 @@
             catch (e) {
                 if (e.status === 409 && e.data && e.data.code === 'BLOCKED' && data && data.status === 'in_progress') {
                     const reason = await SiteStart.askReason(e.data);
-                    if (!reason) { const c = new Error('已取消 ยกเลิก'); c.cancelled = true; throw c; }
+                    if (!reason) { const c = new Error('已取消 Cancel'); c.cancelled = true; throw c; }
                     const r = await orig.call(holder, id, Object.assign({}, data, { force_reason: reason }));
-                    toast('已提前开始，并通知了上级和老板 เริ่มก่อนแล้ว และแจ้งหัวหน้ากับเจ้าของแล้ว', 'warning');
+                    toast('已提前开始，并通知了上级和老板 Started early, notified supervisor and owner', 'warning');
                     return r;
                 }
                 throw e;
@@ -99,8 +99,8 @@
             const items = r.data.items;
             const body = items.length
                 ? items.map(n => `<div class="sb-noti ${n.is_read ? '' : 'unread'}"><div class="sb-title">${esc(n.title)}</div><div class="sb-sub">${esc(n.created_at)}</div><pre>${esc(n.body)}</pre></div>`).join('')
-                : '<div class="sb-empty">暂无通知 ไม่มีการแจ้งเตือน</div>';
-            const d = overlay('通知 การแจ้งเตือน', body, items.length ? '<button class="sb-btn" data-all>全部标为已读 อ่านทั้งหมด</button>' : '');
+                : '<div class="sb-empty">暂无通知 No Notifications</div>';
+            const d = overlay('通知 Notifications', body, items.length ? '<button class="sb-btn" data-all>全部标为已读 Mark all as read</button>' : '');
             const b = d.q('[data-all]');
             if (b) b.onclick = async () => { await call('POST', '/notifications/read-all'); d.close(); SiteNotify.refreshCount(); };
         }
@@ -142,16 +142,16 @@
                     `<div class="sb-sub">普工 ${c.helper_count} 人（打下手，什么都能帮）</div></div>` +
                     (isManager() ? `<button class="sb-btn small" data-edit="${c.id}">编辑</button><button class="sb-btn small" data-del="${c.id}">删除</button>` : '') + `</div>`;
             }).join('')
-                : '<div class="sb-empty">还没有班组。点下面的「添加班组」开始。<br>ยังไม่มีทีม กดเพิ่มทีมด้านล่าง</div>';
-            const d = overlay('施工团队 ทีมงานก่อสร้าง',
-                `<div class="sb-note">只需要填：班组名称、大工和普工各几个人、<b>几个大工会干什么</b>。系统会按这个自动分小组。<br>ช่างฝีมือคือหัวหน้างาน ผู้ช่วยคือคนงานทั่วไป</div>` +
+                : '<div class="sb-empty">还没有班组。点下面的「添加班组」开始。<br>No teams yet. Click Add Team below.</div>';
+            const d = overlay('施工团队 Construction Teams',
+                `<div class="sb-note">只需要填：班组名称、大工和普工各几个人、<b>几个大工会干什么</b>。系统会按这个自动分小组。<br>Skilled Workers are team leads, helpers are general labor</div>` +
                 `<div class="sb-sub" style="margin-bottom:10px"><b>共 ${crews.length} 个班组 · 大工 ${tot.skilled} 人 · 普工 ${tot.helper} 人</b></div>${rows}`,
-                isManager() ? '<button class="sb-btn primary" data-add>+ 添加班组 เพิ่มทีม</button>' : '');
+                isManager() ? '<button class="sb-btn primary" data-add>+ 添加班组 Add Team</button>' : '');
             const reload = () => { d.close(); SiteTeam.open(projectId); if (window.SiteBoard && ProjectDetail.currentView === 'site') SiteBoard.refresh(); };
             const add = d.q('[data-add]'); if (add) add.onclick = () => SiteTeam.form(projectId, null, reload);
             d.qa('[data-edit]').forEach(b => b.onclick = () => SiteTeam.form(projectId, crews.find(c => String(c.id) === b.dataset.edit), reload));
             d.qa('[data-del]').forEach(b => b.onclick = async () => {
-                if (!confirm('确认删除这个班组？ ยืนยันลบทีมนี้')) return;
+                if (!confirm('确认删除这个班组？ Confirm delete this team')) return;
                 try { await call('DELETE', `/crews/${b.dataset.del}`); reload(); } catch (e) { toast(e.message, 'error'); }
             });
         },
@@ -160,14 +160,14 @@
             const rows = COARSE.map(x =>
                 `<div class="sb-skill-row"><div class="sb-skill-name"><b>${esc(x.zh)}</b> <span class="sb-sub">${esc(x.th)}</span><div class="sb-sub">${esc(x.d)}</div></div>` +
                 `<div class="sb-skill-num"><input type="number" min="0" max="100" data-skill="${x.k}" value="${sc[x.k] || 0}"> 人</div></div>`).join('');
-            const d = overlay(c ? '编辑班组 แก้ไขทีม' : '添加班组 เพิ่มทีม',
-                `<div class="sb-field" style="margin-bottom:12px"><label>班组名称 ชื่อทีม *</label><input type="text" id="cr-name" placeholder="例如：A 班组、泥水班" value="${esc(c ? c.name : '')}"></div>` +
+            const d = overlay(c ? '编辑班组 Edit Team' : '添加班组 Add Team',
+                `<div class="sb-field" style="margin-bottom:12px"><label>班组名称 Team Name *</label><input type="text" id="cr-name" placeholder="例如：A 班组、泥水班" value="${esc(c ? c.name : '')}"></div>` +
                 `<div class="sb-grid" style="margin-bottom:12px">` +
-                `<div class="sb-field"><label>大工共几个人 ช่างฝีมือ (คน)</label><input type="number" id="cr-skilled" min="0" max="100" value="${c ? c.skilled_count : 1}"></div>` +
-                `<div class="sb-field"><label>普工共几个人 ผู้ช่วย (คน)</label><input type="number" id="cr-helper" min="0" max="300" value="${c ? c.helper_count : 2}"></div></div>` +
-                `<div class="sb-field"><label>这些大工里，几个人会干什么？ ช่างฝีมือทำงานอะไรได้กี่คน</label>` +
+                `<div class="sb-field"><label>大工共几个人 Skilled Worker (people)</label><input type="number" id="cr-skilled" min="0" max="100" value="${c ? c.skilled_count : 1}"></div>` +
+                `<div class="sb-field"><label>普工共几个人 helpers (people)</label><input type="number" id="cr-helper" min="0" max="300" value="${c ? c.helper_count : 2}"></div></div>` +
+                `<div class="sb-field"><label>这些大工里，几个人会干什么？ Skilled WorkerHow many can do each trade?</label>` +
                 `<div class="sb-sub" style="margin:2px 0 8px">不会的填 0。一个人可以会好几样，所以各项加起来可以比大工总数多。</div><div class="sb-skill-grid">${rows}</div></div>`,
-                '<button class="sb-btn" data-cancel>取消 ยกเลิก</button><button class="sb-btn primary" data-ok>保存 บันทึก</button>');
+                '<button class="sb-btn" data-cancel>取消 Cancel</button><button class="sb-btn primary" data-ok>保存 Save</button>');
             d.q('[data-cancel]').onclick = d.close;
             d.q('[data-ok]').onclick = async () => {
                 const skill_counts = {};
@@ -178,10 +178,10 @@
                     helper_count: Number(d.q('#cr-helper').value) || 0,
                     skill_counts
                 };
-                if (!body.name) { toast('请填写班组名称 กรุณากรอกชื่อทีม', 'error'); return; }
+                if (!body.name) { toast('请填写班组名称 Please enter team name', 'error'); return; }
                 if (body.skilled_count + body.helper_count < 1) { toast('班组至少要有 1 个人', 'error'); return; }
-                if (body.skilled_count > 0 && !Object.keys(skill_counts).length) { toast('请填写有几个大工会干什么 กรุณาระบุงานที่ทำได้', 'error'); return; }
-                if (Object.values(skill_counts).some(n => n > body.skilled_count)) { toast('某项的人数不能比大工总数多 จำนวนเกินช่างฝีมือทั้งหมด', 'error'); return; }
+                if (body.skilled_count > 0 && !Object.keys(skill_counts).length) { toast('请填写有几个大工会干什么 Please specify work types', 'error'); return; }
+                if (Object.values(skill_counts).some(n => n > body.skilled_count)) { toast('某项的人数不能比大工总数多 Count exceeds total skilled workers', 'error'); return; }
                 try {
                     busy(true);
                     if (c) await call('PUT', `/crews/${c.id}`, body); else await call('POST', `/projects/${projectId}/crews`, body);
@@ -194,54 +194,54 @@
     // ================= 项目申请表 =================
     const OPT = (list) => list.map(([v, l]) => ({ v, l }));
     const FORM = [
-        { t: '建筑概况 ข้อมูลอาคาร', f: [
-            { k: 'floors', type: 'num', l: '地上几层 กี่ชั้น (ไม่รวมใต้ดิน)', min: 1, max: 10 },
-            { k: 'units', type: 'num', l: '一共几套（联排/多户整排一起盖时填，单栋填 1）จำนวนยูนิต', min: 1, max: 100 },
-            { k: 'total_area', type: 'num', l: '总建筑面积 พื้นที่รวม (ตร.ม.) — 多套时填整排合计', min: 0 },
-            { k: 'attic', type: 'chk', l: '有阁楼或夹层 มีห้องใต้หลังคา' },
-            { k: 'basement', type: 'chk', l: '有地下室 มีชั้นใต้ดิน' },
-            { k: 'roof', type: 'sel', l: '屋面形式 รูปแบบหลังคา', o: OPT([['flat', '平屋面 ดาดฟ้า'], ['pitched', '坡屋面 หลังคาลาด'], ['both', '两种都有 มีทั้งสอง']]) },
-            { k: 'roof_insulation', type: 'chk', l: '屋面做保温隔热 มีฉนวนกันความร้อน' },
-            { k: 'stairs', type: 'num', l: '室内楼梯几部 บันไดภายในกี่ชุด', min: 0 },
-            { k: 'balconies', type: 'num', l: '阳台/露台共几个 ระเบียง/ดาดฟ้า', min: 0 }
+        { t: '建筑概况 Building Info', f: [
+            { k: 'floors', type: 'num', l: '地上几层 How many floors (excl. basement)', min: 1, max: 10 },
+            { k: 'units', type: 'num', l: '一共几套（联排/多户整排一起盖时填，单栋填 1）Number of units', min: 1, max: 100 },
+            { k: 'total_area', type: 'num', l: '总建筑面积 Total area (sqm) — total for all units', min: 0 },
+            { k: 'attic', type: 'chk', l: '有阁楼或夹层 Has attic/mezzanine' },
+            { k: 'basement', type: 'chk', l: '有地下室 Has basement' },
+            { k: 'roof', type: 'sel', l: '屋面形式 Roof type', o: OPT([['flat', '平屋面 Flat Roof'], ['pitched', '坡屋面 Pitched Roof'], ['both', '两种都有 Both types']]) },
+            { k: 'roof_insulation', type: 'chk', l: '屋面做保温隔热 Has thermal insulation' },
+            { k: 'stairs', type: 'num', l: '室内楼梯几部 How many indoor staircases', min: 0 },
+            { k: 'balconies', type: 'num', l: '阳台/露台共几个 Balcony/Terrace', min: 0 }
         ] },
-        { t: '房间 ห้อง', f: [
-            { k: 'bathrooms', type: 'num', l: '每层卫生间数（各层相同时）ห้องน้ำต่อชั้น', min: 0 },
-            { k: 'bathrooms_by_floor', type: 'list', l: '各层卫生间数（各层不同时填，逗号分隔，如 0,2,2）', hint: '填了这一项，上面的“每层卫生间数”就不起作用 · ต้องมีจำนวนเท่ากับจำนวนชั้น' },
-            { k: 'kitchens', type: 'num', l: '厨房个数 จำนวนครัว', min: 0 },
-            { k: 'kitchen_floors', type: 'list', l: '厨房在哪几层（逗号分隔，默认 1 层）ครัวอยู่ชั้นไหน' }
+        { t: '房间 Rooms', f: [
+            { k: 'bathrooms', type: 'num', l: '每层卫生间数（各层相同时）Bathrooms per floor', min: 0 },
+            { k: 'bathrooms_by_floor', type: 'list', l: '各层卫生间数（各层不同时填，逗号分隔，如 0,2,2）', hint: '填了这一项，上面的“每层卫生间数”就不起作用 · Must match number of floors' },
+            { k: 'kitchens', type: 'num', l: '厨房个数 Number of kitchens', min: 0 },
+            { k: 'kitchen_floors', type: 'list', l: '厨房在哪几层（逗号分隔，默认 1 层）Which floors have kitchen' }
         ] },
-        { t: '装修标准 การตกแต่ง', f: [
-            { k: 'floor_finish', type: 'sel', l: '客厅/卧室地面 พื้นห้องนั่งเล่น/ห้องนอน', o: OPT([['tile', '地砖 กระเบื้อง'], ['wood', '木地板 ไม้'], ['stone', '石材 หิน']]) },
-            { k: 'wall_finish', type: 'sel', l: '墙面 ผนัง', o: OPT([['paint', '乳胶漆 สีน้ำ'], ['wallpaper', '墙纸 วอลเปเปอร์'], ['mixed', '漆+局部墙纸 สีและวอลเปเปอร์']]) },
-            { k: 'ceiling', type: 'sel', l: '吊顶 ฝ้าเพดาน', o: OPT([['none', '无 ไม่มี'], ['gypsum', '石膏板 ยิปซัม'], ['aluminum_wet', '厨卫铝扣板+其他石膏板 อลูมิเนียมในห้องน้ำ/ครัว']]) },
-            { k: 'cabinet', type: 'chk', l: '厨房橱柜和台面 ตู้ครัวและท็อป' },
-            { k: 'shower_room', type: 'chk', l: '淋浴房 ห้องอาบน้ำกระจก' },
-            { k: 'fixed_furniture', type: 'chk', l: '固定家具/衣柜 เฟอร์นิเจอร์บิลท์อิน' }
+        { t: '装修标准 Interior Finishing', f: [
+            { k: 'floor_finish', type: 'sel', l: '客厅/卧室地面 Living/Bedroom floor', o: OPT([['tile', '地砖 Tile'], ['wood', '木地板 Wood'], ['stone', '石材 Stone']]) },
+            { k: 'wall_finish', type: 'sel', l: '墙面 Wall', o: OPT([['paint', '乳胶漆 Paint'], ['wallpaper', '墙纸 Wallpaper'], ['mixed', '漆+局部墙纸 Paint + Wallpaper']]) },
+            { k: 'ceiling', type: 'sel', l: '吊顶 Ceiling', o: OPT([['none', '无 None'], ['gypsum', '石膏板 Gypsum Board'], ['aluminum_wet', '厨卫铝扣板+其他石膏板 Aluminum in Bath/Kitchen']]) },
+            { k: 'cabinet', type: 'chk', l: '厨房橱柜和台面 Kitchen cabinets and countertop' },
+            { k: 'shower_room', type: 'chk', l: '淋浴房 Glass Shower Room' },
+            { k: 'fixed_furniture', type: 'chk', l: '固定家具/衣柜 Built-in furniture/wardrobe' }
         ] },
-        { t: '外立面 ภายนอกอาคาร', f: [
-            { k: 'exterior_finish', type: 'sel', l: '外墙做法 ผนังภายนอก', o: OPT([['paint', '涂料 สี'], ['tile', '外墙砖 กระเบื้อง'], ['stone', '石材 หิน'], ['mixed', '混合 ผสม']]) },
-            { k: 'exterior_insulation', type: 'chk', l: '外墙保温 ฉนวนผนังภายนอก' }
+        { t: '外立面 Exterior', f: [
+            { k: 'exterior_finish', type: 'sel', l: '外墙做法 Exterior Wall', o: OPT([['paint', '涂料 Paint'], ['tile', '外墙砖 Tile'], ['stone', '石材 Stone'], ['mixed', '混合 Mixed']]) },
+            { k: 'exterior_insulation', type: 'chk', l: '外墙保温 Exterior Wall Insulation' }
         ] },
-        { t: '机电设备 ระบบ', f: [
-            { k: 'aircon', type: 'sel', l: '空调 แอร์', o: OPT([['none', '无 ไม่มี'], ['split', '分体 แยกส่วน'], ['central', '中央 ระบบรวม']]) },
-            { k: 'hot_water', type: 'sel', l: '热水 น้ำร้อน', o: OPT([['none', '无 ไม่มี'], ['electric', '电热水器 ไฟฟ้า'], ['solar', '太阳能 โซลาร์'], ['heatpump', '热泵 ฮีทปั๊ม']]) },
-            { k: 'water_supply', type: 'sel', l: '供水 การจ่ายน้ำ', o: OPT([['direct', '市政直供 ประปาตรง'], ['tank', '需水箱水泵 ถังน้ำและปั๊ม']]) },
-            { k: 'elevator', type: 'chk', l: '电梯 ลิฟต์' },
-            { k: 'pool', type: 'chk', l: '泳池 สระว่ายน้ำ' }
+        { t: '机电设备 Systems', f: [
+            { k: 'aircon', type: 'sel', l: '空调 Air Con', o: OPT([['none', '无 None'], ['split', '分体 Split unit'], ['central', '中央 Central System']]) },
+            { k: 'hot_water', type: 'sel', l: '热水 Hot water', o: OPT([['none', '无 None'], ['electric', '电热水器 Electric'], ['solar', '太阳能 Solar'], ['heatpump', '热泵 Heat pump']]) },
+            { k: 'water_supply', type: 'sel', l: '供水 Water supply', o: OPT([['direct', '市政直供 Direct mains'], ['tank', '需水箱水泵 Tank + pump']]) },
+            { k: 'elevator', type: 'chk', l: '电梯 Elevator' },
+            { k: 'pool', type: 'chk', l: '泳池 Pool' }
         ] },
-        { t: '室外 งานภายนอก', f: [
-            { k: 'fence', type: 'chk', l: '围墙与大门 รั้วและประตู' },
-            { k: 'road', type: 'chk', l: '道路与铺装 ถนนและพื้น' },
-            { k: 'landscape', type: 'chk', l: '庭院景观绿化 จัดสวน' },
-            { k: 'sewage', type: 'sel', l: '污水处理 การบำบัดน้ำเสีย', o: OPT([['septic', '化粪池 ถังบำบัด'], ['municipal', '接市政 ต่อท่อสาธารณะ']]) }
+        { t: '室外 Exterior Work', f: [
+            { k: 'fence', type: 'chk', l: '围墙与大门 Fence and gate' },
+            { k: 'road', type: 'chk', l: '道路与铺装 Roads and paving' },
+            { k: 'landscape', type: 'chk', l: '庭院景观绿化 Landscaping' },
+            { k: 'sewage', type: 'sel', l: '污水处理 Wastewater Treatment', o: OPT([['septic', '化粪池 Septic tank'], ['municipal', '接市政 Connect to public sewer']]) }
         ] },
-        { t: '技术项（工程师填，不确定就用默认）ข้อมูลเทคนิค', f: [
-            { k: 'foundation', type: 'sel', l: '基础类型 ประเภทฐานราก', o: OPT([['isolated', '独立基础 ฐานแผ่เดี่ยว'], ['strip', '条形基础 ฐานแถบ'], ['raft', '筏板基础 ฐานแผ่'], ['pile', '桩基 เสาเข็ม']]) },
-            { k: 'soft_soil', type: 'chk', l: '软弱地基需处理 ดินอ่อนต้องปรับปรุง' },
-            { k: 'high_water', type: 'chk', l: '地下水位高 ระดับน้ำใต้ดินสูง' },
-            { k: 'masonry', type: 'sel', l: '砌体材料 วัสดุก่อ', o: OPT([['brick', '红砖 อิฐแดง'], ['aac', '加气块 อิฐมวลเบา']]) },
-            { k: 'concrete_supply', type: 'sel', l: '混凝土供应 การจัดหาคอนกรีต', o: OPT([['ready', '预拌 ผสมเสร็จ'], ['site', '现场搅拌 ผสมหน้างาน']]) }
+        { t: '技术项（工程师填，不确定就用默认）Technical Data', f: [
+            { k: 'foundation', type: 'sel', l: '基础类型 Foundation type', o: OPT([['isolated', '独立基础 Isolated footing'], ['strip', '条形基础 Strip footing'], ['raft', '筏板基础 Raft footing'], ['pile', '桩基 Pile foundation']]) },
+            { k: 'soft_soil', type: 'chk', l: '软弱地基需处理 Soft soil needs treatment' },
+            { k: 'high_water', type: 'chk', l: '地下水位高 High groundwater level' },
+            { k: 'masonry', type: 'sel', l: '砌体材料 Masonry material', o: OPT([['brick', '红砖 Red brick'], ['aac', '加气块 AAC block']]) },
+            { k: 'concrete_supply', type: 'sel', l: '混凝土供应 Concrete supply', o: OPT([['ready', '预拌 Ready-mix'], ['site', '现场搅拌 Site-mixed']]) }
         ] }
     ];
 
@@ -256,11 +256,11 @@
         async open(projectId) {
             const r = await call('GET', `/projects/${projectId}/profile`);
             const data = Object.assign({}, r.data.defaults, r.data.answers);
-            const body = `<div class="sb-note">客户回答这些问题，系统就会自动选出需要的工序、按楼层展开，并排好先后顺序。不需要手动选工序。<br>กรอกข้อมูลนี้ ระบบจะเลือกงาน แบ่งตามชั้น และเรียงลำดับให้อัตโนมัติ</div>` +
+            const body = `<div class="sb-note">客户回答这些问题，系统就会自动选出需要的工序、按楼层展开，并排好先后顺序。不需要手动选工序。<br>Fill in this data and the system will select tasks, split by floor, and order them automatically</div>` +
                 (r.data.planGeneratedAt ? `<div class="sb-sub" style="margin-bottom:8px">上次生成工序：${esc(r.data.planGeneratedAt)}</div>` : '') +
                 FORM.map(s => `<div class="sb-form-sec"><h4>${s.t}</h4><div class="sb-grid">${s.f.map(f => fieldHtml(f, data[f.k])).join('')}</div></div>`).join('');
-            const d = overlay('项目申请表 แบบฟอร์มโครงการ', body,
-                '<button class="sb-btn" data-save>只保存 บันทึก</button><button class="sb-btn primary" data-preview>预览并生成工序 ดูตัวอย่างและสร้างงาน</button>');
+            const d = overlay('项目申请表 Project Form', body,
+                '<button class="sb-btn" data-save>只保存 Save</button><button class="sb-btn primary" data-preview>预览并生成工序 Preview and Generate Tasks</button>');
             const read = () => {
                 const a = Object.assign({}, r.data.answers);
                 for (const s of FORM) for (const f of s.f) {
@@ -279,7 +279,7 @@
                 return a;
             };
             d.q('[data-save]').onclick = async () => {
-                try { busy(true); await call('PUT', `/projects/${projectId}/profile`, { answers: read() }); toast('申请表已保存 บันทึกแล้ว'); }
+                try { busy(true); await call('PUT', `/projects/${projectId}/profile`, { answers: read() }); toast('申请表已保存 Saved'); }
                 catch (e) { toast(e.message, 'error'); } finally { busy(false); }
             };
             d.q('[data-preview]').onclick = async () => {
@@ -311,8 +311,8 @@
                 (p.willKeepStarted.length ? `，保留 ${p.willKeepStarted.length} 个已开始但不在新计划里的（${esc(p.willKeepStarted.join('、'))}）` : '') + `。已有的进度不会丢。</div>` +
                 legacy +
                 `<details style="margin-top:10px"><summary class="sb-sub">不需要的工序（按你的答案没生成）共 ${p.excluded.length} 个</summary><div style="margin-top:6px">${p.excluded.map(x => `<span class="sb-chip">${esc(x.zh)}</span>`).join('')}</div></details>`;
-            const d = overlay('确认生成工序 ยืนยันการสร้างงาน', body,
-                '<button class="sb-btn" data-back>返回修改 กลับไปแก้ไข</button><button class="sb-btn primary" data-go>确认生成 สร้างงาน</button>', true);
+            const d = overlay('确认生成工序 Confirm Task Generation', body,
+                '<button class="sb-btn" data-back>返回修改 Back to Edit</button><button class="sb-btn primary" data-go>确认生成 Generate Tasks</button>', true);
             d.q('[data-back]').onclick = d.close;
             d.q('[data-go]').onclick = async () => {
                 const choice = d.q('input[name=sb-legacy]:checked');
@@ -323,7 +323,7 @@
                     const r = await call('POST', `/projects/${projectId}/plan/apply`, body);
                     busy(false);
                     d.close(); parent.close();
-                    toast(`已生成：新增 ${r.data.added} 个，移除 ${r.data.removed} 个 สร้างเรียบร้อย`);
+                    toast(`已生成：新增 ${r.data.added} 个，移除 ${r.data.removed} 个 Tasks generated successfully`);
                     if (window.ProjectDetail && ProjectDetail.currentView !== 'prepare') await ProjectDetail.showSubView('site');
                     if (window.ProjectDetail && ProjectDetail.currentView === 'prepare') return;
                     try {
@@ -340,8 +340,8 @@
     const bi = (zh, th) => `${esc(zh)}<small class="td-th">${esc(th)}</small>`;
     const bi_th = (th, zh) => `<span class="td-th-main">${esc(th)}</span><small class="td-zh-sub"> ${esc(zh)}</small>`;
     const STATUS_TAG = {
-        waiting_material: '<span class="td-tag warn">等材料 รอวัสดุ</span>',
-        weather_stop: '<span class="td-tag gray">天气停工 หยุดเพราะอากาศ</span>'
+        waiting_material: '<span class="td-tag warn">等材料 Waiting for Materials</span>',
+        weather_stop: '<span class="td-tag gray">天气停工 Weather Stop</span>'
     };
 
     const SiteBoard = {
@@ -350,7 +350,7 @@
         async init(projectId) {
             this.projectId = projectId;
             const c = document.getElementById('site-board-container');
-            c.innerHTML = '<div class="td-empty">加载中… กำลังโหลด</div>';
+            c.innerHTML = '<div class="td-empty">加载中… Loading...</div>';
             await this.refresh();
         },
 
@@ -408,10 +408,10 @@
         head() {
             const d = this.data;
             const menu = `<details class="td-menu"><summary class="sb-btn">更多 ⋯</summary><div class="td-pop">` +
-                (isManager() ? `<a href="#" data-menu="prepare">📝 项目准备 เตรียมโครงการ</a>` : '') +
-                (isManager() ? `<a href="#" data-menu="quota">⚖️ 工序定额设置 ตั้งค่ามาตรฐาน</a>` : '') + `<a href="#" data-menu="notify">🔔 通知 การแจ้งเตือน</a>` +
-                `<a href="#" data-menu="refresh">🔄 刷新 รีเฟรช</a></div></details>`;
-            return `<div class="td-head"><div><h2 class="td-title">今日现场 <small class="td-th">หน้างานวันนี้</small></h2>` +
+                (isManager() ? `<a href="#" data-menu="prepare">📝 项目准备 Project Prep</a>` : '') +
+                (isManager() ? `<a href="#" data-menu="quota">⚖️ 工序定额设置 Standard Settings</a>` : '') + `<a href="#" data-menu="notify">🔔 通知 Notifications</a>` +
+                `<a href="#" data-menu="refresh">🔄 刷新 Refresh</a></div></details>`;
+            return `<div class="td-head"><div><h2 class="td-title">今日现场 <small class="td-th">Today's Site</small></h2>` +
                 `<div class="td-date"><input type="date" id="td-date" value="${esc(this.date || '')}">` +
                 (d && d.planned ? `<span class="td-sub">第 ${d.workingDay} 个工作日（周日休息）</span>` : '') + `</div></div>${menu}</div>`;
         },
@@ -433,10 +433,10 @@
             const doing = rows.filter(r => ['in_progress', 'waiting_material', 'weather_stop'].includes(r.status)).map(item);
             const todo = rows.filter(r => !r.status || r.status === 'not_started').map(item);
             let html = `<div class="td-banner">这个项目还没有按申请表生成工序，下面是原来的工序。` +
-                (isManager() ? ` <button class="sb-btn primary small" data-menu="prepare">去「项目准备」填写申请表并生成 สร้างงานจากแบบฟอร์ม</button>` : '') + `</div>`;
-            html += `<section class="td-sec"><h3>${bi('正在做', 'กำลังทำ')} <span class="td-count">${doing.length}</span></h3>` +
+                (isManager() ? ` <button class="sb-btn primary small" data-menu="prepare">去「项目准备」填写申请表并生成 Generate from project form</button>` : '') + `</div>`;
+            html += `<section class="td-sec"><h3>${bi('正在做', 'In Progress')} <span class="td-count">${doing.length}</span></h3>` +
                 (doing.length ? doing.map(x => this.cardDoing(x, false)).join('') : '<div class="td-empty">暂无</div>') + `</section>`;
-            html += `<section class="td-sec"><h3>${bi('还没开始', 'ยังไม่เริ่ม')} <span class="td-count">${todo.length}</span></h3>` +
+            html += `<section class="td-sec"><h3>${bi('还没开始', 'Not Started')} <span class="td-count">${todo.length}</span></h3>` +
                 (todo.length ? todo.slice(0, 30).map(x => this.cardReady(x, null, false)).join('') : '<div class="td-empty">暂无</div>') + `</section>`;
             return html;
         },
@@ -452,11 +452,11 @@
             if (isExec) {
                 // 执行者：直接显示今天的任务大卡片
                 if (!today.length) return `<div class="wb-banner wb-exec">
-                    <div class="wb-exec-title">👷 <b>งานของคุณวันนี้</b> <small>今天你的工作</small></div>
-                    <div class="wb-exec-empty">หัวหน้ายังไม่ได้มอบหมายงาน<br><small>主管还没有安排今天的工作</small></div>
+                    <div class="wb-exec-title">👷 <b>Your Tasks Today</b> <small>今天你的工作</small></div>
+                    <div class="wb-exec-empty">Supervisor has not assigned tasks yet<br><small>主管还没有安排今天的工作</small></div>
                 </div>`;
                 return `<div class="wb-banner wb-exec">
-                    <div class="wb-exec-title">👷 <b>งานของคุณวันนี้</b> <small>今天你的工作 (${today.length})</small></div>
+                    <div class="wb-exec-title">👷 <b>Your Tasks Today</b> <small>今天你的工作 (${today.length})</small></div>
                     ${today.map(t => {
                         const nm = t.custom_title || t.process_name || '工作';
                         const floor = t.floor_no != null ? `·${t.floor_no}层` : '';
@@ -465,8 +465,8 @@
                         return `<div class="wb-exec-task ${isDone?'done':''}">
                             <div class="wb-exec-nm">${esc(nm+floor)}</div>
                             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                                <span class="wb-chip ${isDone?'c-done':isStart?'c-go':'c-wait'}">${isDone?'✅ เสร็จ':isStart?'🔄 กำลังทำ':'📋 รอทำ'}</span>
-                                ${canStart ? `<button class="sb-btn primary small" data-da-start="${t.id}" style="font-size:13px;padding:5px 10px">▶ เริ่ม 加入正在做</button>` : ''}
+                                <span class="wb-chip ${isDone?'c-done':isStart?'c-go':'c-wait'}">${isDone?'✅ Done':isStart?'🔄 In Progress':'📋 Pending'}</span>
+                                ${canStart ? `<button class="sb-btn primary small" data-da-start="${t.id}" style="font-size:13px;padding:5px 10px">▶ Start 加入正在做</button>` : ''}
                             </div>
                         </div>`;
                     }).join('')}
@@ -477,7 +477,7 @@
             const todayN  = today.length;
             const urgent  = todayN === 0;
             const yestLine = yest.length
-                ? `<div class="wb-yest"><span>📊 เมื่อวาน <b style="color:#fff">${yDone}/${yest.length}</b> <small>昨日完成</small></span>
+                ? `<div class="wb-yest"><span>📊 Yesterday <b style="color:#fff">${yDone}/${yest.length}</b> <small>昨日完成</small></span>
                    ${yest.filter(t=>t.status!=='completed').map(t=>`<span class="wb-yest-chip">${esc(t.custom_title||t.process_name||'?')}</span>`).join('')}</div>`
                 : '';
             return `<div class="wb-banner wb-sup ${urgent?'wb-urgent':'wb-ok'}">
@@ -485,11 +485,11 @@
                 <div class="wb-sup-row">
                     <div class="wb-sup-status">
                         ${urgent
-                            ? `<b class="wb-alert-txt">⚠️ ยังไม่ได้มอบหมายงานวันนี้</b><br><small>今天还没有工作安排</small>`
-                            : `<b class="wb-ok-txt">✅ มอบหมาย ${todayN} งาน</b><br><small>今天已安排 ${todayN} 项工作</small>`}
+                            ? `<b class="wb-alert-txt">⚠️ No tasks assigned today</b><br><small>今天还没有工作安排</small>`
+                            : `<b class="wb-ok-txt">✅ Assigned ${todayN} tasks</b><br><small>今天已安排 ${todayN} 项工作</small>`}
                     </div>
                     <button class="wb-arrange-btn" onclick="DailyAssign.open(${pid})">
-                        📋<br><b>มอบหมายงาน</b><br><small>工作安排</small>
+                        📋<br><b>Assign Tasks</b><br><small>工作安排</small>
                     </button>
                 </div>
             </div>`;
@@ -504,7 +504,7 @@
 
             // 没有团队 → 顶部提示
             if (!hasTeam) {
-                html += `<div class="td-banner"><b>请先录入施工团队 กรุณากรอกทีมงาน</b><br>去「项目准备」填写班组信息，填完才能派人。<br>` +
+                html += `<div class="td-banner"><b>请先录入施工团队 Please enter team info</b><br>去「项目准备」填写班组信息，填完才能派人。<br>` +
                     (isManager() ? `<button class="sb-btn primary" style="margin-top:8px" data-menu="prepare">录入团队</button>` : '') + `</div>`;
             }
             d.warnings.forEach(w => { html += `<div class="td-warn">⚠ ${esc(w.zh)}</div>`; });
@@ -515,11 +515,11 @@
             // ═══ 今天到场几个人（顶部简单一行）═══
             if (hasTeam) {
                 const absent = new Set(d.absent);
-                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} งานกำลังทำ · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} คนมา</span></div>`;
+                html += `<div class="fc-header"><span class="fc-date">第 ${d.workingDay} 个工作日</span><span class="fc-stat">${doing.length} tasksIn Progress · ${readyN > 0 ? readyN + ' 个可以开工 ·' : ''} ${here}/${d.team.length} Present</span></div>`;
             }
 
             // ═══ 第 1 步：点名 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b class="fc-th-label">บันทึกเข้างาน</b><small class="fc-zh-sub">点名</small></div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">1</span><b class="fc-th-label">Attendance</b><small class="fc-zh-sub">点名</small></div>`;
             if (!hasTeam) {
                 html += `<div class="fc-empty">先录入团队再点名</div>`;
             } else {
@@ -537,7 +537,7 @@
             html += `</div>`;
 
             // ═══ 第 2 步：正在做的任务 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">2</span><b class="fc-th-label">กำลังทำ</b><small class="fc-zh-sub">正在做</small>${doing.length ? `<span class="fc-badge">${doing.length}</span>` : ''}</div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num">2</span><b class="fc-th-label">In Progress</b><small class="fc-zh-sub">正在做</small>${doing.length ? `<span class="fc-badge">${doing.length}</span>` : ''}</div>`;
             if (doing.length) {
                 html += doing.map(x => this.cardDoing(x, true)).join('');
             } else {
@@ -546,7 +546,7 @@
             html += `</div>`;
 
             // ═══ 第 3 步：可以开工的任务 ═══
-            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num fc-num-green">3</span><b class="fc-th-label">เริ่มได้เลย</b><small class="fc-zh-sub">可以开工</small>${readyN ? `<span class="fc-badge green">${readyN}</span>` : ''}</div>`;
+            html += `<div class="fc-step"><div class="fc-step-label"><span class="fc-num fc-num-green">3</span><b class="fc-th-label">Ready to Start</b><small class="fc-zh-sub">可以开工</small>${readyN ? `<span class="fc-badge green">${readyN}</span>` : ''}</div>`;
             if (readyN) {
                 html += d.ready.map(x => this.cardReady(x, d.suggestions.find(s => s.execId === x.execId), true)).join('');
             } else {
@@ -560,7 +560,7 @@
             near.sort((a, b) => a.reasons.length - b.reasons.length || a.key.localeCompare(b.key));
             const nearTop = near.slice(0, 8), nearSet = new Set(nearTop.map(x => x.key));
             if (nearTop.length) {
-                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">4</span><b class="fc-th-label">ใกล้เริ่มได้</b><small class="fc-zh-sub">快要开工</small><span class="fc-badge gray">${nearTop.length}</span></summary>` +
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">4</span><b class="fc-th-label">Nearly Ready</b><small class="fc-zh-sub">快要开工</small><span class="fc-badge gray">${nearTop.length}</span></summary>` +
                     nearTop.map(x => this.rowWaiting(x)).join('') + `</details></div>`;
             }
 
@@ -570,13 +570,13 @@
                 const groups = {};
                 rest.forEach(x => { const k = x.floor != null ? x.floor + '层' : '整栋'; (groups[k] = groups[k] || []).push(x); });
                 const names = Object.keys(groups).sort((a, b) => (parseInt(a) || 999) - (parseInt(b) || 999));
-                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">…</span><b>其他在等待 งานที่รออยู่</b><span class="fc-badge gray">${rest.length}</span></summary>` +
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">…</span><b>其他在等待 Waiting Tasks</b><span class="fc-badge gray">${rest.length}</span></summary>` +
                     names.map(n => `<details class="td-grp" style="margin:4px 0"><summary style="padding:6px 0;cursor:pointer;font-weight:600">${esc(n)} (${groups[n].length})</summary>${groups[n].map(x => this.rowWaiting(x)).join('')}</details>`).join('') +
                     `</details></div>`;
             }
 
             if (d.idle.length) {
-                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">👥</span><b>空闲的人 คนที่ว่าง</b><span class="fc-badge gray">${d.idle.length}</span></summary>` +
+                html += `<div class="fc-step collapsed"><details><summary class="fc-step-label summ"><span class="fc-num fc-num-gray">👥</span><b>空闲的人 Available Workers</b><span class="fc-badge gray">${d.idle.length}</span></summary>` +
                     d.idle.map(i => `<div class="td-row"><span class="td-chip free">${esc(i.name)}</span><span class="td-sub">${i.canBorrowTo.length ? '可去：' + i.canBorrowTo.map(esc).join('、') : '暂时没有合适的任务'}</span></div>`).join('') +
                     `</details></div>`;
             }
@@ -589,11 +589,11 @@
             const hasPeople = planned && (this.assign[x.execId] || []).length > 0;
             const est = this.estMap && this.estMap[x.execId];
             const estLine = est && est.kind === 'work' && est.estDays
-                ? `<span class="fc-est-pill">~${est.estDays}วัน/${est.estDays}天 · ${est.crewsUsed}กลุ่ม/${est.crewsUsed}班 ${est.people.skilled}ช่าง+${est.people.helper}ผู้ช่วย</span>`
+                ? `<span class="fc-est-pill">~${est.estDays}days/${est.estDays}天 · ${est.crewsUsed}crews/${est.crewsUsed}班 ${est.people.skilled}skilled+${est.people.helper}helpers</span>`
                 : '';
             const dailyTarget = est && est.kind === 'work' && est.output && est.crewsUsed ? (est.output * est.crewsUsed) : null;
-            const quotaLine = dailyTarget && !paused ? `<div class="fc-quota">🎯 ปริมาณงานต่อวัน/今日定额：<b>${dailyTarget} ${esc(est.unit||"")}</b></div>` : "";
-            const statusLabel = { waiting_material: '🟡 ขาดวัสดุ / 缺材料', weather_stop: '⛅ หยุดเพราะอากาศ / 天气停工' }[x.workStatus] || '';
+            const quotaLine = dailyTarget && !paused ? `<div class="fc-quota">🎯 Daily target/今日定额：<b>${dailyTarget} ${esc(est.unit||"")}</b></div>` : "";
+            const statusLabel = { waiting_material: '🟡 Missing Materials / 缺材料', weather_stop: '⛅ Weather Stop / 天气停工' }[x.workStatus] || '';
 
             return `<div class="fc-card doing ${paused ? 'paused' : ''}">
                 <div class="fc-card-top">
@@ -606,24 +606,24 @@
                 ${hasPeople ? `<div class="fc-people">${this.peopleChips(x.execId, true)}</div>` : ''}
 
                 ${paused
-                    ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ กลับมาทำต่อ</button>`
-                    : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 บันทึกความคืบหน้า</button>`
+                    ? `<button class="fc-main-btn resume" data-resume="${x.execId}">▶ Resume</button>`
+                    : `<button class="fc-main-btn prog" data-prog="${x.execId}">📝 Record Progress</button>`
                 }
 
                 ${!paused ? `
-                <div class="fc-reason-label">遇到问题了？ มีปัญหา?</div>
+                <div class="fc-reason-label">遇到问题了？ Problem?</div>
                 <div class="fc-reason-row">
                     <button class="fc-reason-btn material" data-stat="waiting_material:${x.execId}">
                         <span class="fc-reason-icon">🟡</span>
-                        <span>缺材料<br><small>ขาดวัสดุ</small></span>
+                        <span>缺材料<br><small>Missing Materials</small></span>
                     </button>
                     <button class="fc-reason-btn weather" data-stat="weather_stop:${x.execId}">
                         <span class="fc-reason-icon">⛅</span>
-                        <span>下雨停工<br><small>หยุดเพราะฝน</small></span>
+                        <span>下雨停工<br><small>Rain Stop</small></span>
                     </button>
                     <button class="fc-reason-btn done" data-done="${x.execId}">
                         <span class="fc-reason-icon">✅</span>
-                        <span>完成了<br><small>เสร็จแล้ว</small></span>
+                        <span>完成了<br><small>Done</small></span>
                     </button>
                 </div>
                 ` : ''}
@@ -640,7 +640,7 @@
         cardReady(x, sug, planned) {
             const est = this.estMap && this.estMap[x.execId];
             const estLine = est && est.kind === 'work' && est.estDays
-                ? `<span class="fc-est-pill">~${est.estDays}วัน/${est.estDays}天 · ${est.crewsUsed}กลุ่ม/${est.crewsUsed}班 ${est.people.skilled}ช่าง+${est.people.helper}ผู้ช่วย</span>`
+                ? `<span class="fc-est-pill">~${est.estDays}days/${est.estDays}天 · ${est.crewsUsed}crews/${est.crewsUsed}班 ${est.people.skilled}skilled+${est.people.helper}helpers</span>`
                 : '';
             const sugPeople = sug ? sug.members.map(m => `<span class="fc-sug-chip">${esc(m.name)}</span>`).join('') : '';
             return `<div class="fc-card ready">
@@ -650,9 +650,9 @@
                 ${estLine ? `<div class="fc-card-meta">${estLine}</div>` : ''}
                 ${sugPeople ? `<div class="fc-sug">💡 建议派：${sugPeople}</div>` : ''}
                 ${sug && planned
-                    ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ เริ่มตามคำแนะนำ</button>
-                       <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">เริ่มงาน</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
-                    : `<button class="fc-main-btn start" data-start="${x.execId}">▶ เริ่มงาน</button>
+                    ? `<button class="fc-main-btn start" data-go="${x.execId}">▶ Start as Suggested</button>
+                       <div class="fc-secondary"><button class="fc-sec-btn" data-start="${x.execId}">Start Work</button>${planned ? `<button class="fc-sec-btn" data-pick="${x.execId}">👷 自己选人</button>` : ''}</div>`
+                    : `<button class="fc-main-btn start" data-start="${x.execId}">▶ Start Work</button>
                        ${planned ? `<div class="fc-secondary"><button class="fc-sec-btn" data-pick="${x.execId}">👷 选人再开工</button></div>` : ''}`
                 }
             </div>`;
@@ -693,9 +693,9 @@
                     if(asgn && asgn.process_execution_id){
                         try{ await SiteStart.start(asgn.process_execution_id); }catch(_){}
                     }
-                },'已开始 เริ่มแล้ว');
+                },'已开始 Started');
             });
-            on('[data-da-done]',el=>{const did=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成 เสร็จ');});
+            on('[data-da-done]',el=>{const did=Number(el.dataset.daDone);this.run(()=>apiRequest('/api/daily-assignments/'+did,{method:'PUT',body:JSON.stringify({status:'completed'})}),'✅ 完成 Done');});
             on('[data-att]', el => this.toggleAbsent(Number(el.dataset.att)));
             on('[data-rm]', el => { const [k, i] = el.dataset.rm.split(':'); this.assign[k] = (this.assign[k] || []).filter(x => x !== Number(i)); this.commit(); });
             on('[data-pick]', el => this.pickPeople(Number(el.dataset.pick)));
@@ -743,7 +743,7 @@
                 date: this.date,
                 assignments: payload,
                 externalTeams: this.externalTeams || {}
-            }), '已保存 บันทึกแล้ว');
+            }), '已保存 Saved');
         },
         pickPeople(execId) {
             const d = this.data, used = this.usedIds(), cur = new Set(this.assign[execId] || []), absent = new Set(d.absent);
@@ -755,24 +755,24 @@
                     `${taken ? ' <span class="td-tag gray">已派到别处</span>' : ''}${off ? ' <span class="td-tag warn">今天没来</span>' : ''}</label>`;
             }).join('') : '<div style="color:#94a3b8;padding:8px 0;font-size:13px">暂无注册团队成员</div>') +
             `<div style="margin-top:14px;padding-top:12px;border-top:1.5px solid #e2e8f0">
-                <div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:8px">🏗️ ทีมงานภายนอก / 外派团队</div>
+                <div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:8px">🏗️ External Team / 外派团队</div>
                 <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center">
-                    <input id="ext-name" type="text" placeholder="ชื่อทีมงาน / 队伍名称" value="${esc(curExt.name)}"
+                    <input id="ext-name" type="text" placeholder="Team Name / 队伍名称" value="${esc(curExt.name)}"
                         style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
                     <div>
-                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">ช่าง 技工</div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">Skilled 技工</div>
                         <input id="ext-skilled" type="number" min="0" value="${curExt.skilled||0}"
                             style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;text-align:center">
                     </div>
                     <div>
-                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">ผู้ช่วย 普工</div>
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px">helpers 普工</div>
                         <input id="ext-helper" type="number" min="0" value="${curExt.helper||0}"
                             style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;text-align:center">
                     </div>
                 </div>
-                <div style="font-size:12px;color:#94a3b8;margin-top:6px">กรอกเฉพาะเมื่อมีทีมภายนอกมาช่วยงานนี้ / 仅当有外包人员参与本工序时填写</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:6px">Fill in only when an external team assists this task / 仅当有外包人员参与本工序时填写</div>
             </div>`;
-            const dlg = overlay('选择人员 เลือกคนงาน', opts, '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>确定 ตกลง</button>', true);
+            const dlg = overlay('选择人员 Select Workers', opts, '<button class="sb-btn" data-cancel>Cancel</button><button class="sb-btn primary" data-ok>确定 OK</button>', true);
             dlg.q('[data-cancel]').onclick = dlg.close;
             dlg.q('[data-ok]').onclick = () => {
                 const ids = dlg.qa('input[type=checkbox]:checked').map(x => Number(x.value));
@@ -799,10 +799,10 @@
                         const reason = await SiteStart.askReason(e.data);
                         if (!reason) { const c = new Error('cancel'); c.cancelled = true; throw c; }
                         await SiteStart.start(execId, reason);
-                        toast('已提前开始，并通知了上级和老板 เริ่มก่อนแล้ว แจ้งหัวหน้ากับเจ้าของแล้ว', 'warning');
+                        toast('已提前开始，并通知了上级和老板 Started early, notified supervisor and owner', 'warning');
                     } else throw e;
                 }
-            }, '已开始 เริ่มแล้ว');
+            }, '已开始 Started');
         },
         async startWithSuggestion(execId) {
             const s = this.data.suggestions.find(x => x.execId === execId);
@@ -814,7 +814,7 @@
                 this.assign[execId] = (this.assign[execId] || []).concat(s.members.map(m => m.id));
                 const payload = {}; Object.keys(this.assign).forEach(k => { if (this.assign[k].length) payload[k] = this.assign[k]; });
                 await call('PUT', `/projects/${this.projectId}/site-assignments`, { date: this.date, assignments: payload });
-            }, '已开工并派人 เริ่มงานและมอบหมายแล้ว');
+            }, '已开工并派人 Started and assigned workers');
         },
         async forceStart(execId) {
             const x = this.data.blocked.find(b => b.execId === execId);
@@ -822,7 +822,7 @@
             if (!reason) return;
             await this.run(async () => {
                 const r = await SiteStart.start(execId, reason);
-                toast('已提前开始，并通知了上级和老板 เริ่มก่อนแล้ว แจ้งหัวหน้ากับเจ้าของแล้ว', 'warning');
+                toast('已提前开始，并通知了上级和老板 Started early, notified supervisor and owner', 'warning');
                 if (r.data.override) alert('提前开始已记录\n风险等级：' + { high: '高', medium: '中', low: '低' }[r.data.override.severity]);
             });
         },
@@ -838,13 +838,13 @@
             const name = nm(x);
 
             const targetHtml = dailyTarget
-                ? `<div class="pg-target">🎯 ปริมาณงาน/今日定额：<b>${dailyTarget} ${esc(unit)}</b>（${crews} กลุ่ม/班）</div>`
+                ? `<div class="pg-target">🎯 Daily target/今日定额：<b>${dailyTarget} ${esc(unit)}</b>（${crews} crews/班）</div>`
                 : '';
 
             const body = `
                 <div class="pg-title">${name}</div>
                 ${targetHtml}
-                <div class="pg-label">今天实际做了多少？ ทำได้เท่าไหร่วันนี้</div>
+                <div class="pg-label">今天实际做了多少？ How much completed today</div>
                 <div class="pg-qty-row">
                     <input type="number" id="pg-qty" min="0" step="0.1" placeholder="0"
                         style="flex:1;font-size:28px;font-weight:800;padding:14px;text-align:center;border:2.5px solid #bfdbfe;border-radius:12px;color:#1e3a8a">
@@ -857,10 +857,10 @@
                     <button type="button" class="pg-scut pg-scut-over" data-v="${Math.round(dailyTarget * 1.2 * 10) / 10}">120%⚡<br><small>${Math.round(dailyTarget * 1.2 * 10) / 10}</small></button>
                 </div>` : ''}
                 ${!hasQty ? `<div class="pg-warn">工程量未录入，进度将按百分比记录</div>` : ''}
-                <div class="sb-field" style="margin-top:10px"><label style="font-size:13px">备注（可不填）หมายเหตุ</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
+                <div class="sb-field" style="margin-top:10px"><label style="font-size:13px">备注（可不填）Notes</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
 
-            const dlg = overlay('今天完成了多少 บันทึกผลงานวันนี้', body,
-                '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 24px">✅ 保存</button>', true);
+            const dlg = overlay('今天完成了多少 Record Today's Progress', body,
+                '<button class="sb-btn" data-cancel>Cancel</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 24px">✅ 保存</button>', true);
 
             dlg.qa('.pg-scut').forEach(b => b.onclick = () => { dlg.q('#pg-qty').value = b.dataset.v; });
             dlg.q('[data-cancel]').onclick = dlg.close;
@@ -899,8 +899,8 @@
         },
         async complete(execId) {
             const x = this.findItem(execId);
-            if (!confirm(`确认「${x ? x.label : ''}」已经全部完成？ ยืนยันว่างานเสร็จสมบูรณ์`)) return;
-            await this.run(() => call('PUT', `/processes/${execId}`, { status: 'completed', completion_percentage: 100, actual_end_date: this.date || new Date().toISOString().slice(0, 10) }), '已完成 เสร็จแล้ว');
+            if (!confirm(`确认「${x ? x.label : ''}」已经全部完成？ Confirm task is fully completed`)) return;
+            await this.run(() => call('PUT', `/processes/${execId}`, { status: 'completed', completion_percentage: 100, actual_end_date: this.date || new Date().toISOString().slice(0, 10) }), '已完成 Done');
         },
         async resetProcess(execId) {
             if (!confirm('确认把这道工序重置为「未开始」？状态会清零，进度数据保留。')) return;
@@ -908,14 +908,14 @@
                 status: 'not_started',
                 completion_percentage: 0,
                 actual_start_date: null
-            }), '已重置 รีเซ็ตแล้ว');
+            }), '已重置 Reset done');
         },
         async setStatus(execId, status) {
             let note = '';
             if (status === 'waiting_material') {
                 const dlg = await new Promise(resolve => {
-                    const d = overlay('缺什么材料？ ขาดวัสดุอะไร', '<div class="sb-field"><label>请写明缺的材料 *</label><input type="text" id="ws-note" placeholder="例如：水泥、PVC线管"></div>',
-                        '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>确定</button>', true);
+                    const d = overlay('缺什么材料？ What Materials are Missing?', '<div class="sb-field"><label>请写明缺的材料 *</label><input type="text" id="ws-note" placeholder="例如：水泥、PVC线管"></div>',
+                        '<button class="sb-btn" data-cancel>Cancel</button><button class="sb-btn primary" data-ok>确定</button>', true);
                     d.q('[data-cancel]').onclick = () => { d.close(); resolve(null); };
                     d.q('[data-x]').onclick = () => { d.close(); resolve(null); };
                     d.q('[data-ok]').onclick = () => { const v = d.q('#ws-note').value.trim(); if (!v) { toast('请写明缺什么材料', 'error'); return; } d.close(); resolve(v); };
@@ -923,16 +923,16 @@
                 if (dlg == null) return;
                 note = dlg;
             }
-            const ok = { waiting_material: '已标记缺材料，这几天不算班组的责任 บันทึกแล้ว', weather_stop: '已标记天气停工 บันทึกแล้ว', in_progress: '已恢复施工 ทำต่อแล้ว' }[status];
+            const ok = { waiting_material: '已标记缺材料，这几天不算班组的责任 Saved', weather_stop: '已标记天气停工 Saved', in_progress: '已恢复施工 Work resumed' }[status];
             await this.run(() => call('POST', `/processes/${execId}/work-status`, { status, note }), ok);
         },
         quantityDialog(execId) {
             const x = this.findItem(execId); if (!x) return;
-            const dlg = overlay('录入工程量 ใส่ปริมาณงาน', `<div class="sb-note">${nm(x)}</div>` +
+            const dlg = overlay('录入工程量 Enter Quantity', `<div class="sb-note">${nm(x)}</div>` +
                 `<div class="sb-grid"><div class="sb-field"><label>计划总量 *</label><input type="number" id="qd-q" min="0" step="0.01" value="${x.plannedQuantity || ''}"></div>` +
                 `<div class="sb-field"><label>单位</label><input type="text" id="qd-u" value="${esc(x.unit || '')}"></div></div>` +
                 `<div class="hint" style="margin-top:6px;font-size:12px;color:#94a3b8">录入后，才能按数量记录每天完成多少，也才能准确估算工期。</div>`,
-                '<button class="sb-btn" data-cancel>取消</button><button class="sb-btn primary" data-ok>保存</button>', true);
+                '<button class="sb-btn" data-cancel>Cancel</button><button class="sb-btn primary" data-ok>保存</button>', true);
             dlg.q('[data-cancel]').onclick = dlg.close;
             dlg.q('[data-ok]').onclick = async () => {
                 const q = parseFloat(dlg.q('#qd-q').value);
@@ -949,7 +949,7 @@
                 const rows = r.data || [];
                 const st = { normal: '正常', waiting_material: '等材料', weather_stop: '天气停工', problem: '其他问题' };
                 const noteOf = n => { try { const o = typeof n === 'string' ? JSON.parse(n) : n; return (o && (o.zh || o.th)) || ''; } catch (_) { return String(n || ''); } };
-                overlay('进度历史 ประวัติ', rows.length ? `<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="text-align:left;color:#64748b"><th>日期</th><th>完成量</th><th>累计</th><th>%</th><th>状态</th><th>备注</th></tr>` +
+                overlay('进度历史 History', rows.length ? `<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="text-align:left;color:#64748b"><th>日期</th><th>完成量</th><th>累计</th><th>%</th><th>状态</th><th>备注</th></tr>` +
                     rows.map(h => `<tr style="border-top:1px solid #f1f5f9"><td>${esc(String(h.date).slice(0, 10))}</td><td>${esc(h.quantity_completed)} ${esc(h.unit || '')}</td><td>${esc(h.total_completed)}</td><td>${Math.round(h.completion_percentage)}</td><td>${esc(st[h.work_status] || h.work_status || '')}</td><td>${esc(noteOf(h.notes))}</td></tr>`).join('') + '</table>'
                     : '<div class="td-empty">还没有按数量记录过进度</div>');
             } catch (e) { busy(false); toast(e.message, 'error'); }
@@ -961,8 +961,8 @@
             const body = r.data.length ? r.data.map(o =>
                 `<div class="sb-noti"><div class="sb-title">${esc(getI18nField({ process_name: o.process_name }, 'process_name'))} <span class="sb-sev-${o.severity}">风险${sev[o.severity]}</span></div>` +
                 `<div class="sb-sub">${esc(o.created_at)} · ${esc(o.decided_by_name || '')}</div><pre>原因：${esc(o.reason)}\n未满足：${(o.unmet || []).map(u => esc(u.zh)).join('；')}</pre></div>`).join('')
-                : '<div class="sb-empty">还没有提前开始的记录 ยังไม่มีบันทึกการเริ่มก่อน</div>';
-            overlay('提前开始记录 บันทึกการเริ่มก่อนกำหนด', body);
+                : '<div class="sb-empty">还没有提前开始的记录 No early-start records yet</div>';
+            overlay('提前开始记录 Early Start Records', body);
         }
     };
 
@@ -985,11 +985,11 @@
             return j.data;
         },
         open(projectId) {
-            const d = overlay('导入工程量清单 นำเข้า BOQ',
+            const d = overlay('导入工程量清单 Import BOQ',
                 `<div class="sb-note">选择报价单/工程量清单的 Excel 文件（.xlsx）。系统会把每一行对应到工序，先给你看对照表，你确认后才会写入。<br>` +
                 `Word 或 PDF 的清单，请先另存为 Excel。系统只写入各工序的「计划数量」，不会改动别的数据。</div>` +
                 `<div class="sb-field"><input type="file" id="boq-file" accept=".xlsx"></div><div id="boq-result"></div>`,
-                `<button class="sb-btn primary" data-preview>读取并预览 ดูตัวอย่าง</button>`);
+                `<button class="sb-btn primary" data-preview>读取并预览 Preview</button>`);
             let file = null;
             d.q('[data-preview]').onclick = async () => {
                 file = d.q('#boq-file').files[0];
@@ -1016,7 +1016,7 @@
                 `<details><summary class="td-sum">清单里没对应的行 (${r.unmapped.length})</summary>${list(r.unmapped, u => `<li>${esc(u.section)} / ${esc(u.desc)} ${u.qty == null ? '' : u.qty} ${esc(u.unit)}<span class="sb-sub"> · ${esc(u.reason)}</span></li>`)}</details>` +
                 `<details><summary class="td-sum">还没有数量的工序，需要现场补 (${r.missing.length})</summary>${list(r.missing, m => `<li>${esc(m.name)}${m.floor != null ? ` · ${m.floor}层` : ''} <span class="sb-sub">(${esc(m.unit)})</span></li>`)}</details>`;
             const foot = d.el.querySelector('footer');
-            foot.innerHTML = '<button class="sb-btn primary" data-apply>确认导入选中的工序 นำเข้า</button>';
+            foot.innerHTML = '<button class="sb-btn primary" data-apply>确认导入选中的工序 Import</button>';
             foot.querySelector('[data-apply]').onclick = async () => {
                 const skip = d.qa('[data-sel]').filter(c => !c.checked).map(c => c.dataset.sel);
                 try {
@@ -1024,7 +1024,7 @@
                     const out = await SiteBoq.post(projectId, 'apply', file, { skip: JSON.stringify(skip) });
                     busy(false);
                     d.close();
-                    toast(`已写入 ${out.written} 道工序的计划数量 บันทึกปริมาณแล้ว`);
+                    toast(`已写入 ${out.written} 道工序的计划数量 Quantities saved`);
                     if (window.SiteBoard && window.ProjectDetail && ProjectDetail.currentView === 'site') SiteBoard.refresh();
                 } catch (e) { busy(false); toast(e.message, 'error'); }
             };
@@ -1115,11 +1115,11 @@
                     <td style="text-align:right"><input class="qin qin-out" type="number" data-code="${esc(r.code)}" data-f="output" min="0.01" step="0.01" value="${r.output}" style="width:72px"></td>
                     <td>${r.isOverridden ? `<button class="fc-more-btn qr-reset" data-code="${esc(r.code)}" title="恢复默认 ${r.defaultOutput} ${esc(r.unit)}">↺</button>` : ''}</td>
                 </tr>`).join('');
-            const d = overlay('工序定额设置 ตั้งค่ามาตรฐานผลงาน',
-                `<div class="sb-note">只有管理者能修改。更改后立刻生效，影响今日定额的显示和效率计算。泰文：ผู้จัดการเท่านั้นที่แก้ไขได้</div>
+            const d = overlay('工序定额设置 Standard Output Settings',
+                `<div class="sb-note">只有管理者能修改。更改后立刻生效，影响今日定额的显示和效率计算。泰文：Only managers can edit</div>
                 <div class="qr-note">🟡 高亮 = 已手动修改（默认值显示在恢复按钮提示上）</div>
                 <div style="overflow-x:auto"><table class="sb-table qr-table">${th}<tbody>${trs}</tbody></table></div>`,
-                '<button class="sb-btn" data-cancel>关闭</button><button class="sb-btn primary" data-save>保存所有修改 บันทึก</button>');
+                '<button class="sb-btn" data-cancel>关闭</button><button class="sb-btn primary" data-save>保存所有修改 Save All</button>');
             d.q('[data-cancel]').onclick = d.close;
             d.qa('.qr-reset').forEach(b => b.onclick = async () => {
                 try { await call('DELETE', `/quotas/${b.dataset.code}`); d.close(); SiteQuota.open(); } catch(e) { toast(e.message,'error'); }

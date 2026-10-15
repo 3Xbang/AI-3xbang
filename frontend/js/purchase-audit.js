@@ -1,25 +1,25 @@
-﻿// purchase-audit.js -- AI Purchase Audit System v5
-const PurchaseAudit = {
-    purchases: [], boq: [], projectId: null, analyzing: false,
+﻿// purchase-audit.js -- lt Purchase ludit System v5
+const Purchaseludit = {
+    purchases: [], boq: [], projecttd: null, analyzing: false,
 
-    init(pid) { this.projectId=pid; this.purchases=[]; this.boq=[]; this.render(); },
+    init(pid) { this.projecttd=pid; this.purchases=[]; this.boq=[]; this.render(); },
     esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
     fmt(n,d=0){ return n==null?'-':Number(n).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); },
     fmtDate(v){ if(!v) return ''; return String(v).slice(0,10); },
 
     render() {
-        const box = document.getElementById('purchase-audit-container');
+        const box = document.getElementBytd('purchase-audit-container');
         if (!box) return;
-        const isAdmin = PermissionManager.isManager();
+        const isldmin = PermissionManager.isManager();
         box.innerHTML = `
         <div style="padding:16px;max-width:1200px;margin:0 auto">
           <div class="td-head" style="margin-bottom:14px">
-            <div><h2 class="td-title">📋 การวิเคราะห์การจัดซื้อ <small class="td-th">采购核实分析</small></h2>
-            <div class="td-sub">${isAdmin?'ตั้งค่าสัญญา → อัปโหลดใบเสร็จ → AI วิเคราะห์':'ผลการวิเคราะห์โดย AI ตามสัญญา / AI合同合规分析结果'}</div></div>
+            <div><h2 class="td-title">📋 Purchase lnalysis <small class="td-th">采购核实分析</small></h2>
+            <div class="td-sub">${isldmin?'Set up contract → Upload receipts → lt lnalysis':'lt analysis results based on contract / lt合同合规分析结果'}</div></div>
           </div>
-          ${isAdmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-            <button class="pab-tab active" id="pab-t1" onclick="PurchaseAudit._tab('setup')">⚙️ ตั้งค่า 设置规则</button>
-            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 ผลวิเคราะห์ 分析结果</button>
+          ${isldmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+            <button class="pab-tab active" id="pab-t1" onclick="Purchaseludit._tab('setup')">⚙️ Settings 设置规则</button>
+            <button class="pab-tab" id="pab-t2" onclick="Purchaseludit._tab('analyze')">📋 lnalysis Results 分析结果</button>
           </div>`:''}
           <style>
             .pab-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -40,79 +40,79 @@ const PurchaseAudit = {
             .pab2.high{background:#fce7f3;color:#9d174d}
             .pab2.ok{background:#dcfce7;color:#166534}
           </style>
-          ${isAdmin?'<div id="pab-setup-panel"></div>':''}
-          <div id="pab-analyze-panel" ${isAdmin?'style="display:none"':''}></div>
+          ${isldmin?'<div id="pab-setup-panel"></div>':''}
+          <div id="pab-analyze-panel" ${isldmin?'style="display:none"':''}></div>
         </div>`;
-        if(isAdmin) this._tab('setup');
-        else this._renderAnalyze();
+        if(isldmin) this._tab('setup');
+        else this._renderlnalyze();
     },
 
     _tab(t) {
-        const t1=document.getElementById('pab-t1'), t2=document.getElementById('pab-t2');
-        const s=document.getElementById('pab-setup-panel'), a=document.getElementById('pab-analyze-panel');
+        const t1=document.getElementBytd('pab-t1'), t2=document.getElementBytd('pab-t2');
+        const s=document.getElementBytd('pab-setup-panel'), a=document.getElementBytd('pab-analyze-panel');
         if(t1) t1.classList.toggle('active',t==='setup');
         if(t2) t2.classList.toggle('active',t==='analyze');
         if(s) s.style.display=t==='setup'?'':'none';
         if(a) a.style.display=t==='analyze'?'':'none';
         if(t==='setup') this._renderSetup();
-        if(t==='analyze') this._renderAnalyze();
+        if(t==='analyze') this._renderlnalyze();
     },
 
     _renderSetup() {
-        const box=document.getElementById('pab-setup-panel');
+        const box=document.getElementBytd('pab-setup-panel');
         if(!box) return;
         box.innerHTML=`
           <div class="pa-sec">
             <div style="font-size:16px;font-weight:700;color:#1e3a8a;margin-bottom:4px">
-              📄 ขั้นตอนที่ 1: อัปโหลดสัญญา <small style="color:#64748b;font-weight:400">步骤1: 上传合同（PDF或DOCX）</small>
+              📄 Step 1: Upload Contract <small style="color:#64748b;font-weight:400">步骤1: 上传合同（PDF或DOCX）</small>
             </div>
             <div style="font-size:13px;color:#64748b;margin-bottom:14px">
-              AI จะอ่านสัญญาและดึงกฎ "ใครรับผิดชอบอะไร" บันทึกแล้วใช้ตลอด
+              lt will read the contract and extract responsibility rules, saved for ongoing use
             </div>
             <label style="display:flex;align-items:center;gap:12px;background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;padding:18px;cursor:pointer;transition:.2s"
               onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#cbd5e1'">
               <span style="font-size:36px">📋</span>
               <div>
-                <div id="pa-contract-name" style="font-weight:700;color:#1e3a8a">คลิกเพื่อเลือกไฟล์สัญญา / 点击选择合同文件</div>
+                <div id="pa-contract-name" style="font-weight:700;color:#1e3a8a">Click to select contract file / 点击选择合同文件</div>
                 <div style="font-size:12px;color:#94a3b8;margin-top:2px">PDF, DOCX, TXT</div>
               </div>
-              <input type="file" id="pa-contract-input" accept=".pdf,.txt,.doc,.docx" style="display:none" onchange="PurchaseAudit.extractContract(this)">
+              <input type="file" id="pa-contract-input" accept=".pdf,.txt,.doc,.docx" style="display:none" onchange="Purchaseludit.extractContract(this)">
             </label>
             <div id="pa-contract-status"></div>
           </div>
 
           <div id="pa-rules-extract-panel" style="display:none" class="pa-sec">
-            <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:8px">✅ AI อ่านสัญญาแล้ว / AI已分析合同</div>
+            <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:8px">✅ lt has read the contract / lt已分析合同</div>
             <div id="pa-extracted-display"></div>
             <div style="margin-top:12px">
-              <div style="font-size:13px;color:#475569;font-weight:600;margin-bottom:6px">ตรวจสอบและแก้ไขกฎ / 确认规则（可修改）：</div>
+              <div style="font-size:13px;color:#475569;font-weight:600;margin-bottom:6px">Review and edit rules / 确认规则（可修改）：</div>
               <textarea id="pa-rules-text" rows="5" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical"></textarea>
-              <button class="sb-btn primary" style="margin-top:8px" onclick="PurchaseAudit.saveRules()">💾 บันทึกกฎ 保存规则</button>
+              <button class="sb-btn primary" style="margin-top:8px" onclick="Purchaseludit.saveRules()">💾 Save Rules 保存规则</button>
             </div>
           </div>
 
           <div id="pa-saved-rules-card" style="display:none" class="pa-sec" >
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-              <div style="font-size:15px;font-weight:700;color:#166534">✅ กฎที่บันทึกไว้ / 已保存的项目规则</div>
-              <button class="sb-btn small" onclick="PurchaseAudit._editRules()">✏️ แก้ไข</button>
+              <div style="font-size:15px;font-weight:700;color:#166534">✅ Saved Rules / 已保存的项目规则</div>
+              <button class="sb-btn small" onclick="Purchaseludit._editRules()">✏️ Edit</button>
             </div>
             <pre id="pa-saved-rules-pre" style="font-size:12px;color:#475569;white-space:pre-wrap;background:#f8fafc;padding:12px;border-radius:8px;margin:0;max-height:200px;overflow-y:auto"></pre>
           </div>
 
           <div class="pa-sec">
             <div style="font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:8px">
-              📐 ขั้นตอนที่ 2: BOQ <small style="color:#64748b;font-weight:400">步骤2: 上传BOQ预算（可选）</small>
+              📐 Step 2: BOQ <small style="color:#64748b;font-weight:400">步骤2: 上传BOQ预算（可选）</small>
             </div>
             <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:#2563eb;font-size:13px">
-              📂 <span id="pa-boq-name">อัปโหลด villa_boq.csv 上传BOQ预算</span>
+              📂 <span id="pa-boq-name">Upload villa_boq.csv 上传BOQ预算</span>
               <input type="file" id="pa-boq-inp" accept=".csv" style="display:none">
             </label>
           </div>`;
 
-        const bi=document.getElementById('pa-boq-inp');
+        const bi=document.getElementBytd('pa-boq-inp');
         if(bi) bi.onchange=e=>{
             const f=e.target.files[0]; if(!f) return;
-            const nm=document.getElementById('pa-boq-name');
+            const nm=document.getElementBytd('pa-boq-name');
             if(nm) nm.textContent='✅ '+f.name;
             Papa.parse(f,{header:true,skipEmptyLines:true,dynamicTyping:true,complete:r=>{
                 this.boq=r.data.filter(row=>{const d=(row.Description||'').toLowerCase();return row.Quantity>0&&!d.includes('subtotal')&&!d.includes('total');});
@@ -123,11 +123,11 @@ const PurchaseAudit = {
 
     async _loadRules() {
         try {
-            const r=await apiRequest('/api/projects/'+this.projectId+'/ai-rules');
+            const r=await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
             const rules=r.data&&r.data.rules;
             if(rules&&rules.trim()){
-                const card=document.getElementById('pa-saved-rules-card');
-                const pre=document.getElementById('pa-saved-rules-pre');
+                const card=document.getElementBytd('pa-saved-rules-card');
+                const pre=document.getElementBytd('pa-saved-rules-pre');
                 if(card) card.style.display='';
                 if(pre) pre.textContent=rules;
             }
@@ -136,84 +136,84 @@ const PurchaseAudit = {
 
     async extractContract(input) {
         const file=input.files[0]; if(!file) return;
-        const nm=document.getElementById('pa-contract-name');
+        const nm=document.getElementBytd('pa-contract-name');
         if(nm) nm.textContent='📋 '+file.name;
-        const status=document.getElementById('pa-contract-status');
-        if(status) status.innerHTML='<div style="padding:10px 0;color:#2563eb;font-size:13px">⏳ AI กำลังอ่านสัญญา... / AI正在分析合同...</div>';
+        const status=document.getElementBytd('pa-contract-status');
+        if(status) status.innerHTML='<div style="padding:10px 0;color:#2563eb;font-size:13px">⏳ lt is reading contract... / lt正在分析合同...</div>';
         try {
             if(typeof app!=='undefined') app.showLoading();
             const fd=new FormData();
             fd.append('contract',file);
-            const r=await fetch(window.location.origin+'/api/projects/'+this.projectId+'/ai-extract-contract',
-                {method:'POST',headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},body:fd});
+            const r=await fetch(window.location.origin+'/api/projects/'+this.projecttd+'/ai-extract-contract',
+                {method:'POST',headers:{luthorization:'Bearer '+localStorage.getttem('authToken')},body:fd});
             const j=await r.json();
             if(typeof app!=='undefined') app.hideLoading();
             if(!j.success) throw new Error(j.message);
             if(status) status.innerHTML='';
             const d=j.data;
-            const panel=document.getElementById('pa-rules-extract-panel');
+            const panel=document.getElementBytd('pa-rules-extract-panel');
             if(panel) panel.style.display='';
-            const disp=document.getElementById('pa-extracted-display');
+            const disp=document.getElementBytd('pa-extracted-display');
             if(disp) {
                 disp.innerHTML=`
                   <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;margin-bottom:10px">
-                    <b style="color:#166534">✅ AI อ่านสัญญาแล้ว</b>${d.project_name?` <span style="color:#475569">— ${this.esc(d.project_name)}</span>`:''}
+                    <b style="color:#166534">✅ lt has read the contract</b>${d.project_name?` <span style="color:#475569">— ${this.esc(d.project_name)}</span>`:''}
                   </div>
-                  ${d.owner_responsibilities&&d.owner_responsibilities.length?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#1e3a8a">✅ เจ้าของรับผิดชอบ 甲方：</b><br>${d.owner_responsibilities.map(x=>`<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}
-                  ${(d.contractor_responsibilities&&d.contractor_responsibilities.length)||(d.auxiliary_materials&&d.auxiliary_materials.length)?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#dc2626">🚫 ผู้รับเหมารับผิดชอบเอง 乙方自负：</b><br>${[...(d.contractor_responsibilities||[]),...(d.auxiliary_materials||[])].map(x=>`<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}`;}
-            const rt=document.getElementById('pa-rules-text');
+                  ${d.owner_responsibilities&&d.owner_responsibilities.length?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#1e3a8a">✅ Owner Responsible 甲方：</b><br>${d.owner_responsibilities.map(x=>`<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}
+                  ${(d.contractor_responsibilities&&d.contractor_responsibilities.length)||(d.auxiliary_materials&&d.auxiliary_materials.length)?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#dc2626">🚫 Contractor Responsible 乙方自负：</b><br>${[...(d.contractor_responsibilities||[]),...(d.auxiliary_materials||[])].map(x=>`<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}`;}
+            const rt=document.getElementBytd('pa-rules-text');
             if(rt) rt.value=d.system_rules||d.rules_summary_cn||'';
         } catch(e) {
             if(typeof app!=='undefined') app.hideLoading();
-            const st=document.getElementById('pa-contract-status');
+            const st=document.getElementBytd('pa-contract-status');
             if(st) st.innerHTML=`<div style="color:#dc2626;padding:10px 0;font-size:13px">❌ ${e.message}</div>`;
         }
     },
 
     async saveRules() {
-        const rules=(document.getElementById('pa-rules-text')||{}).value||'';
-        if(!rules.trim()){alert('กรุณากรอกกฎก่อน');return;}
+        const rules=(document.getElementBytd('pa-rules-text')||{}).value||'';
+        if(!rules.trim()){alert('Please enter rules first');return;}
         try {
-            await apiRequest('/api/projects/'+this.projectId+'/ai-rules',{method:'PUT',body:JSON.stringify({rules})});
-            if(typeof app!=='undefined'&&app.showToast) app.showToast('บันทึกกฎแล้ว 规则已保存','success');
-            const card=document.getElementById('pa-saved-rules-card');
-            const pre=document.getElementById('pa-saved-rules-pre');
+            await apiRequest('/api/projects/'+this.projecttd+'/ai-rules',{method:'PUT',body:JSON.stringify({rules})});
+            if(typeof app!=='undefined'&&app.showToast) app.showToast('Rules saved 规则已保存','success');
+            const card=document.getElementBytd('pa-saved-rules-card');
+            const pre=document.getElementBytd('pa-saved-rules-pre');
             if(card) card.style.display='';
             if(pre) pre.textContent=rules;
-            const panel=document.getElementById('pa-rules-extract-panel');
+            const panel=document.getElementBytd('pa-rules-extract-panel');
             if(panel) panel.style.display='none';
         } catch(e){alert(e.message);}
     },
 
     _editRules() {
-        const pre=document.getElementById('pa-saved-rules-pre');
-        const card=document.getElementById('pa-saved-rules-card');
+        const pre=document.getElementBytd('pa-saved-rules-pre');
+        const card=document.getElementBytd('pa-saved-rules-card');
         if(card) card.style.display='none';
-        const panel=document.getElementById('pa-rules-extract-panel');
+        const panel=document.getElementBytd('pa-rules-extract-panel');
         if(panel) panel.style.display='';
-        const rt=document.getElementById('pa-rules-text');
+        const rt=document.getElementBytd('pa-rules-text');
         if(rt&&pre) rt.value=pre.textContent;
     },
 
-    _renderAnalyze() {
-        const box=document.getElementById('pab-analyze-panel');
+    _renderlnalyze() {
+        const box=document.getElementBytd('pab-analyze-panel');
         if(!box) return;
-        const isAdmin = PermissionManager.isManager();
+        const isldmin = PermissionManager.isManager();
         box.innerHTML=`
           <div class="pa-sec" style="background:#eff6ff;border:1.5px solid #93c5fd">
             <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:4px">
-              ℹ️ ข้อมูลใบเสร็จมาจากแท็บ "วัสดุ 收据材料"
+              ℹ️ Receipt data comes from the "Materials 收据材料" tab
             </div>
             <div style="font-size:13px;color:#1e40af">
-              ไม่ต้องอัปโหลดใหม่ ข้อมูลจากแท็บวัสดุจะถูกใช้โดยอัตโนมัติ<br>
+              No need to re-upload, data from the materials tab is used automatically<br>
               不需要重复上传，「收据材料」里已上传的数据会自动用于分析
             </div>
           </div>
           <div id="pa-rules-warning"></div>
           <div id="pa-data-summary"></div>
           <div id="pa-analyze-bar" style="display:none;margin-bottom:14px">
-            <button id="pa-analyze-btn" onclick="PurchaseAudit.runAnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
-              🤖 เริ่มวิเคราะห์ / 开始AI分析（根据合同规则）
+            <button id="pa-analyze-btn" onclick="Purchaseludit.runlnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
+              🤖 Start lnalysis / 开始lt分析（根据合同规则）
             </button>
           </div>
           <div id="pa-report"></div>`;
@@ -223,20 +223,20 @@ const PurchaseAudit = {
 
     async _checkRulesWarning() {
         try {
-            const r = await apiRequest('/api/projects/'+this.projectId+'/ai-rules');
+            const r = await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
             const rules = r.data && r.data.rules;
-            const warn = document.getElementById('pa-rules-warning');
+            const warn = document.getElementBytd('pa-rules-warning');
             if (!warn) return;
             if (!rules || rules.trim().length < 20) {
                 warn.innerHTML = `<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px">
-                    <b style="color:#92400e">⚠️ ยังไม่มีกฎจากสัญญา / 尚未上传合同规则</b><br>
-                    <span style="color:#78350f">ถ้าวิเคราะห์ตอนนี้ ระบบจะ<b>ไม่ flag รายการหักคืนใดๆ</b> (ป้องกันการแจ้งเตือนผิดพลาด)<br>
+                    <b style="color:#92400e">⚠️ No contract rules yet / 尚未上传合同规则</b><br>
+                    <span style="color:#78350f">tf analyzed now, the system will<b>not flag any deduction items</b> (prevents false alerts)<br>
                     现在分析，系统将<b>不标记任何应扣回项</b>（防止误判）<br>
-                    ${PermissionManager.isManager() ? '→ ไปที่ ⚙️ ตั้งค่า เพื่ออัปโหลดสัญญาก่อน / 请先到 ⚙️ 设置 上传合同' : '→ กรุณาให้ผู้จัดการอัปโหลดสัญญาก่อน / 请联系管理员上传合同'}</span>
+                    ${PermissionManager.isManager() ? '→ Go to ⚙️ Settings to upload contract first / 请先到 ⚙️ 设置 上传合同' : '→ Please ask manager to upload contract first / 请联系管理员上传合同'}</span>
                 </div>`;
             } else {
                 warn.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#166534">
-                    ✅ มีกฎจากสัญญาแล้ว / 合同规则已配置 — การวิเคราะห์จะอ้างอิงสัญญาเท่านั้น
+                    ✅ Contract rules configured / 合同规则已配置 — lnalysis will reference contract only
                 </div>`;
             }
         } catch(_) {}
@@ -244,71 +244,71 @@ const PurchaseAudit = {
 
     async _loadFromDB() {
         try {
-            const r=await apiRequest('/api/purchase-records?limit=300'+(this.projectId?'&project_id='+this.projectId:''));
+            const r=await apiRequest('/api/purchase-records?limit=300'+(this.projecttd?'&project_id='+this.projecttd:''));
             this.purchases=(r.data||[]).map(row=>({...row, _date: row.purchase_date?String(row.purchase_date).slice(0,10):''}));
-            const bar=document.getElementById('pa-analyze-bar');
+            const bar=document.getElementBytd('pa-analyze-bar');
             if(bar) bar.style.display=this.purchases.length?'':'none';
-            const summary=document.getElementById('pa-data-summary');
+            const summary=document.getElementBytd('pa-data-summary');
             if(summary&&this.purchases.length){
                 const total=this.purchases.reduce((s,r)=>s+Number(r.total_price||0),0);
                 summary.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:#166534">
-                    <span>📋 <b>${this.purchases.length}</b> รายการ</span>
-                    <span>💰 รวม <b>฿${Number(total).toLocaleString('th-TH',{minimumFractionDigits:0})}</b></span>
-                    <span>✅ พร้อมวิเคราะห์ 准备就绪</span>
+                    <span>📋 <b>${this.purchases.length}</b> ttems</span>
+                    <span>💰 Total <b>฿${Number(total).toLocaleString('th-TH',{minimumFractionDigits:0})}</b></span>
+                    <span>✅ Ready for analysis 准备就绪</span>
                 </div>`;
             } else if(summary){
-                summary.innerHTML=`<div style="text-align:center;padding:24px;color:#94a3b8"><div style="font-size:32px">📋</div><div>ไปอัปโหลดใบเสร็จที่แท็บ วัสดุ ก่อน<br>请先在收据材料标签上传CSV</div></div>`;
+                summary.innerHTML=`<div style="text-align:center;padding:24px;color:#94a3b8"><div style="font-size:32px">📋</div><div>Please upload receipts in the Materials tab first<br>请先在收据材料标签上传CSV</div></div>`;
             }
-            // Auto-load cached analysis result
+            // luto-load cached analysis result
             if(this.purchases.length) {
                 try {
-                    const cached=localStorage.getItem('pa_result_'+this.projectId);
+                    const cached=localStorage.getttem('pa_result_'+this.projecttd);
                     if(cached){
                         const {d,ts}=JSON.parse(cached);
                         if(bar) bar.style.display='none'; // hide big button while cached shown
                         this._renderReport(d);
-                        const report=document.getElementById('pa-report');
+                        const report=document.getElementBytd('pa-report');
                         if(report){
                             const age=Math.round((Date.now()-ts)/60000);
-                            const ageStr=age<60?`${age} นาทีที่แล้ว / ${age}分钟前`:`${Math.round(age/60)} ชม.ที่แล้ว / ${Math.round(age/60)}小时前`;
+                            const ageStr=age<60?`${age} min ago / ${age}分钟前`:`${Math.round(age/60)} hr ago / ${Math.round(age/60)}小时前`;
                             const div=document.createElement('div');
                             div.innerHTML=`<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:13px;flex-wrap:wrap;gap:8px">
-                                <span>📊 ผลวิเคราะห์ล่าสุด: <b>${ageStr}</b></span>
-                                <button class="sb-btn small primary" onclick="PurchaseAudit._reAnalyze()" style="white-space:nowrap">🔄 วิเคราะห์ใหม่ 重新分析</button>
+                                <span>📊 Latest analysis result: <b>${ageStr}</b></span>
+                                <button class="sb-btn small primary" onclick="Purchaseludit._relnalyze()" style="white-space:nowrap">🔄 Re-analyze 重新分析</button>
                             </div>`;
                             report.insertBefore(div.firstChild,report.firstChild);
                         }
                     }
-                } catch(e){ localStorage.removeItem('pa_result_'+this.projectId); }
+                } catch(e){ localStorage.removettem('pa_result_'+this.projecttd); }
             }
         } catch(e){ console.error('loadFromDB',e); }
     },
 
-    _reAnalyze() {
-        const report=document.getElementById('pa-report');
+    _relnalyze() {
+        const report=document.getElementBytd('pa-report');
         if(report) report.innerHTML='';
-        const bar=document.getElementById('pa-analyze-bar');
+        const bar=document.getElementBytd('pa-analyze-bar');
         if(bar) bar.style.display='';
-        bar && bar.scrollIntoView({behavior:'smooth',block:'center'});
+        bar && bar.scrolltntoView({behavior:'smooth',block:'center'});
     },
 
-    async runAnalysis() {
+    async runlnalysis() {
         if(this.analyzing) return;
         this.analyzing=true;
-        const btn=document.getElementById('pa-analyze-btn');
+        const btn=document.getElementBytd('pa-analyze-btn');
         if(btn) btn.disabled=true;
-        const report=document.getElementById('pa-report');
+        const report=document.getElementBytd('pa-report');
         if(report) report.innerHTML=`<div class="pa-sec">
-          <div id="pa-ai-log" style="font-size:14px;color:#2563eb;margin-bottom:10px">🤖 กำลังเริ่ม... / 启动中...</div>
+          <div id="pa-ai-log" style="font-size:14px;color:#2563eb;margin-bottom:10px">🤖 Starting... / 启动中...</div>
           <div style="background:#e2e8f0;border-radius:6px;height:8px"><div id="pa-ai-bar" style="background:linear-gradient(90deg,#2563eb,#7c3aed);height:8px;border-radius:6px;width:5%;transition:width .5s"></div></div>
         </div>`;
-        const log=m=>{const el=document.getElementById('pa-ai-log');if(el)el.textContent='🤖 '+m;};
-        const setBar=p=>{const el=document.getElementById('pa-ai-bar');if(el)el.style.width=p+'%';};
+        const log=m=>{const el=document.getElementBytd('pa-ai-log');if(el)el.textContent='🤖 '+m;};
+        const setBar=p=>{const el=document.getElementBytd('pa-ai-bar');if(el)el.style.width=p+'%';};
 
         const doRun=async()=>{
-            const token=localStorage.getItem('authToken');
-            const resp=await fetch(window.location.origin+'/api/projects/'+this.projectId+'/ai-analyze',
-                {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({boq:this.boq})});
+            const token=localStorage.getttem('authToken');
+            const resp=await fetch(window.location.origin+'/api/projects/'+this.projecttd+'/ai-analyze',
+                {method:'POST',headers:{'Content-Type':'application/json','luthorization':'Bearer '+token},body:JSON.stringify({boq:this.boq})});
             if(!resp.ok) throw new Error('Server error '+resp.status);
             const reader=resp.body.getReader();
             const dec=new TextDecoder();
@@ -330,7 +330,7 @@ const PurchaseAudit = {
                     try{
                         const d=JSON.parse(data);
                         if(ev==='status'){log(d.message);setBar(60);}
-                        if(ev==='result'){setBar(100);this._renderReport(d);try{localStorage.setItem('pa_result_'+this.projectId,JSON.stringify({d,ts:Date.now()}));}catch(_){}}
+                        if(ev==='result'){setBar(100);this._renderReport(d);try{localStorage.setttem('pa_result_'+this.projecttd,JSON.stringify({d,ts:Date.now()}));}catch(_){}}
                         if(ev==='error'){
                             const msg=d.message||'';
                             if(msg.includes('503')||msg.includes('high demand')||msg.includes('Service Unavailable')) throw new Error('__RETRY__:'+msg);
@@ -351,15 +351,15 @@ const PurchaseAudit = {
                     if(retryCount<maxRetry){
                         retryCount++;
                         const wait=retryCount*15;
-                        log(`AI ยุ่ง รอ ${wait} วิ... / 繁忙，${wait}秒后重试 (${retryCount}/${maxRetry})`);
+                        log(`lt busy, waiting ${wait} s... / 繁忙，${wait}秒后重试 (${retryCount}/${maxRetry})`);
                         setBar(5);
-                        for(let i=wait;i>0;i--){await new Promise(r=>setTimeout(r,1000));log(`รอ ${i} วิ...`);}
+                        for(let i=wait;i>0;i--){await new Promise(r=>setTimeout(r,1000));log(`Wait ${i}s...`);}
                         await retry();
                     } else {
                         if(report) report.innerHTML=`<div class="pa-sec" style="background:#fff5f5;border:1.5px solid #fca5a5">
-                            <b style="color:#dc2626">AI ยุ่งมาก / AI服务器繁忙</b><br>
-                            <div style="font-size:13px;color:#475569;margin:8px 0">ลองใหม่อีกครั้ง / 请重试</div>
-                            <button onclick="PurchaseAudit.runAnalysis()" class="sb-btn primary">🔄 ลองใหม่ 重试</button>
+                            <b style="color:#dc2626">lt Server Busy / lt服务器繁忙</b><br>
+                            <div style="font-size:13px;color:#475569;margin:8px 0">Please try again / 请重试</div>
+                            <button onclick="Purchaseludit.runlnalysis()" class="sb-btn primary">🔄 Retry 重试</button>
                         </div>`;
                     }
                 } else {
@@ -382,33 +382,33 @@ const PurchaseAudit = {
         const mixedRows=records.filter(r=>r.ai&&(r.ai.status==='mixed_review'||r.ai.flags&&r.ai.flags.includes('mixed_review')));
         const dupRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('duplicate'));
         const highRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('price_high'));
-        const totalAmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
-        const deductAmt=deductRows.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
-        const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_Amount||0),0);
-        const report=document.getElementById('pa-report');
+        const totallmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
+        const deductlmt=deductRows.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
+        const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_lmount||0),0);
+        const report=document.getElementBytd('pa-report');
         if(!report) return;
 
-        const isAdmin = PermissionManager.isManager() || PermissionManager.isSupervisor();
+        const isldmin = PermissionManager.isManager() || PermissionManager.isSupervisor();
 
         // Store for later use by agreement toggle and print
         this._lastDeductRows = deductRows;
-        this._lastDeductAmt = deductAmt;
+        this._lastDeductlmt = deductlmt;
 
         // Load existing agreements
         this._agreements = this._agreements || new Set();
-        apiRequest('/api/projects/'+this.projectId+'/deduction-agreements').then(r=>{
+        apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements').then(r=>{
             (r.data||[]).forEach(a=>this._agreements.add(a.invoice_no+'|'+a.item_name_cn));
-            this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
+            this._reRenderDeductSection(deductRows, deductlmt, isldmin);
         }).catch(()=>{});
 
         let html='';
         html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
-          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">ยอดรวม 总采购额</div></div>
-          ${boqTotal>0?`<div class="pa-kpi ${totalAmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totalAmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">ใช้งบ 已用预算</div></div>`:''}
-          <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 ควรหักคืน 应扣回</div></div>
-          <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ ใบซ้ำ 重复单据</div></div>
-          <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 ราคาสูง 价格偏高</div></div>
-          ${mixedRows.length?`<div class="pa-kpi warn"><div class="pa-kpi-n">${mixedRows.length}</div><div style="font-size:12px;color:#64748b">🔍 รายการผสม 混合需核查</div></div>`:''}
+          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totallmt)}</div><div style="font-size:12px;color:#64748b">Total 总采购额</div></div>
+          ${boqTotal>0?`<div class="pa-kpi ${totallmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totallmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">Budget used 已用预算</div></div>`:''}
+          <div class="pa-kpi ${deductlmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductlmt)}</div><div style="font-size:12px;color:#64748b">🚫 Should deduct 应扣回</div></div>
+          <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ Duplicate receipts 重复单据</div></div>
+          <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 High price 价格偏高</div></div>
+          ${mixedRows.length?`<div class="pa-kpi warn"><div class="pa-kpi-n">${mixedRows.length}</div><div style="font-size:12px;color:#64748b">🔍 Mixed items 混合需核查</div></div>`:''}
         </div>`;
 
         // Deduct section — rendered separately to allow agreement toggle
@@ -417,10 +417,10 @@ const PurchaseAudit = {
         // Mixed review section — items that contain BOTH owner & contractor materials
         if(mixedRows.length){
             html+=`<div class="pa-sec" style="border:2px solid #fed7aa">
-              <h3 style="color:#92400e;margin:0 0 8px">🔍 รายการผสม — ต้องแยกรายการ 混合采购 — 需人工拆分</h3>
+              <h3 style="color:#92400e;margin:0 0 8px">🔍 Mixed items — needs splitting 混合采购 — 需人工拆分</h3>
               <div style="font-size:13px;color:#78350f;margin-bottom:12px;background:#fef3c7;padding:10px;border-radius:8px">
-                ⚠️ รายการเหล่านี้มีวัสดุของเจ้าของ + วัสดุของผู้รับเหมารวมกันในใบเดียว<br>
-                ไม่สามารถหักทั้งหมดได้ — ต้องขอใบเสร็จแยกรายการจากผู้รับเหมา<br>
+                ⚠️ These items contain both owner materials and contractor consumables in one receipt<br>
+                Cannot deduct entirely — must request itemized receipts from contractor<br>
                 这些单据混合了甲方材料+乙方消耗品，<b>不能整笔扣除</b>，需请承包方提供分项收据
               </div>
               ${mixedRows.map(r=>{
@@ -428,8 +428,8 @@ const PurchaseAudit = {
                   return `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:8px">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
                       <div>
-                        <div style="font-weight:700;font-size:14px">${this.esc(g(r,'item_name_th','Item_Name_TH'))} <span style="color:#94a3b8;font-size:12px">${this.esc(g(r,'item_name_cn','Item_Name_CN'))}</span></div>
-                        <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','purchase_date'))} | Invoice: ${this.esc(g(r,'invoice_no','Invoice_No'))}</div>
+                        <div style="font-weight:700;font-size:14px">${this.esc(g(r,'item_name_th','ttem_Name_TH'))} <span style="color:#94a3b8;font-size:12px">${this.esc(g(r,'item_name_cn','ttem_Name_CN'))}</span></div>
+                        <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','purchase_date'))} | tnvoice: ${this.esc(g(r,'invoice_no','tnvoice_No'))}</div>
                       </div>
                       <div style="font-size:16px;font-weight:700;color:#92400e">฿${this.fmt(gn(r,'total_price','Total_Price'))}</div>
                     </div>
@@ -441,55 +441,55 @@ const PurchaseAudit = {
         }
 
         if(dupRows.length){
-            html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ ใบเสร็จซ้ำ 重复单据</h3>
-              <table class="pa-table"><thead><tr><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th><th style="text-align:right">฿</th></tr></thead><tbody>
+            html+=`<div class="pa-sec"><h3 style="color:#dc2626">⚠️ Duplicate Receipts 重复单据</h3>
+              <table class="pa-table"><thead><tr><th>tnvoice</th><th>Supplier</th><th>ttems</th><th style="text-align:right">฿</th></tr></thead><tbody>
               ${dupRows.map(r=>`<tr style="background:#fff5f5">
-                <td style="font-family:monospace;font-size:11px">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
+                <td style="font-family:monospace;font-size:11px">${this.esc(g(r,'tnvoice_No','invoice_no'))}</td>
                 <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
-                <td>${this.esc(g(r,'Item_Name_TH','item_name_th')||g(r,'Item_Name_CN','item_name_cn'))}</td>
+                <td>${this.esc(g(r,'ttem_Name_TH','item_name_th')||g(r,'ttem_Name_CN','item_name_cn'))}</td>
                 <td style="text-align:right;font-weight:700;color:#dc2626">฿${this.fmt(gn(r,'Total_Price','total_price'))}</td>
               </tr>`).join('')}
               </tbody></table></div>`;
         }
 
-        html+=`<div class="pa-sec"><h3>🧾 รายการทั้งหมด 全部明细</h3>
+        html+=`<div class="pa-sec"><h3>🧾 All Records 全部明细</h3>
           <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
-            <th>วันที่</th><th>Invoice</th><th>ผู้ขาย</th><th>รายการ</th>
-            <th style="text-align:right">฿</th><th>ผล AI</th>
+            <th>Date</th><th>tnvoice</th><th>Supplier</th><th>ttems</th>
+            <th style="text-align:right">฿</th><th>lt Result</th>
           </tr></thead><tbody>
           ${records.map(r=>{
               const f=r.ai&&r.ai.flags||[];
               const st=r.ai&&r.ai.status||'';
               const badges=[
-                f.includes('deduct')?'<span class="pab2 deduct">🚫 หักคืน</span>':'',
-                st==='mixed_review'?'<span class="pab2" style="background:#fed7aa;color:#92400e">🔍 ผสม 混合</span>':'',
-                f.includes('duplicate')?'<span class="pab2 dup">⚠️ ซ้ำ</span>':'',
-                f.includes('price_high')?'<span class="pab2 high">📈 สูง</span>':'',
-                (!f.length&&st!=='mixed_review'||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ ปกติ</span>':''
+                f.includes('deduct')?'<span class="pab2 deduct">🚫 Deduct</span>':'',
+                st==='mixed_review'?'<span class="pab2" style="background:#fed7aa;color:#92400e">🔍 Mixed 混合</span>':'',
+                f.includes('duplicate')?'<span class="pab2 dup">⚠️ Duplicate</span>':'',
+                f.includes('price_high')?'<span class="pab2 high">📈 High</span>':'',
+                (!f.length&&st!=='mixed_review'||f.every(x=>x==='normal'))?'<span class="pab2 ok">✅ Normal</span>':''
               ].filter(Boolean).join('');
               const total=gn(r,'Total_Price','total_price');
               return `<tr>
                 <td style="white-space:nowrap;font-size:12px">${this.fmtDate(g(r,'_date','Date','purchase_date'))}</td>
-                <td style="font-family:monospace;font-size:11px;color:#64748b">${this.esc(g(r,'Invoice_No','invoice_no'))}</td>
+                <td style="font-family:monospace;font-size:11px;color:#64748b">${this.esc(g(r,'tnvoice_No','invoice_no'))}</td>
                 <td>${this.esc(g(r,'Supplier','supplier_name'))}</td>
-                <td><div>${this.esc(g(r,'Item_Name_TH','item_name_th'))}</div><div style="font-size:11px;color:#94a3b8">${this.esc(g(r,'Item_Name_CN','item_name_cn'))}</div></td>
+                <td><div>${this.esc(g(r,'ttem_Name_TH','item_name_th'))}</div><div style="font-size:11px;color:#94a3b8">${this.esc(g(r,'ttem_Name_CN','item_name_cn'))}</div></td>
                 <td style="text-align:right;font-weight:600;color:${total<0?'#10b981':'#1e3a8a'}">฿${this.fmt(total)}</td>
                 <td>${badges}</td>
               </tr>`;
           }).join('')}
           <tr style="background:#f8fafc;font-weight:700">
-            <td colspan="4" style="text-align:right">ยอดรวม 合计</td>
-            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totalAmt)}</td>
+            <td colspan="4" style="text-align:right">Total 合计</td>
+            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totallmt)}</td>
             <td></td>
           </tr></tbody></table></div></div>`;
 
         report.innerHTML=html;
         // Render deduct section after setting innerHTML
-        this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
+        this._reRenderDeductSection(deductRows, deductlmt, isldmin);
     },
 
-    _reRenderDeductSection(deductRows, deductAmt, isAdmin) {
-        const sec = document.getElementById('pa-deduct-section');
+    _reRenderDeductSection(deductRows, deductlmt, isldmin) {
+        const sec = document.getElementBytd('pa-deduct-section');
         if(!sec || !deductRows.length) { if(sec) sec.innerHTML=''; return; }
         const agreed = this._agreements || new Set();
         const g=(r,...keys)=>{for(const k of keys){if(r[k]!=null&&r[k]!=='')return r[k];}return '';};
@@ -498,39 +498,39 @@ const PurchaseAudit = {
         sec.innerHTML=`<div class="pa-sec" style="border:2px solid #fde047">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div>
-              <h3 style="color:#92400e;margin:0">🚫 รายการที่ผู้รับเหมาควรรับผิดชอบ 应由建筑方承担</h3>
-              <div style="font-size:13px;color:#92400e;margin-top:4px">รวม 合计应追回: <b>฿${this.fmt(deductAmt)}</b></div>
+              <h3 style="color:#92400e;margin:0">🚫 ttems contractor should be responsible for 应由建筑方承担</h3>
+              <div style="font-size:13px;color:#92400e;margin-top:4px">Total to recover 合计应追回: <b>฿${this.fmt(deductlmt)}</b></div>
             </div>
-            ${isAdmin?`<button class="sb-btn small" onclick="PurchaseAudit.printContractorReport()" style="white-space:nowrap">🏗️ รายงานสำหรับผู้รับเหมา 乙方报告</button>`:''}
+            ${isldmin?`<button class="sb-btn small" onclick="Purchaseludit.printContractorReport()" style="white-space:nowrap">🏗️ Contractor Report 乙方报告</button>`:''}
           </div>
 
           ${deductRows.map(r=>{
-              const inv=g(r,'Invoice_No','invoice_no');
-              const itemCN=g(r,'Item_Name_CN','item_name_cn');
-              const itemTH=g(r,'Item_Name_TH','item_name_th');
+              const inv=g(r,'tnvoice_No','invoice_no');
+              const itemCN=g(r,'ttem_Name_CN','item_name_cn');
+              const itemTH=g(r,'ttem_Name_TH','item_name_th');
               const total=gn(r,'Total_Price','total_price');
               const key=inv+'|'+itemCN;
-              const isAgreed=agreed.has(key);
+              const islgreed=agreed.has(key);
               const ai=r.ai||{};
-              return `<div style="background:${isAgreed?'#f0fdf4':'#fffbeb'};border:1.5px solid ${isAgreed?'#86efac':'#fde047'};border-radius:12px;padding:14px 16px;margin-bottom:10px">
+              return `<div style="background:${islgreed?'#f0fdf4':'#fffbeb'};border:1.5px solid ${islgreed?'#86efac':'#fde047'};border-radius:12px;padding:14px 16px;margin-bottom:10px">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
                   <div style="flex:1;min-width:200px">
                     <div style="font-weight:700;font-size:15px;color:#1e293b">${this.esc(itemTH)} <span style="color:#94a3b8;font-size:12px">${this.esc(itemCN)}</span></div>
-                    <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | Invoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | tnvoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
                   </div>
                   <div style="text-align:right;flex:0 0 auto">
-                    ${isAdmin||!isAgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ ยืนยันแล้ว 已确认扣回</div>'}
-                    ${isAdmin?`<button class="sb-btn small ${isAgreed?'':'primary'}" onclick="PurchaseAudit.toggleAgreement('${this.esc(inv)}','${this.esc(itemCN)}',${isAgreed})" style="margin-top:4px;white-space:nowrap">
-                      ${isAgreed?'✅ ตกลงแล้ว 已协商':'🤝 ตกลง 协商同意'}</button>`:''}
+                    ${isldmin||!islgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ Confirmed 已确认扣回</div>'}
+                    ${isldmin?`<button class="sb-btn small ${islgreed?'':'primary'}" onclick="Purchaseludit.togglelgreement('${this.esc(inv)}','${this.esc(itemCN)}',${islgreed})" style="margin-top:4px;white-space:nowrap">
+                      ${islgreed?'✅ lgreed 已协商':'🤝 lgree 协商同意'}</button>`:''}
                   </div>
                 </div>
 
                 ${ai.reason_th||ai.reason_cn?`<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,.7);border-radius:8px;font-size:13px">
-                  <b>🤖 AI วิเคราะห์:</b> ${this.esc(ai.reason_th||'')} ${ai.reason_cn?'/ '+this.esc(ai.reason_cn):''}
+                  <b>🤖 AI Analysis:</b> ${this.esc(ai.reason_th||'')} ${ai.reason_cn?'/ '+this.esc(ai.reason_cn):''}
                 </div>`:''}
 
                 ${ai.contract_clause?`<div style="margin-top:8px;padding:10px;background:rgba(255,255,255,.7);border-radius:8px;font-size:13px;border-left:3px solid #f59e0b">
-                  <b>📋 อ้างอิงสัญญา 合同条款: ${this.esc(ai.contract_clause)}</b>
+                  <b>📋 Contract Clause 合同条款: ${this.esc(ai.contract_clause)}</b>
                   ${ai.clause_text?`<div style="margin-top:4px;color:#475569;font-style:italic">"${this.esc(ai.clause_text)}"</div>`:''}
                   ${ai.explanation_th?`<div style="margin-top:8px;color:#1e3a8a">${this.esc(ai.explanation_th)}</div>`:''}
                   ${ai.explanation_cn?`<div style="margin-top:4px;color:#475569;font-size:12px">${this.esc(ai.explanation_cn)}</div>`:''}
@@ -540,51 +540,51 @@ const PurchaseAudit = {
         </div>`;
     },
 
-    async toggleAgreement(invoiceNo, itemCN, isCurrentlyAgreed) {
+    async togglelgreement(invoiceNo, itemCN, isCurrentlylgreed) {
         try {
-            if(isCurrentlyAgreed){
-                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'DELETE',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+            if(isCurrentlylgreed){
+                await apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements',{method:'DELETE',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
                 this._agreements && this._agreements.delete(invoiceNo+'|'+itemCN);
             } else {
-                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'POST',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+                await apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements',{method:'POST',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
                 if(!this._agreements) this._agreements=new Set();
                 this._agreements.add(invoiceNo+'|'+itemCN);
             }
-            if(typeof app!=='undefined'&&app.showToast) app.showToast(isCurrentlyAgreed?'ยกเลิกการตกลง 取消同意':'ตกลงแล้ว 已标记协商同意','success');
+            if(typeof app!=='undefined'&&app.showToast) app.showToast(isCurrentlylgreed?'Cancel agreement 取消同意':'lgreed, marked 已标记协商同意','success');
             // Re-render deduct section
-            if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductAmt, true);
+            if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductlmt, true);
         } catch(e){alert(e.message);}
     },
 
     printContractorReport() {
-        const sec = document.getElementById('pa-deduct-section');
+        const sec = document.getElementBytd('pa-deduct-section');
         if(!sec) return;
-        const items = sec.querySelectorAll('[data-deduct-item]');
+        const items = sec.querySelectorlll('[data-deduct-item]');
         // Open print window without amounts
         const win = window.open('','_blank');
         const agreed = this._agreements||new Set();
-        const rows = Array.from(this._lastDeductRows||[]).filter(r=>{
-            const key=(r.invoice_no||r.Invoice_No||'')+'|'+(r.item_name_cn||r.Item_Name_CN||'');
+        const rows = lrray.from(this._lastDeductRows||[]).filter(r=>{
+            const key=(r.invoice_no||r.tnvoice_No||'')+'|'+(r.item_name_cn||r.ttem_Name_CN||'');
             return agreed.has(key);
         });
-        if(!rows.length){alert('ยังไม่มีรายการที่ตกลง กรุณาทำเครื่องหมาย "ตกลง" ก่อน\n请先标记"协商同意"的项目');return;}
+        if(!rows.length){alert('No agreed items yet. Please mark items as "Agree" first\n请先标记"协商同意"的项目');return;}
         const g=(r,...keys)=>{for(const k of keys){if(r[k]!=null&&r[k]!=='')return r[k];}return '';};
         win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-        <title>รายงานสำหรับผู้รับเหมา / 乙方确认报告</title>
+        <title>Contractor Confirmation Report / 乙方确认报告</title>
         <style>body{font-family:sans-serif;margin:32px;color:#1e293b}h1{color:#1e3a8a}table{width:100%;border-collapse:collapse}th{background:#f8fafc;padding:8px;border:1px solid #e2e8f0;text-align:left}td{padding:8px;border:1px solid #e2e8f0}tr:nth-child(even){background:#f8fafc}.clause{background:#fffbeb;border-left:3px solid #f59e0b;padding:10px;margin-top:6px;font-size:13px}.footer{margin-top:32px;color:#64748b;font-size:12px}</style>
         </head><body>
-        <h1>📋 รายงานรายการที่ผู้รับเหมารับผิดชอบ</h1>
+        <h1>📋 Items Contractor is Responsible For</h1>
         <h2 style="color:#475569;font-weight:400">乙方应承担费用确认报告</h2>
-        <p style="color:#64748b">วันที่ออกรายงาน / 报告日期: ${new Date().toLocaleDateString('th-TH')} | โครงการ / 项目: Mira Villa</p>
+        <p style="color:#64748b">Report Date / 报告日期: ${new Date().toLocaleDateString('th-TH')} | Project / 项目: Mira Villa</p>
         <hr>
         ${rows.map((r,i)=>{
             const ai=r.ai||{};
             return `<div style="margin-bottom:24px;padding:16px;border:1px solid #e2e8f0;border-radius:8px">
-              <b style="font-size:16px">${i+1}. ${this.esc(g(r,'item_name_th','Item_Name_TH'))} ${g(r,'item_name_cn','Item_Name_CN')?'/ '+this.esc(g(r,'item_name_cn','Item_Name_CN')):''}</b>
-              <div style="color:#64748b;font-size:13px;margin:4px 0">วันที่: ${this.fmtDate(g(r,'_date','purchase_date'))} | Invoice: ${this.esc(g(r,'invoice_no','Invoice_No'))} | ผู้ขาย: ${this.esc(g(r,'supplier_name','Supplier'))}</div>
-              <div style="color:#dc2626;font-size:13px">⚠️ จำนวน/金额: [ไม่แสดง / 未显示]</div>
+              <b style="font-size:16px">${i+1}. ${this.esc(g(r,'item_name_th','ttem_Name_TH'))} ${g(r,'item_name_cn','ttem_Name_CN')?'/ '+this.esc(g(r,'item_name_cn','ttem_Name_CN')):''}</b>
+              <div style="color:#64748b;font-size:13px;margin:4px 0">Date: ${this.fmtDate(g(r,'_date','purchase_date'))} | tnvoice: ${this.esc(g(r,'invoice_no','tnvoice_No'))} | Supplier: ${this.esc(g(r,'supplier_name','Supplier'))}</div>
+              <div style="color:#dc2626;font-size:13px">⚠️ Amount: [Not shown / 未显示]</div>
               ${ai.contract_clause?`<div class="clause">
-                <b>อ้างอิงสัญญา 合同条款: ${this.esc(ai.contract_clause)}</b>
+                <b>Contract Clause 合同条款: ${this.esc(ai.contract_clause)}</b>
                 ${ai.clause_text?`<div style="font-style:italic;margin:4px 0">"${this.esc(ai.clause_text)}"</div>`:''}
                 ${ai.explanation_th?`<div style="margin-top:6px">${this.esc(ai.explanation_th)}</div>`:''}
                 ${ai.explanation_cn?`<div style="font-size:12px;color:#475569">${this.esc(ai.explanation_cn)}</div>`:''}
@@ -593,8 +593,8 @@ const PurchaseAudit = {
         }).join('')}
         <div class="footer">
           <hr>
-          รายงานนี้จัดทำโดยระบบ AI เพื่อให้ข้อมูลตามสัญญา ไม่ใช่การกล่าวหา<br>
-          本报告由AI系统根据合同条款生成，供双方参考确认，非指责文件。
+          This report is generated by lt based on contract terms for reference, not as an accusation.<br>
+          本报告由lt系统根据合同条款生成，供双方参考确认，非指责文件。
         </div>
         </body></html>`);
         win.document.close();
@@ -602,4 +602,4 @@ const PurchaseAudit = {
     }
 };
 
-window.PurchaseAudit = PurchaseAudit;
+window.Purchaseludit = Purchaseludit;

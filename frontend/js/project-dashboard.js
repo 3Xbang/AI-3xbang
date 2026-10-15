@@ -1,13 +1,13 @@
-
+﻿
 // 获取状态双语文本
 function getStatusText(status) {
     const statusTexts = {
-        'not_started': '未开始 ยังไม่เริ่ม',
-        'in_progress': '进行中 กำลังดำเนินการ',
-        'waiting_material': '等待材料 รอวัสดุ',
-        'weather_stop': '天气停工 หยุดเพราะสภาพอากาศ',
-        'completed': '已完成 เสร็จแล้ว',
-        'paused': '已暂停 หยุดชั่วคราว'
+        'not_started': '未开始 Not Started',
+        'in_progress': '进行中 In Progress',
+        'waiting_material': '等待材料 Waiting for Materials',
+        'weather_stop': '天气停工 Weather Stop',
+        'completed': '已完成 Completed',
+        'paused': '已暂停 Paused'
     };
     return statusTexts[status] || status;
 }
@@ -228,7 +228,7 @@ const ProjectDashboard = {
                 <div class="form-row">
                     <div class="form-group">
                         <label>${t('projects.name')} (${t('common.thai')}) *</label>
-                        <input type="text" id="project-name-th" required placeholder="เช่น: วิลล่ามิร่า">
+                        <input type="text" id="project-name-th" required placeholder="e.g. Mira Villa">
                     </div>
                     <div class="form-group">
                         <label>${t('projects.name')} (${t('common.chinese')})</label>
@@ -238,7 +238,7 @@ const ProjectDashboard = {
                 <div class="form-row">
                     <div class="form-group">
                         <label>${t('projects.location')} (${t('common.thai')}) *</label>
-                        <input type="text" id="project-location-th" required placeholder="เช่น: เชียงใหม่">
+                        <input type="text" id="project-location-th" required placeholder="e.g. Chiang Mai">
                     </div>
                     <div class="form-group">
                         <label>${t('projects.location')} (${t('common.chinese')})</label>
@@ -261,7 +261,7 @@ const ProjectDashboard = {
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        ${"取消 ยกเลิก"}
+                        ${"取消 Cancel"}
                     </button>
                     <button type="submit" class="btn btn-primary">
                         ${t('common.next')}
@@ -561,10 +561,10 @@ const ProjectDashboard = {
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                        ${"取消 ยกเลิก"}
+                        ${"取消 Cancel"}
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        ${"保存 บันทึก"}
+                        ${"保存 Save"}
                     </button>
                 </div>
             </form>
@@ -645,7 +645,7 @@ const ProjectDashboard = {
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                    ${"取消 ยกเลิก"}
+                    ${"取消 Cancel"}
                 </button>
                 <button type="button" class="btn btn-danger" onclick="ProjectDashboard.handleDeleteProject(${projectId})">
                     ${t('common.confirmDelete')}

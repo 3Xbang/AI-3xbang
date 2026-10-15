@@ -1,4 +1,4 @@
-// 系统账号与权限：决定哪些登录账号可以进入这个项目（不是现场工人，工人在“施工团队”里）
+﻿// 系统账号与权限：决定哪些登录账号可以进入这个项目（不是现场工人，工人在“施工团队”里）
 const projectMembers = {
     currentProjectId: null,
     currentProjectName: '',
@@ -6,12 +6,12 @@ const projectMembers = {
     allUsers: [],
 
     ROLE_TEXT: {
-        manager: '管理者 ผู้จัดการ',
-        purchaser:  '🛒 เจ้าหน้าที่จัดซื้อ 采购员',
-        supervisor: '🏗️ หัวหน้างาน 工地主管',
-        foreman:    '🪚 โฟร์แมน 工头',
-        owner:      '👑 เจ้าของโครงการ 业主',
-        executor: '执行者 ผู้ปฏิบัติงาน'
+        manager: '管理者 Manager',
+        purchaser:  '🛒 Purchaser 采购员',
+        supervisor: '🏗️ Site Supervisor 工地主管',
+        foreman:    '🪚 Foreman 工头',
+        owner:      '👑 Project Owner 业主',
+        executor: '执行者 Executor'
     },
 
     toast(msg, type) { if (typeof app !== 'undefined' && app.showToast) app.showToast(msg, type || 'success'); else alert(msg); },
@@ -29,7 +29,7 @@ const projectMembers = {
             this.renderModal();
         } catch (error) {
             console.error('加载项目账号失败:', error);
-            this.toast('加载失败 โหลดไม่สำเร็จ', 'error');
+            this.toast('加载失败 Load failed', 'error');
         } finally {
             app.hideLoading();
         }
@@ -61,7 +61,7 @@ const projectMembers = {
             <div class="modal" id="project-members-modal">
                 <div class="modal-content modal-large">
                     <div class="modal-header">
-                        <h3>👥 系统账号与权限 บัญชีผู้ใช้ - ${this.escapeHtml(this.currentProjectName)}</h3>
+                        <h3>👥 系统账号与权限 System Accounts - ${this.escapeHtml(this.currentProjectName)}</h3>
                         <button class="close-btn" onclick="projectMembers.closeModal()">&times;</button>
                     </div>
                     <div class="modal-body">
@@ -73,11 +73,11 @@ const projectMembers = {
                         <div class="members-section">
                             <div class="section-header"><h4>可以加入的账号</h4></div>
                             ${available.length ? `<div class="available-users-list">${this.renderAvailableUsers(available)}</div>`
-                                : '<p class="info-message">所有账号都已加入 ผู้ใช้ทั้งหมดอยู่ในโครงการแล้ว</p>'}
+                                : '<p class="info-message">所有账号都已加入 All accounts already added</p>'}
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="projectMembers.closeModal()">关闭 ปิด</button>
+                        <button type="button" class="btn btn-secondary" onclick="projectMembers.closeModal()">关闭 Close</button>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@ const projectMembers = {
     },
 
     renderMembersList() {
-        if (this.members.length === 0) return '<p class="empty-message">还没有账号 ยังไม่มีบัญชี</p>';
+        if (this.members.length === 0) return '<p class="empty-message">还没有账号 No accounts yet</p>';
         return this.members.map(member => {
             const date = member.assigned_at ? new Date(member.assigned_at).toLocaleDateString('zh-CN') : '-';
             return `
@@ -102,7 +102,7 @@ const projectMembers = {
                             </div>
                         </div>
                     </div>
-                    <button class="btn btn-small btn-danger" onclick="projectMembers.removeMember(${member.user_id})">🗑️ 移除 ลบ</button>
+                    <button class="btn btn-small btn-danger" onclick="projectMembers.removeMember(${member.user_id})">🗑️ 除除 Remove</button>
                 </div>`;
         }).join('');
     },
@@ -117,7 +117,7 @@ const projectMembers = {
                         <div class="member-meta"><span class="role-badge">${this.ROLE_TEXT[user.role] || this.escapeHtml(user.role)}</span></div>
                     </div>
                 </div>
-                <button class="btn btn-small btn-primary" onclick="projectMembers.addMember(${user.id})">➕ 添加 เพิ่ม</button>
+                <button class="btn btn-small btn-primary" onclick="projectMembers.addMember(${user.id})">➕ 添加 Add</button>
             </div>`).join('');
     },
 
@@ -135,7 +135,7 @@ const projectMembers = {
             app.showLoading();
             const r = await this.req('POST', `/projects/${this.currentProjectId}/members`, { user_id: userId });
             if (r.success) {
-                this.toast('已添加 เพิ่มแล้ว');
+                this.toast('已添加 Added');
                 await this.loadProjectMembers();
                 this.renderModal();
             } else {
@@ -150,20 +150,20 @@ const projectMembers = {
     },
 
     async removeMember(userId) {
-        if (!confirm('确认把这个账号移出项目？ ยืนยันลบบัญชีออกจากโครงการ?')) return;
+        if (!confirm('确认把这个账号除出项目？ Confirm remove account from project?')) return;
         try {
             app.showLoading();
             const r = await this.req('DELETE', `/projects/${this.currentProjectId}/members/${userId}`);
             if (r.success) {
-                this.toast('已移除 ลบแล้ว');
+                this.toast('已除除 Removed');
                 await this.loadProjectMembers();
                 this.renderModal();
             } else {
-                this.toast(r.message || '移除失败', 'error');
+                this.toast(r.message || '除除失败', 'error');
             }
         } catch (error) {
-            console.error('移除账号失败:', error);
-            this.toast(error.message || '移除失败', 'error');
+            console.error('除除账号失败:', error);
+            this.toast(error.message || '除除失败', 'error');
         } finally {
             app.hideLoading();
         }

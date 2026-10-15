@@ -1,4 +1,4 @@
-// 用户管理模块 — 使用 apiRequest()，样式与系统统一
+﻿// 用户管理模块 — 使用 apiRequest()，样式与系统统一
 const userManager = {
     users: [],
     projects: [],
@@ -23,12 +23,12 @@ const userManager = {
 
     roleLabel(role) {
         return {
-            manager:    '⚙️ 系统管理员 ผู้ดูแลระบบ',
-            owner:      '👑 业主 เจ้าของโครงการ',
-            supervisor: '🏗️ 工地主管 หัวหน้างาน',
-            foreman:    '🪚 工头 โฟร์แมน',
-            purchaser:  '🛒 采购员 เจ้าหน้าที่จัดซื้อ',
-            patrol:     '🔦 巡逻员 ยาม'
+            manager:    '⚙️ 系统管理员 System Admin',
+            owner:      '👑 业主 Project Owner',
+            supervisor: '🏗️ 工地主管 Site Supervisor',
+            foreman:    '🪚 工头 Foreman',
+            purchaser:  '🛒 采购员 Purchaser',
+            patrol:     '🔦 巡逻员 Security'
         }[role] || role;
     },
     roleBadgeClass(role) {
@@ -81,18 +81,18 @@ const userManager = {
     // ── 添加用户 ──
     showAdd() {
         this._dialog(`
-            <h3>➕ 添加用户 เพิ่มผู้ใช้</h3>
+            <h3>➕ 添加用户 Add User</h3>
             <div class="sb-field"><label>用户名 *</label><input id="um-username" type="text" placeholder="pakorn" autocomplete="off"></div>
             <div class="sb-field"><label>密码 * (最少6位)</label><input id="um-password" type="password" autocomplete="new-password"></div>
             <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" placeholder="Pakorn K."></div>
-            <div class="sb-field"><label>บทบาท 角色 *</label>
+            <div class="sb-field"><label>Role 角色 *</label>
                 <select id="um-role">
-                    <option value="">— เลือกบทบาท 选择 —</option>
-                    <option value="owner">👑 เจ้าของโครงการ 业主</option>
-                    <option value="supervisor">🏗️ หัวหน้างาน 工地主管</option>
-                    <option value="foreman">🪚 โฟร์แมน 工头</option>
-                    <option value="purchaser">🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
-                    <option value="patrol">🔦 ยาม 巡逻员</option>
+                    <option value="">— Select Role 选择 —</option>
+                    <option value="owner">👑 Project Owner 业主</option>
+                    <option value="supervisor">🏗️ Site Supervisor 工地主管</option>
+                    <option value="foreman">🪚 Foreman 工头</option>
+                    <option value="purchaser">🛒 Purchaser 采购员</option>
+                    <option value="patrol">🔦 Security 巡逻员</option>
                 </select>
             </div>`,
             '添加', async () => {
@@ -114,14 +114,14 @@ const userManager = {
             <div class="sb-field"><label>用户名</label><input value="${this.esc(u.username)}" disabled style="background:#f1f5f9;color:#94a3b8"></div>
             <div class="sb-field"><label>新密码（不填则不改）</label><input id="um-password" type="password" autocomplete="new-password"></div>
             <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" value="${this.esc(u.full_name||'')}"></div>
-            <div class="sb-field"><label>บทบาท 角色 *</label>
+            <div class="sb-field"><label>Role 角色 *</label>
                 <select id="um-role">
-                    ${u.role==='manager' ? `<option value="manager" selected>⚙️ ผู้ดูแลระบบ 系统管理员</option>` : ''}
-                    <option value="owner" ${u.role==='owner'?'selected':''}>👑 เจ้าของโครงการ 业主</option>
-                    <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🏗️ หัวหน้างาน 工地主管</option>
-                    <option value="foreman" ${u.role==='foreman'?'selected':''}>🪚 โฟร์แมน 工头</option>
-                    <option value="purchaser" ${u.role==='purchaser'?'selected':''}>🛒 เจ้าหน้าที่จัดซื้อ 采购员</option>
-                    <option value="patrol" ${u.role==='patrol'?'selected':''}>🔦 ยาม 巡逻员</option>
+                    ${u.role==='manager' ? `<option value="manager" selected>⚙️ System Admin 系统管理员</option>` : ''}
+                    <option value="owner" ${u.role==='owner'?'selected':''}>👑 Project Owner 业主</option>
+                    <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🏗️ Site Supervisor 工地主管</option>
+                    <option value="foreman" ${u.role==='foreman'?'selected':''}>🪚 Foreman 工头</option>
+                    <option value="purchaser" ${u.role==='purchaser'?'selected':''}>🛒 Purchaser 采购员</option>
+                    <option value="patrol" ${u.role==='patrol'?'selected':''}>🔦 Security 巡逻员</option>
                 </select>
             </div>`,
             '保存', async () => {

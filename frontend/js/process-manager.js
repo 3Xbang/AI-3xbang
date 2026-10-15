@@ -1,4 +1,4 @@
-// 工序管理模块 - Phase 3A
+﻿// 工序管理模块 - Phase 3A
 // Process Manager Module
 
 const ProcessManager = {
@@ -12,22 +12,22 @@ const ProcessManager = {
 
     // 显示添加工序模态框
     async showAddProcessModal() {
-        const modal = app.createModal('添加工序 เพิ่มงาน', `
+        const modal = app.createModal('添加工序 Add Task', `
             <div class="add-process-options">
                 <div class="option-card" onclick="ProcessManager.showTemplateSelection()">
                     <div class="option-icon">📚</div>
-                    <h4>从模板添加 เพิ่มจากเทมเพลต</h4>
-                    <p>从工序库选择 เลือกจากคลังงาน</p>
+                    <h4>从模板添加 Add from Template</h4>
+                    <p>从工序库选择 Select from Task Library</p>
                 </div>
                 <div class="option-card" onclick="ProcessManager.showCustomProcessForm()">
                     <div class="option-icon">✏️</div>
-                    <h4>自定义工序 งานกำหนดเอง</h4>
-                    <p>手动创建工序 สร้างงานด้วยตนเอง</p>
+                    <h4>自定义工序 Custom Task</h4>
+                    <p>手动创建工序 Create task manually</p>
                 </div>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="app.closeModal()">
-                    取消 ยกเลิก
+                    取消 Cancel
                 </button>
             </div>
         `);
@@ -67,16 +67,16 @@ const ProcessManager = {
             
             app.hideLoading();
             
-            const modal = app.createModal('从模板选择工序 เลือกงานจากเทมเพลต', `
+            const modal = app.createModal('从模板选择工序 Select Tasks from Template', `
                 <div class="process-selection-container">
                     <div class="process-selection-header">
-                        <p class="help-text">选择要添加的工序 เลือกงานที่ต้องการเพิ่ม</p>
+                        <p class="help-text">选择要添加的工序 Select tasks to add</p>
                         <div class="selection-actions">
                             <button type="button" class="btn btn-sm" onclick="ProcessManager.selectAllAvailableProcesses()">
-                                全选 เลือกทั้งหมด
+                                全选 Select All
                             </button>
                             <button type="button" class="btn btn-sm" onclick="ProcessManager.deselectAllProcesses()">
-                                取消全选 ยกเลิกทั้งหมด
+                                取消全选 Deselect All
                             </button>
                         </div>
                     </div>
@@ -88,10 +88,10 @@ const ProcessManager = {
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="ProcessManager.showAddProcessModal()">
-                        返回 กลับ
+                        返回 Back
                     </button>
                     <button type="button" class="btn btn-primary" onclick="ProcessManager.handleAddFromTemplate()">
-                        添加 เพิ่ม (<span id="selected-count">0</span> 个工序已选 งานถูกเลือก)
+                        添加 Add (<span id="selected-count">0</span> 个工序已选 tasks selected)
                     </button>
                 </div>
             `);
@@ -102,7 +102,7 @@ const ProcessManager = {
         } catch (error) {
             app.hideLoading();
             console.error('Load process templates error:', error);
-            app.showToast('加载工序失败 โหลดงานไม่สำเร็จ', 'error');
+            app.showToast('加载工序失败 Failed to load tasks', 'error');
         }
     },
 
@@ -113,7 +113,7 @@ const ProcessManager = {
                 <div class="category-header" onclick="ProcessManager.toggleCategory('${category.category}')">
                     <div class="category-info">
                         <h4>${getI18nField(category, 'name')}</h4>
-                        <span class="category-count">${templates.length} 工序 งาน</span>
+                        <span class="category-count">${templates.length} 工序 Tasks</span>
                     </div>
                     <button type="button" class="btn-icon-only">▼</button>
                 </div>
@@ -139,7 +139,7 @@ const ProcessManager = {
                         ${isExisting ? '<span class="badge-existing">已添加</span>' : ''}
                     </div>
                     ${template.quality_points ? `
-                        <div class="process-quality">质量要点 จุดตรวจสอบคุณภาพ: ${template.quality_points}</div>
+                        <div class="process-quality">质量要点 Quality Check Points: ${template.quality_points}</div>
                     ` : ''}
                 </div>
             </label>
@@ -195,7 +195,7 @@ const ProcessManager = {
     // 处理从模板添加
     async handleAddFromTemplate() {
         if (this.selectedTemplates.length === 0) {
-            app.showToast('请至少选择一个工序 กรุณาเลือกงานอย่างน้อยหนึ่งรายการ', 'warning');
+            app.showToast('请至少选择一个工序 Please select at least one task', 'warning');
             return;
         }
 
@@ -205,15 +205,15 @@ const ProcessManager = {
             
             if (result.success) {
                 app.closeModal();
-                app.showToast('工序添加成功 เพิ่มงานสำเร็จ');
+                app.showToast('工序添加成功 Add task successful');
                 // 刷新工序列表
                 await ProjectDetail.loadProcesses();
             } else {
-                app.showToast(result.message || '工序添加失败 เพิ่มงานไม่สำเร็จ', 'error');
+                app.showToast(result.message || '工序添加失败 Add task failed', 'error');
             }
         } catch (error) {
             console.error('Add processes error:', error);
-            app.showToast('错误 ผิดพลาด', 'error');
+            app.showToast('错误 Error', 'error');
         } finally {
             app.hideLoading();
         }
@@ -221,43 +221,43 @@ const ProcessManager = {
 
     // 显示自定义工序表单
     showCustomProcessForm() {
-        const modal = app.createModal('自定义工序 งานกำหนดเอง', `
+        const modal = app.createModal('自定义工序 Custom Task', `
             <form id="custom-process-form" class="form-vertical">
                 <div class="form-group">
-                    <label>工序编号 รหัสงาน *</label>
-                    <input type="text" id="custom-code" required placeholder="例如: A01 เช่น: A01">
-                    <small class="form-hint">请输入工序编号 กรุณาใส่รหัสงาน</small>
+                    <label>工序编号 Task Code *</label>
+                    <input type="text" id="custom-code" required placeholder="例如: A01 e.g.: A01">
+                    <small class="form-hint">请输入工序编号 Please enter task code</small>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>工序名称 ชื่องาน (泰语 ภาษาไทย) *</label>
-                        <input type="text" id="custom-name-th" required placeholder="เช่น: งานพิเศษ">
+                        <label>工序名称 Task Name (English) *</label>
+                        <input type="text" id="custom-name-th" required placeholder="e.g.: Special Work">
                     </div>
                     <div class="form-group">
-                        <label>工序名称 ชื่องาน (中文 中文)</label>
+                        <label>工序名称 Task Name (Chinese 中文)</label>
                         <input type="text" id="custom-name-zh" placeholder="例如：特殊工序">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label>单位 หน่วย *</label>
+                    <label>单位 Unit *</label>
                     <select id="custom-unit" required>
                         <option value="m²">m² (平方米)</option>
                         <option value="m³">m³ (立方米)</option>
                         <option value="m">m (米)</option>
-                        <option value="项">项 (รายการ)</option>
-                        <option value="个">个 (ชิ้น)</option>
-                        <option value="天">天 (วัน)</option>
+                        <option value="项">项 (items)</option>
+                        <option value="个">个 (pcs)</option>
+                        <option value="天">天 (days)</option>
                     </select>
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="ProcessManager.showAddProcessModal()">
-                        返回 กลับ
+                        返回 Back
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        添加 เพิ่ม
+                        添加 Add
                     </button>
                 </div>
             </form>

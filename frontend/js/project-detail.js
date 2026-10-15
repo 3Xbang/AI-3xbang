@@ -52,12 +52,12 @@ const ProjectDetail = {
 
     tabs() {
         const list = [];
-        if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'เตรียมโครงการ', warn: true });
-        if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'หน้างานวันนี้' });
-        if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'แผนความคืบหน้า' });
-        if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'การจัดซื้อ' });
-        if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'รูปถ่าย' });
-        if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'ภาพรวม' });
+        if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'Project Prep', warn: true });
+        if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'Today's Site' });
+        if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'Progress Plan' });
+        if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: 'Procurement Overview', th: 'Procurement' });
+        if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'Photos' });
+        if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'Overview' });
         return list;
     },
 
@@ -71,9 +71,9 @@ const ProjectDetail = {
             <div class="project-detail-header hero">
                 <div class="hero-top">
                     <button class="btn-back" onclick="ProjectDetail.backToDashboard()">
-                        <span>←</span> 返回 กลับ
+                        <span>←</span> 返回 Back
                     </button>
-                    <button class="sb-btn hero-bell" onclick="SiteNotify.open(${this.projectId})" title="通知 การแจ้งเตือน">🔔<span id="sb-bell-count" class="sb-badge" style="display:none"></span></button>
+                    <button class="sb-btn hero-bell" onclick="SiteNotify.open(${this.projectId})" title="通知 Notifications">🔔<span id="sb-bell-count" class="sb-badge" style="display:none"></span></button>
                 </div>
                 <div class="hero-main">
                     <div class="hero-title">
@@ -81,7 +81,7 @@ const ProjectDetail = {
                         <p class="project-location">📍 ${getI18nField(this.project, 'location')}</p>
                     </div>
                     <div class="hero-progress">
-                        <div class="hp-label">总进度 ความคืบหน้ารวม</div>
+                        <div class="hp-label">总进度 Total Progress</div>
                         <div class="hp-row"><div class="hp-bar"><i style="width:${Math.min(100, Math.round(this.project.progress || 0))}%"></i></div><b>${Math.round(this.project.progress || 0)}%</b></div>
                     </div>
                 </div>
@@ -126,7 +126,7 @@ const ProjectDetail = {
                 break;
             case 'processes':
                 container.innerHTML = `<div class="proc-toolbar">
-                    <span class="proc-view-label">视图 มุมมอง：</span>
+                    <span class="proc-view-label">视图 View：</span>
                     <button class="proc-toggle active" id="btn-gantt" onclick="ProjectDetail.switchProcView('gantt')">📊 甘特图</button>
                     <button class="proc-toggle" id="btn-cards" onclick="ProjectDetail.switchProcView('cards')">🃏 卡片</button>
                 </div>
@@ -158,20 +158,20 @@ const ProjectDetail = {
         }
     },
 
-    // ---------- 采购总览 ----------
+    // ---------- Procurement Overview ----------
     renderProcurement() {
         const isAdmin = PermissionManager.isManager();
         return `<div style="padding:16px;max-width:1400px;margin:0 auto">
           <div class="td-head">
             <div>
-              <h2 class="td-title">📦 การจัดซื้อ <small class="td-th">采购总览</small></h2>
-              <div class="td-sub">วัสดุและการวิเคราะห์การจัดซื้อ · 材料设备与采购分析</div>
+              <h2 class="td-title">📦 Procurement <small class="td-th">Procurement Overview</small></h2>
+              <div class="td-sub">Materials and procurement analysis · 材料设备与采购分析</div>
             </div>
           </div>
 
           <div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-            <button class="proc-tab active" id="proc-tab-mat" onclick="ProjectDetail._switchProcTab('mat')">🧱 วัสดุ 收据材料</button>
-            <button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">📋 การวิเคราะห์ 采购分析</button>
+            <button class="proc-tab active" id="proc-tab-mat" onclick="ProjectDetail._switchProcTab('mat')">🧱 Materials 收据材料</button>
+            <button class="proc-tab" id="proc-tab-ai" onclick="ProjectDetail._switchProcTab('ai')">📋 Analysis 采购分析</button>
           </div>
           <style>
             .proc-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -209,9 +209,9 @@ const ProjectDetail = {
     renderPhotos() {
         return `<div style="padding:16px;max-width:900px;margin:0 auto">
             <div class="td-head">
-                <div><h2 class="td-title">📷 รูปถ่ายหน้างาน <small class="td-th">现场照片</small></h2>
-                <div class="td-sub">อัปโหลดรูปถ่ายความคืบหน้า · 上传施工进度照片</div></div>
-                <button class="sb-btn primary" onclick="photoManager.showUploadForm()">📷 อัปโหลด 上传照片</button>
+                <div><h2 class="td-title">📷 Site Photos <small class="td-th">现场照片</small></h2>
+                <div class="td-sub">Upload construction progress photos · 上传施工进度照片</div></div>
+                <button class="sb-btn primary" onclick="photoManager.showUploadForm()">📷 Upload 上传照片</button>
             </div>
             <div id="photos-grid" class="photo-grid" style="margin-top:12px"></div>
         </div>`;
@@ -221,30 +221,30 @@ const ProjectDetail = {
     renderOverview() {
         const p = this.project || {};
         const day = d => (d ? String(d).slice(0, 10) : '-');
-        const statusTxt = { active: '进行中 กำลังดำเนินการ', planning: '筹备中 เตรียมการ', completed: '已完工 เสร็จสิ้น', paused: '暂停 หยุดชั่วคราว' }[p.status] || (p.status || '-');
+        const statusTxt = { active: '进行中 In Progress', planning: '筹备中 Planning', completed: '已完工 Completed', paused: '暂停 Paused' }[p.status] || (p.status || '-');
         return `
             <div class="project-overview">
                 <div class="overview-cards">
-                    <div class="overview-card"><div class="card-icon">📊</div><div class="card-content"><h3>总工序数 จำนวนงานทั้งหมด</h3><p class="card-value" id="overview-processes">-</p></div></div>
-                    <div class="overview-card"><div class="card-icon">✅</div><div class="card-content"><h3>已完成 เสร็จแล้ว</h3><p class="card-value" id="overview-completed">-</p></div></div>
-                    <div class="overview-card"><div class="card-icon">🚧</div><div class="card-content"><h3>进行中 กำลังดำเนินการ</h3><p class="card-value" id="overview-inprogress">-</p></div></div>
-                    <div class="overview-card"><div class="card-icon">👷</div><div class="card-content"><h3>施工人员 คนงาน</h3><p class="card-value" id="overview-members">-</p></div></div>
+                    <div class="overview-card"><div class="card-icon">📊</div><div class="card-content"><h3>总工序数 Total Processes</h3><p class="card-value" id="overview-processes">-</p></div></div>
+                    <div class="overview-card"><div class="card-icon">✅</div><div class="card-content"><h3>已完成 Completed</h3><p class="card-value" id="overview-completed">-</p></div></div>
+                    <div class="overview-card"><div class="card-icon">🚧</div><div class="card-content"><h3>进行中 In Progress</h3><p class="card-value" id="overview-inprogress">-</p></div></div>
+                    <div class="overview-card"><div class="card-icon">👷</div><div class="card-content"><h3>施工人员 Workers</h3><p class="card-value" id="overview-members">-</p></div></div>
                 </div>
 
                 <div id="overview-estimate"></div>
 
                 <div class="detail-section">
-                    <h3>需要关注 สิ่งที่ต้องดู</h3>
+                    <h3>需要关注 Items to watch</h3>
                     <div id="overview-alerts"><div class="td-empty">读取中…</div></div>
                 </div>
 
                 <div class="detail-section">
-                    <h3>项目信息 ข้อมูลโครงการ</h3>
+                    <h3>项目信息 Project Info</h3>
                     <div class="info-table">
-                        <div class="info-row"><span class="info-label">客户 ลูกค้า:</span><span class="info-value">${p.client_name || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">开始日期 วันเริ่ม:</span><span class="info-value">${day(p.start_date)}</span></div>
-                        <div class="info-row"><span class="info-label">结束日期 วันสิ้นสุด:</span><span class="info-value">${day(p.planned_end_date)}</span></div>
-                        <div class="info-row"><span class="info-label">状态 สถานะ:</span><span class="info-value">${statusTxt}</span></div>
+                        <div class="info-row"><span class="info-label">客户 Client:</span><span class="info-value">${p.client_name || '-'}</span></div>
+                        <div class="info-row"><span class="info-label">开始日期 Start Date:</span><span class="info-value">${day(p.start_date)}</span></div>
+                        <div class="info-row"><span class="info-label">结束日期 End Date:</span><span class="info-value">${day(p.planned_end_date)}</span></div>
+                        <div class="info-row"><span class="info-label">状态 Status:</span><span class="info-value">${statusTxt}</span></div>
                     </div>
                 </div>
 

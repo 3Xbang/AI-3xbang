@@ -12,12 +12,12 @@ const photoManager = {
     async loadPhotos() {
         const grid = document.getElementById('photos-grid');
         if (!grid) return;
-        grid.innerHTML = '<div class="td-empty">กำลังโหลด... 加载中</div>';
+        grid.innerHTML = '<div class="td-empty">Loading... 加载中</div>';
         try {
             const r = await apiRequest('/api/photos/project/' + this.currentProjectId);
             this.renderPhotos(r.data || []);
         } catch(e) {
-            grid.innerHTML = '<div class="td-empty">โหลดไม่สำเร็จ 加载失败</div>';
+            grid.innerHTML = '<div class="td-empty">Load failed 加载失败</div>';
         }
     },
 
@@ -25,7 +25,7 @@ const photoManager = {
         const grid = document.getElementById('photos-grid');
         if (!grid) return;
         if (!photos.length) {
-            grid.innerHTML = '<div class="ph-empty"><div style="font-size:48px">📷</div><div><b>ยังไม่มีรูปถ่าย</b></div><div style="font-size:13px;color:#94a3b8">还没有上传照片</div></div>';
+            grid.innerHTML = '<div class="ph-empty"><div style="font-size:48px">📷</div><div><b>No photos yet</b></div><div style="font-size:13px;color:#94a3b8">No photos uploaded yet</div></div>';
             return;
         }
         // Group by date
@@ -36,13 +36,13 @@ const photoManager = {
             groups[d].push(p);
         });
         const dateLabel = dateStr => {
-            if (dateStr === 'unknown') return 'ไม่ระบุวันที่ 日期不详';
+            if (dateStr === 'unknown') return 'Date unknown 日期不详';
             const d = new Date(dateStr);
             const today = new Date(); today.setHours(0,0,0,0);
             const yest = new Date(today); yest.setDate(today.getDate()-1);
             d.setHours(0,0,0,0);
-            const label = d.getTime()===today.getTime() ? '📅 วันนี้ 今天' :
-                          d.getTime()===yest.getTime()  ? '📅 เมื่อวาน 昨天' :
+            const label = d.getTime()===today.getTime() ? '📅 Today 今天' :
+                          d.getTime()===yest.getTime()  ? '📅 Yesterday 昨天' :
                           '📅 ' + d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
             return label;
         };
@@ -50,7 +50,7 @@ const photoManager = {
             <div class="ph-date-group">
                 <div class="ph-date-header">
                     ${dateLabel(date)}
-                    <span class="ph-date-count">${groups[date].length} รูป 张</span>
+                    <span class="ph-date-count">${groups[date].length} photos 张</span>
                 </div>
                 <div class="photo-grid">
                     ${groups[date].map(p => this.renderCard(p)).join('')}
@@ -72,8 +72,8 @@ const photoManager = {
 
         const actions = canManage ? `
             <div class="ph-actions">
-                <button class="ph-btn-edit" onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" title="แก้ไขเหตุผล 编辑理由">✏️</button>
-                <button class="ph-btn-del" onclick="photoManager.deletePhoto(${p.id})" title="ลบ 删除">🗑️</button>
+                <button class="ph-btn-edit" onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" title="Edit Reason 编辑理由">✏️</button>
+                <button class="ph-btn-del" onclick="photoManager.deletePhoto(${p.id})" title="Delete 删除">🗑️</button>
             </div>` : '';
 
         return `<div class="ph-card">
@@ -106,31 +106,31 @@ const photoManager = {
         const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
         dlg.innerHTML = `<div class="sb-dialog" style="max-width:500px">
             <header style="background:#1e3a8a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
-                <div><b style="font-size:18px">📷 อัปโหลดรูปถ่าย</b><small style="display:block;opacity:.8;font-size:12px">上传现场照片</small></div>
+                <div><b style="font-size:18px">📷 Upload Photos</b><small style="display:block;opacity:.8;font-size:12px">上传现场照片</small></div>
                 <button data-x style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer">&times;</button>
             </header>
             <div class="sb-body" style="display:flex;flex-direction:column;gap:14px">
 
                 <div style="background:#f0f9ff;border:1.5px dashed #7dd3fc;border-radius:10px;padding:12px;text-align:center">
-                    <div style="font-size:13px;color:#0369a1;margin-bottom:8px">เลือกรูปภาพ 选择照片 *</div>
+                    <div style="font-size:13px;color:#0369a1;margin-bottom:8px">Select Photos 选择照片 *</div>
                     <input type="file" id="ph-files" accept="image/*" multiple style="font-size:15px;padding:4px 0">
                     <div id="ph-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
                 </div>
 
                 <div>
-                    <div style="font-size:13px;color:#475569;margin-bottom:4px"><b>เหตุผลที่ถ่าย</b> <small>上传理由 *</small></div>
-                    <input type="text" id="ph-reason" placeholder="เช่น ความคืบหน้างานฉาบ / 例如：记录墙面抹灰进度" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
+                    <div style="font-size:13px;color:#475569;margin-bottom:4px"><b>Reason for Photo</b> <small>上传理由 *</small></div>
+                    <input type="text" id="ph-reason" placeholder="e.g. Wall plastering progress / 例如：记录墙面抹灰进度" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
                 </div>
 
                 <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;color:#475569">
-                    <b>ผู้อัปโหลด 上传人：</b><b style="color:#1e3a8a">${this.esc(userName)}</b>
-                    &nbsp;&nbsp; <b>วันที่ 时间：</b>${new Date().toLocaleDateString('th-TH')} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}
+                    <b>Uploaded by 上传人：</b><b style="color:#1e3a8a">${this.esc(userName)}</b>
+                    &nbsp;&nbsp; <b>Date/Time 时间：</b>${new Date().toLocaleDateString('th-TH')} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}
                 </div>
 
             </div>
             <footer>
-                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
-                <button class="sb-btn primary" data-ok>📤 อัปโหลด 上传</button>
+                <button class="sb-btn" data-cancel>Cancel 取消</button>
+                <button class="sb-btn primary" data-ok>📤 Upload 上传</button>
             </footer></div>`;
         document.body.appendChild(dlg);
 
@@ -151,11 +151,11 @@ const photoManager = {
             if (okBtn.disabled) return;          // prevent double-submit
             const files = dlg.querySelector('#ph-files').files;
             const reason = dlg.querySelector('#ph-reason').value.trim();
-            if (!files.length) { alert('กรุณาเลือกรูปภาพ / 请选择照片'); return; }
-            if (!reason) { alert('กรุณาระบุเหตุผล / 请填写上传理由'); return; }
+            if (!files.length) { alert('Please select photos / 请选择照片'); return; }
+            if (!reason) { alert('Please enter reason / 请填写上传理由'); return; }
 
             okBtn.disabled = true;
-            okBtn.textContent = '⏳ กำลังอัปโหลด... 上传中...';
+            okBtn.textContent = '⏳ Uploading... 上传中...';
             try {
                 if (typeof app !== 'undefined') app.showLoading();
                 let uploaded = 0;
@@ -175,26 +175,26 @@ const photoManager = {
                     if (j.success) uploaded++;
                 }
                 if (typeof app !== 'undefined') app.hideLoading();
-                if (typeof app !== 'undefined' && app.showToast) app.showToast(`อัปโหลดแล้ว ${uploaded} รูป / 已上传${uploaded}张`, 'success');
+                if (typeof app !== 'undefined' && app.showToast) app.showToast(`Uploaded ${uploaded}  photos / 已上传${uploaded}张`, 'success');
                 close();
                 await this.loadPhotos();
             } catch(e) {
                 if (typeof app !== 'undefined') app.hideLoading();
                 okBtn.disabled = false;
-                okBtn.textContent = '📤 อัปโหลด 上传';
-                alert('อัปโหลดไม่สำเร็จ / 上传失败：' + e.message);
+                okBtn.textContent = '📤 Upload 上传';
+                alert('Upload failed / 上传失败：' + e.message);
             }
         };
     },
 
     async deletePhoto(photoId) {
-        if (!confirm('ลบรูปนี้? / 确认删除这张照片？')) return;
+        if (!confirm('Delete this photo? / 确认删除这张照片？')) return;
         try {
             await apiRequest('/api/photos/' + photoId, { method: 'DELETE' });
-            if (typeof app !== 'undefined' && app.showToast) app.showToast('ลบแล้ว 已删除', 'success');
+            if (typeof app !== 'undefined' && app.showToast) app.showToast('Deleted 已删除', 'success');
             await this.loadPhotos();
         } catch(e) {
-            alert('ลบไม่สำเร็จ 删除失败：' + e.message);
+            alert('Delete failed 删除失败：' + e.message);
         }
     },
 
@@ -202,17 +202,17 @@ const photoManager = {
         const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
         dlg.innerHTML = `<div class="sb-dialog" style="max-width:420px">
             <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-                <b>✏️ แก้ไขเหตุผล 编辑理由</b>
+                <b>✏️ Edit Reason 编辑理由</b>
                 <button data-x style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
             </header>
             <div class="sb-body">
-                <div style="font-size:13px;color:#475569;margin-bottom:6px">เหตุผล/คำอธิบาย 理由/说明</div>
+                <div style="font-size:13px;color:#475569;margin-bottom:6px">Reason/Description 理由/说明</div>
                 <input type="text" id="edit-reason-input" value="${this.esc(currentReason)}" 
                     style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
             </div>
             <footer>
-                <button class="sb-btn" data-cancel>ยกเลิก 取消</button>
-                <button class="sb-btn primary" data-ok>💾 บันทึก 保存</button>
+                <button class="sb-btn" data-cancel>Cancel 取消</button>
+                <button class="sb-btn primary" data-ok>💾 Save 保存</button>
             </footer></div>`;
         document.body.appendChild(dlg);
         dlg.querySelector('#edit-reason-input').focus();
@@ -222,11 +222,11 @@ const photoManager = {
             const reason = dlg.querySelector('#edit-reason-input').value.trim();
             try {
                 await apiRequest('/api/photos/' + photoId, { method: 'PUT', body: JSON.stringify({ reason }) });
-                if (typeof app !== 'undefined' && app.showToast) app.showToast('บันทึกแล้ว 已保存', 'success');
+                if (typeof app !== 'undefined' && app.showToast) app.showToast('Saved 已保存', 'success');
                 close();
                 await this.loadPhotos();
             } catch(e) {
-                alert('บันทึกไม่สำเร็จ 保存失败：' + e.message);
+                alert('Save failed 保存失败：' + e.message);
             }
         };
     },

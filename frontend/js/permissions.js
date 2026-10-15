@@ -1,4 +1,4 @@
-// permissions.js — 5角色权限系统
+﻿// permissions.js — 5角色权限系统
 // manager(系统管理员), owner(业主), supervisor(工地主管), foreman(工头), purchaser(采购员)
 
 const PermissionManager = {
@@ -98,12 +98,12 @@ const PermissionManager = {
     // ── 显示名称 ──
     getRoleDisplayName(role) {
         return {
-            manager:    '系统管理员 ผู้ดูแลระบบ',
-            owner:      '业主 เจ้าของโครงการ',
-            supervisor: '工地主管 หัวหน้างาน',
-            foreman:    '工头 โฟร์แมน',
-            purchaser:  '采购员 เจ้าหน้าที่จัดซื้อ',
-            patrol:     '巡逻员 ยาม'
+            manager:    '系统管理员 System Admin',
+            owner:      '业主 Project Owner',
+            supervisor: '工地主管 Site Supervisor',
+            foreman:    '工头 Foreman',
+            purchaser:  '采购员 Purchaser',
+            patrol:     '巡逻员 Security'
         }[role] || role;
     },
 
@@ -127,7 +127,7 @@ const PermissionManager = {
         document.querySelectorAll(sel).forEach(el => { el.style.display = ok ? '' : 'none'; });
     },
     showPermissionDenied(msg) {
-        const def = 'ไม่มีสิทธิ์ / 无权限执行此操作';
+        const def = 'No permission / 无权限执行此操作';
         if (typeof app !== 'undefined' && app.showToast) app.showToast(msg || def, 'error');
         else alert(msg || def);
     },

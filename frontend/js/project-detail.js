@@ -53,7 +53,7 @@ const ProjectDetail = {
     tabs() {
         const list = [];
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'Project Prep', warn: true });
-        if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: 'Today's Site' });
+        if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: "Today's Site" });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'Progress Plan' });
         if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: 'Procurement Overview', th: 'Procurement' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'Photos' });

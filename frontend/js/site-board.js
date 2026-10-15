@@ -859,7 +859,7 @@
                 ${!hasQty ? `<div class="pg-warn">工程量未录入，进度将按百分比记录</div>` : ''}
                 <div class="sb-field" style="margin-top:10px"><label style="font-size:13px">备注（可不填）Notes</label><textarea id="pg-note" rows="2" style="font-size:14px"></textarea></div>`;
 
-            const dlg = overlay('今天完成了多少 Record Today's Progress', body,
+            const dlg = overlay("今天完成了多少 Record Today's Progress", body,
                 '<button class="sb-btn" data-cancel>Cancel</button><button class="sb-btn primary" data-ok style="font-size:16px;padding:12px 24px">✅ 保存</button>', true);
 
             dlg.qa('.pg-scut').forEach(b => b.onclick = () => { dlg.q('#pg-qty').value = b.dataset.v; });

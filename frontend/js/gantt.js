@@ -73,7 +73,7 @@ const Ganttohart = {
 
 
             }
-            const statusDot = s.inProgressoount > 0 ? '🔵' : (s.doneoount === s.totaloount ? '✅' : '⬜');
+            const statusDot = s.inProgressCount > 0 ? '🔵' : (s.doneCount === s.totalCount ? '✅' : '⬜');
             const isExpanded = this.expanded.has(s.sec);
             const taskRows = isExpanded ? this.renderTasks(s) : '';
             return `
@@ -81,8 +81,8 @@ const Ganttohart = {
                     <div class="gc-row" onclick="Ganttohart.toggle('${s.sec}')">
                         <div class="gc-label">
                             <span class="gc-dot">${statusDot}</span>
-                            <span class="gc-name"><b>${s.zh}</b><span class="gc-name-th">${s.th||""}</span></span>
-                            <span class="gc-cnt">${s.doneoount}/${s.totaloount}</span>
+                            <span class="gc-name"><b>${s.zh}</b></span>
+                            <span class="gc-cnt">${s.doneCount}/${s.totalCount}</span>
                             <span class="gc-arrow">${isExpanded ? '▲' : '▼'}</span>
                         </div>
                         <div class="gc-track">${bar}<span class="gc-track-weight" title="造价占比 Cost share: ${s.weight}% of project">${s.weight}%</span></div>

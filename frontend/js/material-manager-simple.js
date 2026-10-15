@@ -173,7 +173,7 @@ const MaterialManager = {
                         <div style="font-size:13px;color:#1e293b">${esc(r.item_name_th||'')}</div>
                         ${r.item_name_cn?`<div style="font-size:11px;color:#94a3b8">${esc(r.item_name_cn)}</div>`:''}
                       </td>
-                      <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-size:12px;color:#475569">${r.qty!=null&&r.qty!=0?r.qty+' '+(r.unit||''):''}</td>
+                      <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-size:12px;color:#475569">${r.qty!=null&&r.qty!=0?(+r.qty).toLocaleString('th-TH',{maximumFractionDigits:3})+' '+(r.unit||''):''}</td>
                       <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-size:12px;color:#475569">${r.unit_price>0?'฿'+fmt2(r.unit_price):'—'}</td>
                       <td style="padding:8px 14px;border-bottom:${borderBottom};text-align:right;font-weight:600;color:${isCredit?'#10b981':'#1e3a8a'}">฿${fmt(total)}</td>
                       <td style="padding:6px 8px;border-bottom:${borderBottom};text-align:center;white-space:nowrap">

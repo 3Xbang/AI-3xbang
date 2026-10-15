@@ -949,10 +949,10 @@ router.post('/purchase-records/import-csv', authenticate, requirePermission('pur
       }
     }
 
-    // Skip duplicates: same invoice + item + total
+    // Skip duplicates: same date + invoice + item → definitely duplicate
     const exists = await pool.query(
-      `SELECT 1 FROM purchase_records WHERE invoice_no=$1 AND item_name_cn=$2 AND ABS(total_price - $3) < 0.01 LIMIT 1`,
-      [invoiceNo||null, nameCN, totalPrice]);
+      `SELECT 1 FROM purchase_records WHERE project_id=$1 AND invoice_no=$2 AND item_name_cn=$3 AND (purchase_date=$4::date OR ($4 IS NULL AND purchase_date IS NULL)) LIMIT 1`,
+      [req.body.project_id||null, invoiceNo||null, nameCN, dateStr]);
     if (exists.rows.length === 0) {
       await pool.query(
         `INSERT INTO purchase_records (purchase_date, invoice_no, supplier_id, supplier_name, item_id, item_name_cn, item_name_th, item_category, qty, unit, unit_price, total_price, project_id, imported_by)

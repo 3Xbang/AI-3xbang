@@ -132,7 +132,7 @@ const ProjectDetail = {
                 </div>
                 <div id="gantt-container"></div>
                 <div id="processes-list" class="process-timeline" style="display:none"></div>`;
-                await GanttChart.init(this.projectId);
+                await Ganttohart.init(this.projectId);
                 break;
 
             case 'materials':

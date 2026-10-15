@@ -645,10 +645,20 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       return res.status(403).json({ success: false, message: '��Ȩ���ʴ���Ŀ' });
     }
 
+    // Duplicate check: same file size from same user in last 30 seconds
+    const dupCheck = await pool.query(
+      `SELECT id FROM photos WHERE project_id=$1 AND uploaded_by=$2 AND file_size=$3
+       AND upload_time > NOW() - INTERVAL '30 seconds' LIMIT 1`,
+      [project_id, req.user.username, req.file.size]
+    );
+    if (dupCheck.rows.length) {
+      return res.status(409).json({ success: false, message: '照片已上传 / รูปนี้เพิ่งอัปโหลดไปแล้ว' });
+    }
+
     const result = await pool.query(`
       INSERT INTO photos
-      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by, reason, uploader_name)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `, [
       project_id,
@@ -657,7 +667,9 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       `/uploads/${req.file.filename}`,
       photo_type,
       req.file.size,
-      req.user.username
+      req.user.username,
+      req.body.reason || null,
+      req.user.full_name || req.user.username
     ]);
 
     res.json({ success: true, data: result.rows[0] });

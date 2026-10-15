@@ -120,13 +120,18 @@ const photoManager = {
         dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
 
         dlg.querySelector('[data-ok]').onclick = async () => {
+            const okBtn = dlg.querySelector('[data-ok]');
+            if (okBtn.disabled) return;          // prevent double-submit
             const files = dlg.querySelector('#ph-files').files;
             const reason = dlg.querySelector('#ph-reason').value.trim();
             if (!files.length) { alert('กรุณาเลือกรูปภาพ / 请选择照片'); return; }
             if (!reason) { alert('กรุณาระบุเหตุผล / 请填写上传理由'); return; }
 
+            okBtn.disabled = true;
+            okBtn.textContent = '⏳ กำลังอัปโหลด... 上传中...';
             try {
                 if (typeof app !== 'undefined') app.showLoading();
+                let uploaded = 0;
                 for (const file of files) {
                     const fd = new FormData();
                     fd.append('photo', file);
@@ -134,17 +139,22 @@ const photoManager = {
                     fd.append('photo_type', 'progress');
                     fd.append('reason', reason);
                     if (processExecutionId) fd.append('process_execution_id', processExecutionId);
-                    await fetch(window.location.origin + '/api/photos/upload', {
+                    const resp = await fetch(window.location.origin + '/api/photos/upload', {
                         method: 'POST',
                         headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') },
                         body: fd
                     });
+                    const j = await resp.json();
+                    if (j.success) uploaded++;
                 }
                 if (typeof app !== 'undefined') app.hideLoading();
+                if (typeof app !== 'undefined' && app.showToast) app.showToast(`อัปโหลดแล้ว ${uploaded} รูป / 已上传${uploaded}张`, 'success');
                 close();
                 await this.loadPhotos();
             } catch(e) {
                 if (typeof app !== 'undefined') app.hideLoading();
+                okBtn.disabled = false;
+                okBtn.textContent = '📤 อัปโหลด 上传';
                 alert('อัปโหลดไม่สำเร็จ / 上传失败：' + e.message);
             }
         };

@@ -1351,8 +1351,8 @@ ${RECORDS_TEXT}
 
 
 // ============ Daily Site Report — 施工日报 ============
-const DSR_MACHINERY = ['Backhoe','Tractor','Mobile Crane','Truck 6-wheel','Truck 10-wheel','Pump','Road Roller','Vibrator','Halb','Bar Bending Machine','Bar Cutting Machine'];
-const DSR_WORKERS   = ['Engineer','Foreman','Surveyor','Carpenter','Bender','Welder','Masonry','Electrician','Mechanic','Air-con Tech'];
+const DSR_MACHINERY = ['Back hole','Tractor','Mobile Crane','Truck 6 wheel','Truck 10 wheel','Pump','Road roller','Vibrator','Halb','Bar bending','Bar cuting'];
+const DSR_WORKERS   = ['Engineer','Foreman','Survey','Carpenter','Bender','Welder','Masonry','Electrician','Mechanic','Air conditioned'];
 
 // GET — load today's report (or blank)
 router.get('/projects/:projectId/daily-report', authenticate, requireProjectAccess(), wrap(async(req,res)=>{

@@ -28,7 +28,34 @@ const photoManager = {
             grid.innerHTML = '<div class="ph-empty"><div style="font-size:48px">📷</div><div><b>ยังไม่มีรูปถ่าย</b></div><div style="font-size:13px;color:#94a3b8">还没有上传照片</div></div>';
             return;
         }
-        grid.innerHTML = photos.map(p => this.renderCard(p)).join('');
+        // Group by date
+        const groups = {};
+        photos.forEach(p => {
+            const d = p.upload_time ? p.upload_time.slice(0, 10) : 'unknown';
+            if (!groups[d]) groups[d] = [];
+            groups[d].push(p);
+        });
+        const dateLabel = dateStr => {
+            if (dateStr === 'unknown') return 'ไม่ระบุวันที่ 日期不详';
+            const d = new Date(dateStr);
+            const today = new Date(); today.setHours(0,0,0,0);
+            const yest = new Date(today); yest.setDate(today.getDate()-1);
+            d.setHours(0,0,0,0);
+            const label = d.getTime()===today.getTime() ? '📅 วันนี้ 今天' :
+                          d.getTime()===yest.getTime()  ? '📅 เมื่อวาน 昨天' :
+                          '📅 ' + d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+            return label;
+        };
+        grid.innerHTML = Object.keys(groups).sort((a,b)=>b.localeCompare(a)).map(date => `
+            <div class="ph-date-group">
+                <div class="ph-date-header">
+                    ${dateLabel(date)}
+                    <span class="ph-date-count">${groups[date].length} รูป 张</span>
+                </div>
+                <div class="photo-grid">
+                    ${groups[date].map(p => this.renderCard(p)).join('')}
+                </div>
+            </div>`).join('');
     },
 
     renderCard(p) {

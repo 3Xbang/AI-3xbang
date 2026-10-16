@@ -172,6 +172,7 @@ async function loadPlanState(client, projectId, dateISO) {
   const prof = await getProfile(client, projectId);
   const rows = (await client.query(
     `SELECT pn.id AS node_id, pn.process_code, pn.process_name, pn.master_code, pn.floor_no,
+            pn.is_custom, pn.custom_section,
             pe.id AS exec_id, pe.status, pe.completion_percentage, pe.planned_quantity, pe.quantity_unit,
             to_char(pe.actual_start_date, 'YYYY-MM-DD') AS start_iso, to_char(pe.actual_end_date, 'YYYY-MM-DD') AS end_iso
        FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id = pn.id
@@ -186,7 +187,7 @@ async function loadPlanState(client, projectId, dateISO) {
 
   const tasks = rows.map(r => {
     const lib = LIB[r.master_code];
-    return { key: keyOfRow(r), code: r.master_code, floor: r.floor_no, zh: lib ? lib.zh : r.process_code, th: lib ? lib.th : null, unit: lib ? lib.unit : r.quantity_unit, section: lib ? lib.sec : null };
+    return { key: keyOfRow(r), code: r.master_code, floor: r.floor_no, zh: lib ? lib.zh : (typeof r.process_name==='object' ? r.process_name.zh : r.process_code), th: lib ? lib.th : (typeof r.process_name==='object' ? r.process_name.th : null), unit: lib ? lib.unit : r.quantity_unit, section: lib ? lib.sec : r.custom_section, isCustom: r.is_custom || false };
   });
   const keyByExec = new Map(rows.map(r => [r.exec_id, keyOfRow(r)]));
   const execByKey = new Map(rows.map(r => [keyOfRow(r), r.exec_id]));
@@ -277,7 +278,8 @@ async function buildBoard(client, projectId, dateISO) {
       execId: L.execByKey.get(x.key), name: nameByKey.get(x.key), code: r.master_code, floor: r.floor_no,
       quantityMissing: x.kind === 'work' && !(L.quantities[x.key] > 0),
       unit: r.quantity_unit, plannedQuantity: Number(r.planned_quantity) > 0 ? Number(r.planned_quantity) : null,
-      workStatus: r.status          // not_started | in_progress | waiting_material | weather_stop | completed
+      workStatus: r.status,         // not_started | in_progress | waiting_material | weather_stop | completed
+      isCustom: r.is_custom || false, customSection: r.custom_section || null
     });
   };
   const sug = adv.suggestions.map(s => Object.assign({}, s, { execId: L.execByKey.get(s.key), name: nameByKey.get(s.key) }));

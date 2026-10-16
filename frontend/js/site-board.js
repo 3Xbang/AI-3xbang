@@ -411,6 +411,7 @@
             }).join('') + extChip;
         },
         floorTag(x) { return x.floor != null ? `<span class="td-tag">${x.floor}层</span>` : ''; },
+        customTag(x) { return x.isCustom ? `<span class="td-tag" style="background:#fbbf24;color:#78350f;font-size:10px">AI</span>` : ''; },
 
         // ---------- 页面 ----------
         head() {
@@ -605,7 +606,7 @@
 
             return `<div class="fc-card doing ${paused ? 'paused' : ''}">
                 <div class="fc-card-top">
-                    <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
+                    <div class="fc-card-title">${nm(x)} ${this.customTag(x)} ${this.floorTag(x)}</div>
                     <div class="fc-card-pct">${pct}%</div>
                 </div>
                 <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%"></div></div>
@@ -653,7 +654,7 @@
             const sugPeople = sug ? sug.members.map(m => `<span class="fc-sug-chip">${esc(m.name)}</span>`).join('') : '';
             return `<div class="fc-card ready">
                 <div class="fc-card-top">
-                    <div class="fc-card-title">${nm(x)} ${this.floorTag(x)}</div>
+                    <div class="fc-card-title">${nm(x)} ${this.customTag(x)} ${this.floorTag(x)}</div>
                 </div>
                 ${estLine ? `<div class="fc-card-meta">${estLine}</div>` : ''}
                 ${sugPeople ? `<div class="fc-sug">💡 Suggested: ${sugPeople}</div>` : ''}

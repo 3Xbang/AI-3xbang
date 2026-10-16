@@ -346,7 +346,8 @@ const DailyReport = {
                     const aiR = await apiRequest('/api/projects/'+this.projectId+'/ai-process-update', {
                         method:'POST', body:JSON.stringify({performance:payload.performance, report_date:payload.report_date})
                     });
-                    if (aiR.updates && aiR.updates.length>0) this._showAiResult(aiR.updates);
+                    if ((aiR.updates&&aiR.updates.length>0)||(aiR.created&&aiR.created.length>0))
+                        this._showAiResult(aiR.updates||[], aiR.created||[]);
                     else if (aiR.success) { if(typeof app!=='undefined'&&app.showToast) app.showToast('🤖 AI: No matching processes found','info'); }
                 } catch(e) { /* AI analysis optional, don't block */ }
             }
@@ -357,14 +358,17 @@ const DailyReport = {
             if (b) { b.disabled=false; b.textContent='💾 บันทึก / Save Report'; }
         }
     },
-    _showAiResult(updates) {
+    _showAiResult(updates, created) {
+        created = created || [];
         const box = document.createElement('div');
         box.style.cssText='position:fixed;top:70px;right:12px;z-index:9999;background:#fff;border:2px solid #10b981;border-radius:14px;padding:14px 16px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.18);font-family:sans-serif';
+        const updRows = updates.map(u=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid #f0fdf4"><span style="color:#374151">${this.esc(u.reason||'Process updated')}</span><br><b style="color:#10b981;font-size:15px">${u.old_pct}% → ${u.new_pct}%</b> <span style="font-size:11px;color:#94a3b8">${Math.round((u.confidence||0)*100)}% match</span></div>`).join('');
+        const createdRows = created.map(c=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid #fef3c7"><span style="background:#fbbf24;color:#78350f;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;margin-right:4px">AI Added</span><span style="color:#374151">${this.esc(c.name_zh||c.name_th||c.reason||'New process')}</span>${c.name_th?`<br><small style="color:#64748b">${this.esc(c.name_th)}</small>`:''}</div>`).join('');
         box.innerHTML=`<div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:8px">🤖 AI อัปเดตงาน / AI Updated Progress</div>`+
-            updates.map(u=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid #f0fdf4"><span style="color:#374151">${this.esc(u.reason||'Process updated')}</span><br><b style="color:#10b981;font-size:15px">${u.old_pct}% → ${u.new_pct}%</b> <span style="font-size:11px;color:#94a3b8">${Math.round((u.confidence||0)*100)}% match</span></div>`).join('')+
+            (updRows||'')+(createdRows ? `<div style="font-size:12px;color:#92400e;font-weight:600;margin-top:6px">✨ New processes added / เพิ่มงานใหม่</div>`+createdRows : '')+
             `<button onclick="this.parentElement.remove()" style="margin-top:8px;font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;float:right">✕ Close</button>`;
         document.body.appendChild(box);
-        setTimeout(()=>{ if(box.parentElement) box.remove(); },10000);
+        setTimeout(()=>{ if(box.parentElement) box.remove(); },12000);
     },
 
     async _loadHistory() {

@@ -35,8 +35,9 @@ const upload = multer({
 const drawingStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
-    const unique = `drawing_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
-    cb(null, unique);
+    const ext = require('path').extname(file.originalname);
+    const safe = `drawing_${Date.now()}_${Math.random().toString(36).slice(7)}${ext}`;
+    cb(null, safe);
   }
 });
 const drawingUpload = multer({
@@ -1982,19 +1983,76 @@ router.get('/projects/:projectId/drawings', authenticate, async (req, res) => {
 // POST /projects/:projectId/drawings — upload a drawing file
 router.post('/projects/:projectId/drawings', authenticate, requireProjectAccess(), drawingUpload.single('drawing'), async (req, res) => {
   try {
+    const { execFile } = require('child_process');
+    const fs = require('fs');
     const { projectId } = req.params;
     if (!req.file) return res.status(400).json({ success: false, message: '请选择文件' });
     const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, projectId);
     if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
-    const ext = path.extname(req.file.originalname).toLowerCase().slice(1);
-    const file_type = ext === 'pdf' ? 'pdf' : 'image';
-    const result = await pool.query(
-      `INSERT INTO design_drawings (project_id, file_name, file_url, file_type, file_size, description, uploaded_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [projectId, req.file.originalname, `/uploads/${req.file.filename}`,
-       file_type, req.file.size, req.body.description || '', req.user.id]
-    );
-    res.json({ success: true, data: result.rows[0] });
+
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    const isPdf = fileExt === '.pdf';
+
+    if (isPdf) {
+      // Split PDF into pages using pdftoppm
+      const pdfPath = req.file.path; // full path to uploaded PDF
+      const outputPrefix = pdfPath.replace('.pdf', '_page').replace(/[^a-zA-Z0-9_\/]/g, '_');
+
+      // Run pdftoppm: converts PDF to PNG images at 150dpi
+      await new Promise((resolve, reject) => {
+        execFile('pdftoppm', ['-r', '150', '-png', pdfPath, outputPrefix], (err) => {
+          if (err) reject(err); else resolve();
+        });
+      });
+
+      // Find all generated page files (pdftoppm names them prefix-1.png, prefix-2.png etc.)
+      const uploadDir = path.dirname(pdfPath);
+      const prefixBase = path.basename(outputPrefix);
+      const pageFiles = fs.readdirSync(uploadDir)
+        .filter(f => f.startsWith(prefixBase) && f.endsWith('.png'))
+        .sort();
+
+      if (pageFiles.length === 0) {
+        return res.status(500).json({ success: false, message: 'PDF conversion failed — no pages generated' });
+      }
+
+      const totalPages = pageFiles.length;
+      const baseName = path.basename(req.file.originalname, '.pdf');
+      const baseDesc = req.body.description || '';
+
+      const insertedRecords = [];
+      for (let i = 0; i < pageFiles.length; i++) {
+        const pageFile = pageFiles[i];
+        const pageNum = i + 1;
+        const fileUrl = '/uploads/' + pageFile;
+        const fileName = `${baseName} — Page ${pageNum}`;
+        const description = totalPages > 1
+          ? (baseDesc ? `${baseDesc} · Page ${pageNum}/${totalPages}` : `Page ${pageNum} / ${totalPages}`)
+          : (baseDesc || '');
+        const fileSize = fs.statSync(path.join(uploadDir, pageFile)).size;
+
+        const r = await pool.query(
+          `INSERT INTO design_drawings (project_id, file_name, file_url, file_type, file_size, description, uploaded_by, sort_order)
+           VALUES ($1, $2, $3, 'image', $4, $5, $6, $7) RETURNING *`,
+          [projectId, fileName, fileUrl, fileSize, description, req.user.id, i]
+        );
+        insertedRecords.push(r.rows[0]);
+      }
+
+      // Delete original PDF (no longer needed)
+      fs.unlink(pdfPath, () => {});
+
+      return res.json({ success: true, data: insertedRecords, pages: totalPages });
+    } else {
+      // Image upload — unchanged behavior
+      const result = await pool.query(
+        `INSERT INTO design_drawings (project_id, file_name, file_url, file_type, file_size, description, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [projectId, req.file.originalname, `/uploads/${req.file.filename}`,
+         'image', req.file.size, req.body.description || '', req.user.id]
+      );
+      return res.json({ success: true, data: result.rows[0] });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

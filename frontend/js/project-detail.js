@@ -123,39 +123,49 @@ const ProjectDetail = {
             case 'site':
                 container.innerHTML = '<div id="site-board-container"></div>';
                 {
-                // 日报权限：工头/巡逻填写，管理/主管/采购可查看，业主只看进度看板
                 const _role = PermissionManager.role();
-                const _fills = _role !== 'owner'; // All internal staff can fill/modify the daily report
-                const _views = _role === 'manager' || _role === 'supervisor'; // These roles also get Site Board access
-                const _force = localStorage.getItem('force_daily_report') === '1';
+                const _isOwner = _role === 'owner';
+                const _isManager = _role === 'manager' || _role === 'supervisor';
+                const _goBoard = localStorage.getItem('force_site_board') === '1';
 
-                await SiteBoard.init(this.projectId);
-                if (_views && typeof DailyReport !== 'undefined') {
-                    setTimeout(() => {
-                        if (!document.getElementById('view-reports-btn')) {
-                            const _b = document.createElement('button');
-                            _b.id = 'view-reports-btn';
-                            _b.innerHTML = '📋 日报记录<br><small style="font-size:11px">Daily Reports</small>';
-                            _b.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
-                            _b.onclick = () => { localStorage.setItem('force_daily_report','1'); ProjectDetail.showSubView('site'); };
-                            document.body.appendChild(_b);
-                        }
-                    }, 400);
+                if (_isOwner || _goBoard) {
+                    // 业主 或 点击了"进度看板"按钮 → 显示进度看板
+                    localStorage.removeItem('force_site_board');
+                    await SiteBoard.init(this.projectId);
+                    if (!_isOwner) {
+                        // 管理员看板时，右下角显示"返回日报"按钮
+                        setTimeout(() => {
+                            if (!document.getElementById('to-report-btn')) {
+                                const _b = document.createElement('button');
+                                _b.id = 'to-report-btn';
+                                _b.innerHTML = '📋 日报记录<br><small style="font-size:11px">Daily Reports</small>';
+                                _b.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
+                                _b.onclick = () => ProjectDetail.showSubView('site');
+                                document.body.appendChild(_b);
+                            }
+                        }, 400);
+                    }
+                    break;
                 }
-                if (_force && _views && typeof DailyReport !== 'undefined') {
-                    localStorage.removeItem('force_daily_report');
-                    container.innerHTML = '<div id="site-board-container"></div>';
+
+                // 所有内部人员（非业主）→ 直接显示日报
+                if (typeof DailyReport !== 'undefined') {
                     await DailyReport.init(this.projectId);
-                    setTimeout(() => {
-                        if (!document.getElementById('back-board-btn')) {
-                            const _back = document.createElement('button');
-                            _back.id = 'back-board-btn';
-                            _back.textContent = '← Site Board 进度看板';
-                            _back.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.25)';
-                            _back.onclick = () => ProjectDetail.showSubView('site');
-                            document.body.appendChild(_back);
-                        }
-                    }, 300);
+                    // 管理员/主管 显示"进度看板"切换按钮
+                    if (_isManager) {
+                        setTimeout(() => {
+                            if (!document.getElementById('to-board-btn')) {
+                                const _b = document.createElement('button');
+                                _b.id = 'to-board-btn';
+                                _b.innerHTML = '📊 进度看板<br><small style="font-size:11px">Site Board</small>';
+                                _b.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
+                                _b.onclick = () => { localStorage.setItem('force_site_board','1'); ProjectDetail.showSubView('site'); };
+                                document.body.appendChild(_b);
+                            }
+                        }, 400);
+                    }
+                } else {
+                    await SiteBoard.init(this.projectId);
                 }
                 break;
                 }

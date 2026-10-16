@@ -1482,8 +1482,8 @@ Rules: only include matches with confidence>0.55, estimate progress_delta from t
 
   const applied = [];
   for (const upd of aiResult) {
-    if (!upd.exec_id || (upd.confidence||0) < 0.55) continue;
-    const proc = procs.find(p=>p.exec_id===upd.exec_id);
+    if (!upd.exec_id || isNaN(Number(upd.exec_id)) || (upd.confidence||0) < 0.55) continue;
+    const proc = procs.find(p=>Number(p.exec_id)===Number(upd.exec_id));
     if (!proc) continue;
     const newPct = Math.min(100, Math.max(0, (proc.completion_percentage||0)+(upd.progress_delta||0)));
     const newStatus = newPct>=100 ? 'completed' : 'in_progress';

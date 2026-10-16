@@ -89,7 +89,7 @@ const DesignDrawings = {
                             <div style="font-weight:600;font-size:0.9rem;color:#2d3748;margin-bottom:4px;word-break:break-all;">${this.esc(d.file_name)}</div>
                             ${d.description ? `<div style="font-size:0.8rem;color:#718096;margin-bottom:8px;">${this.esc(d.description)}</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                <button class="sb-btn primary" style="font-size:0.8rem;padding:4px 10px;" onclick="DesignDrawings.openAnnotator(${JSON.stringify(JSON.stringify(d))})">✏️ 标注 Annotate</button>
+                                <button class="sb-btn primary" style="font-size:0.8rem;padding:4px 10px;" onclick="DesignDrawings.openAnnotator(${this.esc(JSON.stringify(JSON.stringify(d)))})">✏️ 标注 Annotate</button>
                                 ${canDelete ? `<button class="sb-btn" style="font-size:0.8rem;padding:4px 10px;color:#e53e3e;border-color:#e53e3e;" onclick="DesignDrawings.deleteDrawing(${d.id})">🗑️ 删除 Delete</button>` : ''}
                             </div>
                         </div>

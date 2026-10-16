@@ -1980,7 +1980,7 @@ router.get('/projects/:projectId/drawings', authenticate, async (req, res) => {
 });
 
 // POST /projects/:projectId/drawings — upload a drawing file
-router.post('/projects/:projectId/drawings', authenticate, drawingUpload.single('drawing'), async (req, res) => {
+router.post('/projects/:projectId/drawings', authenticate, requireProjectAccess(), drawingUpload.single('drawing'), async (req, res) => {
   try {
     const { projectId } = req.params;
     if (!req.file) return res.status(400).json({ success: false, message: '请选择文件' });

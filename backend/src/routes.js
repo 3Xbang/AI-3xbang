@@ -2017,7 +2017,9 @@ router.post('/projects/:projectId/drawings', authenticate, requireProjectAccess(
       }
 
       const totalPages = pageFiles.length;
-      const baseName = path.basename(req.file.originalname, '.pdf');
+      // multer decodes filenames as Latin-1; re-encode to UTF-8 for Thai/CJK names
+      const rawName = path.basename(req.file.originalname, '.pdf');
+      const baseName = Buffer.from(rawName, 'latin1').toString('utf8');
       const baseDesc = req.body.description || '';
 
       const insertedRecords = [];

@@ -76,7 +76,7 @@ const DesignDrawings = {
                     ? '<span style="background:#e9d8fd;color:#6b46c1;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">PDF</span>'
                     : '<span style="background:#bee3f8;color:#2b6cb0;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">IMG</span>';
                 const dateStr = d.upload_time ? new Date(d.upload_time).toLocaleDateString('zh-CN') : '';
-                const thumbBg = d.file_type !== 'pdf' ? 'url(' + JSON.stringify(d.file_url) + ') center/cover no-repeat' : 'none';
+                const thumbBg = d.file_type !== 'pdf' ? "url('" + d.file_url + "') center/cover no-repeat" : 'none';
                 html += `
                     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                         <div style="height:160px;background:#f0f4f8 ${thumbBg};">

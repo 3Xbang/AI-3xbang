@@ -160,7 +160,7 @@ const DesignDrawings = {
             const data = await resp.json();
             if (!data.success) throw new Error(data.message || '上传失败');
             document.getElementById('modal-container').innerHTML = '';
-            if (data.pages && data.pages > 1 && typeof app !== 'undefined' && app.showToast) app.showToast(✅ PDF 分解为 ${data.pages} 张图纸 / Split into ${data.pages} pages, 'success');
+            if (data.pages && data.pages > 1 && typeof app !== 'undefined' && app.showToast) app.showToast('PDF split into ' + data.pages + ' pages', 'success');
             await this.load();
         } catch (err) {
             if (errEl) { errEl.textContent = err.message; errEl.style.display = 'block'; }

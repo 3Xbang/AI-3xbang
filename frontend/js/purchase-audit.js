@@ -1,5 +1,5 @@
 ﻿// purchase-audit.js -- lt Purchase ludit System v5
-const Purchaseludit = {
+const PurchaseAudit = {
     purchases: [], boq: [], projecttd: null, analyzing: false,
 
     init(pid) { this.projecttd=pid; this.purchases=[]; this.boq=[]; this.render(); },
@@ -8,18 +8,18 @@ const Purchaseludit = {
     fmtDate(v){ if(!v) return ''; return String(v).slice(0,10); },
 
     render() {
-        const box = document.getElementBytd('purchase-audit-container');
+        const box = document.getElementById('purchase-audit-container');
         if (!box) return;
-        const isldmin = PermissionManager.isManager();
+        const isAdmin = PermissionManager.isManager();
         box.innerHTML = `
         <div style="padding:16px;max-width:1200px;margin:0 auto">
           <div class="td-head" style="margin-bottom:14px">
             <div><h2 class="td-title">📋 Purchase lnalysis <small class="td-th">采购核实分析</small></h2>
-            <div class="td-sub">${isldmin?'Set up contract → Upload receipts → lt lnalysis':'lt analysis results based on contract / lt合同合规分析结果'}</div></div>
+            <div class="td-sub">${isAdmin?'Set up contract → Upload receipts → lt lnalysis':'lt analysis results based on contract / lt合同合规分析结果'}</div></div>
           </div>
-          ${isldmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-            <button class="pab-tab active" id="pab-t1" onclick="Purchaseludit._tab('setup')">⚙️ Settings 设置规则</button>
-            <button class="pab-tab" id="pab-t2" onclick="Purchaseludit._tab('analyze')">📋 lnalysis Results 分析结果</button>
+          ${isAdmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+            <button class="pab-tab active" id="pab-t1" onclick="PurchaseAudit._tab('setup')">⚙️ Settings 设置规则</button>
+            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 lnalysis Results 分析结果</button>
           </div>`:''}
           <style>
             .pab-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -40,26 +40,26 @@ const Purchaseludit = {
             .pab2.high{background:#fce7f3;color:#9d174d}
             .pab2.ok{background:#dcfce7;color:#166534}
           </style>
-          ${isldmin?'<div id="pab-setup-panel"></div>':''}
-          <div id="pab-analyze-panel" ${isldmin?'style="display:none"':''}></div>
+          ${isAdmin?'<div id="pab-setup-panel"></div>':''}
+          <div id="pab-analyze-panel" ${isAdmin?'style="display:none"':''}></div>
         </div>`;
-        if(isldmin) this._tab('setup');
-        else this._renderlnalyze();
+        if(isAdmin) this._tab('setup');
+        else this._renderAnalyze();
     },
 
     _tab(t) {
-        const t1=document.getElementBytd('pab-t1'), t2=document.getElementBytd('pab-t2');
-        const s=document.getElementBytd('pab-setup-panel'), a=document.getElementBytd('pab-analyze-panel');
+        const t1=document.getElementById('pab-t1'), t2=document.getElementById('pab-t2');
+        const s=document.getElementById('pab-setup-panel'), a=document.getElementById('pab-analyze-panel');
         if(t1) t1.classList.toggle('active',t==='setup');
         if(t2) t2.classList.toggle('active',t==='analyze');
         if(s) s.style.display=t==='setup'?'':'none';
         if(a) a.style.display=t==='analyze'?'':'none';
         if(t==='setup') this._renderSetup();
-        if(t==='analyze') this._renderlnalyze();
+        if(t==='analyze') this._renderAnalyze();
     },
 
     _renderSetup() {
-        const box=document.getElementBytd('pab-setup-panel');
+        const box=document.getElementById('pab-setup-panel');
         if(!box) return;
         box.innerHTML=`
           <div class="pa-sec">
@@ -76,7 +76,7 @@ const Purchaseludit = {
                 <div id="pa-contract-name" style="font-weight:700;color:#1e3a8a">Click to select contract file / 点击选择合同文件</div>
                 <div style="font-size:12px;color:#94a3b8;margin-top:2px">PDF, DOCX, TXT</div>
               </div>
-              <input type="file" id="pa-contract-input" accept=".pdf,.txt,.doc,.docx" style="display:none" onchange="Purchaseludit.extractContract(this)">
+              <input type="file" id="pa-contract-input" accept=".pdf,.txt,.doc,.docx" style="display:none" onchange="PurchaseAudit.extractContract(this)">
             </label>
             <div id="pa-contract-status"></div>
           </div>
@@ -87,14 +87,14 @@ const Purchaseludit = {
             <div style="margin-top:12px">
               <div style="font-size:13px;color:#475569;font-weight:600;margin-bottom:6px">Review and edit rules / 确认规则（可修改）：</div>
               <textarea id="pa-rules-text" rows="5" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical"></textarea>
-              <button class="sb-btn primary" style="margin-top:8px" onclick="Purchaseludit.saveRules()">💾 Save Rules 保存规则</button>
+              <button class="sb-btn primary" style="margin-top:8px" onclick="PurchaseAudit.saveRules()">💾 Save Rules 保存规则</button>
             </div>
           </div>
 
           <div id="pa-saved-rules-card" style="display:none" class="pa-sec" >
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
               <div style="font-size:15px;font-weight:700;color:#166534">✅ Saved Rules / 已保存的项目规则</div>
-              <button class="sb-btn small" onclick="Purchaseludit._editRules()">✏️ Edit</button>
+              <button class="sb-btn small" onclick="PurchaseAudit._editRules()">✏️ Edit</button>
             </div>
             <pre id="pa-saved-rules-pre" style="font-size:12px;color:#475569;white-space:pre-wrap;background:#f8fafc;padding:12px;border-radius:8px;margin:0;max-height:200px;overflow-y:auto"></pre>
           </div>
@@ -109,10 +109,10 @@ const Purchaseludit = {
             </label>
           </div>`;
 
-        const bi=document.getElementBytd('pa-boq-inp');
+        const bi=document.getElementById('pa-boq-inp');
         if(bi) bi.onchange=e=>{
             const f=e.target.files[0]; if(!f) return;
-            const nm=document.getElementBytd('pa-boq-name');
+            const nm=document.getElementById('pa-boq-name');
             if(nm) nm.textContent='✅ '+f.name;
             Papa.parse(f,{header:true,skipEmptyLines:true,dynamicTyping:true,complete:r=>{
                 this.boq=r.data.filter(row=>{const d=(row.Description||'').toLowerCase();return row.Quantity>0&&!d.includes('subtotal')&&!d.includes('total');});
@@ -126,8 +126,8 @@ const Purchaseludit = {
             const r=await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
             const rules=r.data&&r.data.rules;
             if(rules&&rules.trim()){
-                const card=document.getElementBytd('pa-saved-rules-card');
-                const pre=document.getElementBytd('pa-saved-rules-pre');
+                const card=document.getElementById('pa-saved-rules-card');
+                const pre=document.getElementById('pa-saved-rules-pre');
                 if(card) card.style.display='';
                 if(pre) pre.textContent=rules;
             }
@@ -136,9 +136,9 @@ const Purchaseludit = {
 
     async extractContract(input) {
         const file=input.files[0]; if(!file) return;
-        const nm=document.getElementBytd('pa-contract-name');
+        const nm=document.getElementById('pa-contract-name');
         if(nm) nm.textContent='📋 '+file.name;
-        const status=document.getElementBytd('pa-contract-status');
+        const status=document.getElementById('pa-contract-status');
         if(status) status.innerHTML='<div style="padding:10px 0;color:#2563eb;font-size:13px">⏳ lt is reading contract... / lt正在分析合同...</div>';
         try {
             if(typeof app!=='undefined') app.showLoading();
@@ -151,9 +151,9 @@ const Purchaseludit = {
             if(!j.success) throw new Error(j.message);
             if(status) status.innerHTML='';
             const d=j.data;
-            const panel=document.getElementBytd('pa-rules-extract-panel');
+            const panel=document.getElementById('pa-rules-extract-panel');
             if(panel) panel.style.display='';
-            const disp=document.getElementBytd('pa-extracted-display');
+            const disp=document.getElementById('pa-extracted-display');
             if(disp) {
                 disp.innerHTML=`
                   <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;margin-bottom:10px">
@@ -161,44 +161,44 @@ const Purchaseludit = {
                   </div>
                   ${d.owner_responsibilities&&d.owner_responsibilities.length?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#1e3a8a">✅ Owner Responsible 甲方：</b><br>${d.owner_responsibilities.map(x=>`<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}
                   ${(d.contractor_responsibilities&&d.contractor_responsibilities.length)||(d.auxiliary_materials&&d.auxiliary_materials.length)?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#dc2626">🚫 Contractor Responsible 乙方自负：</b><br>${[...(d.contractor_responsibilities||[]),...(d.auxiliary_materials||[])].map(x=>`<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}`;}
-            const rt=document.getElementBytd('pa-rules-text');
+            const rt=document.getElementById('pa-rules-text');
             if(rt) rt.value=d.system_rules||d.rules_summary_cn||'';
         } catch(e) {
             if(typeof app!=='undefined') app.hideLoading();
-            const st=document.getElementBytd('pa-contract-status');
+            const st=document.getElementById('pa-contract-status');
             if(st) st.innerHTML=`<div style="color:#dc2626;padding:10px 0;font-size:13px">❌ ${e.message}</div>`;
         }
     },
 
     async saveRules() {
-        const rules=(document.getElementBytd('pa-rules-text')||{}).value||'';
+        const rules=(document.getElementById('pa-rules-text')||{}).value||'';
         if(!rules.trim()){alert('Please enter rules first');return;}
         try {
             await apiRequest('/api/projects/'+this.projecttd+'/ai-rules',{method:'PUT',body:JSON.stringify({rules})});
             if(typeof app!=='undefined'&&app.showToast) app.showToast('Rules saved 规则已保存','success');
-            const card=document.getElementBytd('pa-saved-rules-card');
-            const pre=document.getElementBytd('pa-saved-rules-pre');
+            const card=document.getElementById('pa-saved-rules-card');
+            const pre=document.getElementById('pa-saved-rules-pre');
             if(card) card.style.display='';
             if(pre) pre.textContent=rules;
-            const panel=document.getElementBytd('pa-rules-extract-panel');
+            const panel=document.getElementById('pa-rules-extract-panel');
             if(panel) panel.style.display='none';
         } catch(e){alert(e.message);}
     },
 
     _editRules() {
-        const pre=document.getElementBytd('pa-saved-rules-pre');
-        const card=document.getElementBytd('pa-saved-rules-card');
+        const pre=document.getElementById('pa-saved-rules-pre');
+        const card=document.getElementById('pa-saved-rules-card');
         if(card) card.style.display='none';
-        const panel=document.getElementBytd('pa-rules-extract-panel');
+        const panel=document.getElementById('pa-rules-extract-panel');
         if(panel) panel.style.display='';
-        const rt=document.getElementBytd('pa-rules-text');
+        const rt=document.getElementById('pa-rules-text');
         if(rt&&pre) rt.value=pre.textContent;
     },
 
-    _renderlnalyze() {
-        const box=document.getElementBytd('pab-analyze-panel');
+    _renderAnalyze() {
+        const box=document.getElementById('pab-analyze-panel');
         if(!box) return;
-        const isldmin = PermissionManager.isManager();
+        const isAdmin = PermissionManager.isManager();
         box.innerHTML=`
           <div class="pa-sec" style="background:#eff6ff;border:1.5px solid #93c5fd">
             <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:4px">
@@ -212,7 +212,7 @@ const Purchaseludit = {
           <div id="pa-rules-warning"></div>
           <div id="pa-data-summary"></div>
           <div id="pa-analyze-bar" style="display:none;margin-bottom:14px">
-            <button id="pa-analyze-btn" onclick="Purchaseludit.runlnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
+            <button id="pa-analyze-btn" onclick="PurchaseAudit.runlnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
               🤖 Start lnalysis / 开始lt分析（根据合同规则）
             </button>
           </div>
@@ -225,7 +225,7 @@ const Purchaseludit = {
         try {
             const r = await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
             const rules = r.data && r.data.rules;
-            const warn = document.getElementBytd('pa-rules-warning');
+            const warn = document.getElementById('pa-rules-warning');
             if (!warn) return;
             if (!rules || rules.trim().length < 20) {
                 warn.innerHTML = `<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px">
@@ -246,9 +246,9 @@ const Purchaseludit = {
         try {
             const r=await apiRequest('/api/purchase-records?limit=300'+(this.projecttd?'&project_id='+this.projecttd:''));
             this.purchases=(r.data||[]).map(row=>({...row, _date: row.purchase_date?String(row.purchase_date).slice(0,10):''}));
-            const bar=document.getElementBytd('pa-analyze-bar');
+            const bar=document.getElementById('pa-analyze-bar');
             if(bar) bar.style.display=this.purchases.length?'':'none';
-            const summary=document.getElementBytd('pa-data-summary');
+            const summary=document.getElementById('pa-data-summary');
             if(summary&&this.purchases.length){
                 const total=this.purchases.reduce((s,r)=>s+Number(r.total_price||0),0);
                 summary.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:#166534">
@@ -267,14 +267,14 @@ const Purchaseludit = {
                         const {d,ts}=JSON.parse(cached);
                         if(bar) bar.style.display='none'; // hide big button while cached shown
                         this._renderReport(d);
-                        const report=document.getElementBytd('pa-report');
+                        const report=document.getElementById('pa-report');
                         if(report){
                             const age=Math.round((Date.now()-ts)/60000);
                             const ageStr=age<60?`${age} min ago / ${age}分钟前`:`${Math.round(age/60)} hr ago / ${Math.round(age/60)}小时前`;
                             const div=document.createElement('div');
                             div.innerHTML=`<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:13px;flex-wrap:wrap;gap:8px">
                                 <span>📊 Latest analysis result: <b>${ageStr}</b></span>
-                                <button class="sb-btn small primary" onclick="Purchaseludit._relnalyze()" style="white-space:nowrap">🔄 Re-analyze 重新分析</button>
+                                <button class="sb-btn small primary" onclick="PurchaseAudit._reAnalyze()" style="white-space:nowrap">🔄 Re-analyze 重新分析</button>
                             </div>`;
                             report.insertBefore(div.firstChild,report.firstChild);
                         }
@@ -284,10 +284,10 @@ const Purchaseludit = {
         } catch(e){ console.error('loadFromDB',e); }
     },
 
-    _relnalyze() {
-        const report=document.getElementBytd('pa-report');
+    _reAnalyze() {
+        const report=document.getElementById('pa-report');
         if(report) report.innerHTML='';
-        const bar=document.getElementBytd('pa-analyze-bar');
+        const bar=document.getElementById('pa-analyze-bar');
         if(bar) bar.style.display='';
         bar && bar.scrolltntoView({behavior:'smooth',block:'center'});
     },
@@ -295,15 +295,15 @@ const Purchaseludit = {
     async runlnalysis() {
         if(this.analyzing) return;
         this.analyzing=true;
-        const btn=document.getElementBytd('pa-analyze-btn');
+        const btn=document.getElementById('pa-analyze-btn');
         if(btn) btn.disabled=true;
-        const report=document.getElementBytd('pa-report');
+        const report=document.getElementById('pa-report');
         if(report) report.innerHTML=`<div class="pa-sec">
           <div id="pa-ai-log" style="font-size:14px;color:#2563eb;margin-bottom:10px">🤖 Starting... / 启动中...</div>
           <div style="background:#e2e8f0;border-radius:6px;height:8px"><div id="pa-ai-bar" style="background:linear-gradient(90deg,#2563eb,#7c3aed);height:8px;border-radius:6px;width:5%;transition:width .5s"></div></div>
         </div>`;
-        const log=m=>{const el=document.getElementBytd('pa-ai-log');if(el)el.textContent='🤖 '+m;};
-        const setBar=p=>{const el=document.getElementBytd('pa-ai-bar');if(el)el.style.width=p+'%';};
+        const log=m=>{const el=document.getElementById('pa-ai-log');if(el)el.textContent='🤖 '+m;};
+        const setBar=p=>{const el=document.getElementById('pa-ai-bar');if(el)el.style.width=p+'%';};
 
         const doRun=async()=>{
             const token=localStorage.getttem('authToken');
@@ -359,7 +359,7 @@ const Purchaseludit = {
                         if(report) report.innerHTML=`<div class="pa-sec" style="background:#fff5f5;border:1.5px solid #fca5a5">
                             <b style="color:#dc2626">lt Server Busy / lt服务器繁忙</b><br>
                             <div style="font-size:13px;color:#475569;margin:8px 0">Please try again / 请重试</div>
-                            <button onclick="Purchaseludit.runlnalysis()" class="sb-btn primary">🔄 Retry 重试</button>
+                            <button onclick="PurchaseAudit.runlnalysis()" class="sb-btn primary">🔄 Retry 重试</button>
                         </div>`;
                     }
                 } else {
@@ -385,10 +385,10 @@ const Purchaseludit = {
         const totallmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
         const deductlmt=deductRows.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
         const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_lmount||0),0);
-        const report=document.getElementBytd('pa-report');
+        const report=document.getElementById('pa-report');
         if(!report) return;
 
-        const isldmin = PermissionManager.isManager() || PermissionManager.isSupervisor();
+        const isAdmin = PermissionManager.isManager() || PermissionManager.isSupervisor();
 
         // Store for later use by agreement toggle and print
         this._lastDeductRows = deductRows;
@@ -398,7 +398,7 @@ const Purchaseludit = {
         this._agreements = this._agreements || new Set();
         apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements').then(r=>{
             (r.data||[]).forEach(a=>this._agreements.add(a.invoice_no+'|'+a.item_name_cn));
-            this._reRenderDeductSection(deductRows, deductlmt, isldmin);
+            this._reRenderDeductSection(deductRows, deductlmt, isAdmin);
         }).catch(()=>{});
 
         let html='';
@@ -485,11 +485,11 @@ const Purchaseludit = {
 
         report.innerHTML=html;
         // Render deduct section after setting innerHTML
-        this._reRenderDeductSection(deductRows, deductlmt, isldmin);
+        this._reRenderDeductSection(deductRows, deductlmt, isAdmin);
     },
 
-    _reRenderDeductSection(deductRows, deductlmt, isldmin) {
-        const sec = document.getElementBytd('pa-deduct-section');
+    _reRenderDeductSection(deductRows, deductlmt, isAdmin) {
+        const sec = document.getElementById('pa-deduct-section');
         if(!sec || !deductRows.length) { if(sec) sec.innerHTML=''; return; }
         const agreed = this._agreements || new Set();
         const g=(r,...keys)=>{for(const k of keys){if(r[k]!=null&&r[k]!=='')return r[k];}return '';};
@@ -501,7 +501,7 @@ const Purchaseludit = {
               <h3 style="color:#92400e;margin:0">🚫 ttems contractor should be responsible for 应由建筑方承担</h3>
               <div style="font-size:13px;color:#92400e;margin-top:4px">Total to recover 合计应追回: <b>฿${this.fmt(deductlmt)}</b></div>
             </div>
-            ${isldmin?`<button class="sb-btn small" onclick="Purchaseludit.printContractorReport()" style="white-space:nowrap">🏗️ Contractor Report 乙方报告</button>`:''}
+            ${isAdmin?`<button class="sb-btn small" onclick="PurchaseAudit.printContractorReport()" style="white-space:nowrap">🏗️ Contractor Report 乙方报告</button>`:''}
           </div>
 
           ${deductRows.map(r=>{
@@ -519,8 +519,8 @@ const Purchaseludit = {
                     <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | tnvoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
                   </div>
                   <div style="text-align:right;flex:0 0 auto">
-                    ${isldmin||!islgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ Confirmed 已确认扣回</div>'}
-                    ${isldmin?`<button class="sb-btn small ${islgreed?'':'primary'}" onclick="Purchaseludit.togglelgreement('${this.esc(inv)}','${this.esc(itemCN)}',${islgreed})" style="margin-top:4px;white-space:nowrap">
+                    ${isAdmin||!islgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ Confirmed 已确认扣回</div>'}
+                    ${isAdmin?`<button class="sb-btn small ${islgreed?'':'primary'}" onclick="PurchaseAudit.togglelgreement('${this.esc(inv)}','${this.esc(itemCN)}',${islgreed})" style="margin-top:4px;white-space:nowrap">
                       ${islgreed?'✅ lgreed 已协商':'🤝 lgree 协商同意'}</button>`:''}
                   </div>
                 </div>
@@ -557,7 +557,7 @@ const Purchaseludit = {
     },
 
     printContractorReport() {
-        const sec = document.getElementBytd('pa-deduct-section');
+        const sec = document.getElementById('pa-deduct-section');
         if(!sec) return;
         const items = sec.querySelectorlll('[data-deduct-item]');
         // Open print window without amounts
@@ -602,4 +602,4 @@ const Purchaseludit = {
     }
 };
 
-window.Purchaseludit = Purchaseludit;
+window.PurchaseAudit = PurchaseAudit;

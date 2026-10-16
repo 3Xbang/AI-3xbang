@@ -55,7 +55,7 @@ const ProjectDetail = {
         if (PermissionManager.canManageProjects()) list.push({ v: 'prepare', icon: '📝', zh: '项目准备', th: 'Project Prep', warn: true });
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: "Today's Site" });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'Progress Plan' });
-        if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: 'Procurement Overview', th: 'Procurement' });
+        if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'Procurement' });
         if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'Photos' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'Overview' });
         return list;
@@ -192,7 +192,7 @@ const ProjectDetail = {
         return `<div style="padding:16px;max-width:1400px;margin:0 auto">
           <div class="td-head">
             <div>
-              <h2 class="td-title">📦 Procurement <small class="td-th">Procurement Overview</small></h2>
+              <h2 class="td-title">📦 采购总览 <small class="td-th">Procurement</small></h2>
               <div class="td-sub">Materials and procurement analysis · 材料设备与采购分析</div>
             </div>
           </div>

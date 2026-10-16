@@ -187,7 +187,7 @@
                     skill_counts
                 };
                 if (!body.name) { toast('请填写班组名称 Please enter team name', 'error'); return; }
-                if (body.skilled_count + body.helper_count < 1) { toast('班组至少要有 1 个人', 'error'); return; }
+                if (body.skilled_count + body.helper_count < 1) { toast('班组至少要有 1 个人 Team needs at least 1 person', 'error'); return; }
                 if (body.skilled_count > 0 && !Object.keys(skill_counts).length) { toast('请填写有几个大工会干什么 Please specify work types', 'error'); return; }
                 if (Object.values(skill_counts).some(n => n > body.skilled_count)) { toast('某项的人数不能比大工总数多 Count exceeds total skilled workers', 'error'); return; }
                 try {
@@ -715,7 +715,7 @@
             on('[data-resume]', el => this.setStatus(Number(el.dataset.resume), 'in_progress'));
             on('[data-stat]', el => { const [s, id] = el.dataset.stat.split(':'); this.setStatus(Number(id), s); });
             on('[data-qty]', el => this.quantityDialog(Number(el.dataset.qty)));
-            on('[data-subtasks]', el => { if (hasApp() && app.showSubtasks) app.showSubtasks(Number(el.dataset.subtasks)); else toast('子任务功能不可用', 'error'); });
+            on('[data-subtasks]', el => { if (hasApp() && app.showSubtasks) app.showSubtasks(Number(el.dataset.subtasks)); else toast('子任务功能不可用 Subtasks not available', 'error'); });
             on('[data-reset]', el => this.resetProcess(Number(el.dataset.reset)));
             on('[data-hist]', el => this.history(Number(el.dataset.hist)));
         },
@@ -816,7 +816,7 @@
             const s = this.data.suggestions.find(x => x.execId === execId);
             if (!s) return this.start(execId);
             const used = this.usedIds();
-            if (s.members.some(m => used.has(m.id))) { toast('建议的人已经被安排到别处，请自己选人', 'error'); return; }
+            if (s.members.some(m => used.has(m.id))) { toast('建议的人已被安排到别处 Suggested workers assigned elsewhere — please select manually', 'error'); return; }
             await this.run(async () => {
                 await SiteStart.start(execId);
                 this.assign[execId] = (this.assign[execId] || []).concat(s.members.map(m => m.id));
@@ -875,7 +875,7 @@
             dlg.q('[data-ok]').onclick = async () => {
                 const qtyVal = parseFloat(dlg.q('#pg-qty').value);
                 const note = dlg.q('#pg-note').value.trim();
-                if (isNaN(qtyVal) || qtyVal < 0) { toast('请填写完成的数量', 'error'); return; }
+                if (isNaN(qtyVal) || qtyVal < 0) { toast('请填写完成的数量 Please enter quantity completed', 'error'); return; }
                 try {
                     busy(true);
                     if (hasQty && qtyVal > 0) {
@@ -890,7 +890,7 @@
                         if (dailyTarget && qtyVal > dailyTarget) {
                             toast(`⚡ 超出定额！完成 ${qtyVal} ${unit}，定额 ${dailyTarget} ${unit}`, 'success');
                         } else {
-                            toast('进度已记录 ✅');
+                            toast('进度已记录 Progress saved ✅');
                         }
                     } else {
                         // 没有工程量 → 按百分比记录（把数量当百分比）
@@ -899,7 +899,7 @@
                         if (p >= 100) { body.status = 'completed'; body.actual_end_date = this.date || new Date().toISOString().slice(0, 10); }
                         if (note) body.notes = { zh: note, th: note };
                         await call('PUT', `/processes/${execId}`, body);
-                        toast('进度已记录 ✅');
+                        toast('进度已记录 Progress saved ✅');
                     }
                     dlg.close(); await this.refresh();
                 } catch (e) { toast(e.message, 'error'); } finally { busy(false); }

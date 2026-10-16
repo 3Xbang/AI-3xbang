@@ -1430,15 +1430,14 @@ router.get('/projects/:projectId/daily-reports', authenticate, requireProjectAcc
     [req.params.projectId]);
   res.json({success:true, data:r.rows});
 }));
-// POST /projects/:id/ai-process-update — map daily report work items to processes (FREE AI)
+// POST /projects/:id/ai-process-update — map daily report work items to processes + create custom ones (FREE AI)
 router.post('/projects/:projectId/ai-process-update', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
   const projectId = req.params.projectId;
   const { performance, report_date } = req.body;
   const items = (performance||[]).filter(p => (p.work||'').trim());
-  if (!items.length) return res.json({success:true, updates:[], message:'No work items'});
+  if (!items.length) return res.json({success:true, updates:[], created:[], message:'No work items'});
 
-  // Get active processes
-  const { LIB } = require('./process-master');
+  const { LIB, SECTIONS } = require('./process-master');
   const procs = (await pool.query(`
     SELECT pe.id exec_id, pn.process_name, pn.master_code, pn.floor_no,
            pe.completion_percentage, pe.status, pe.planned_quantity, pe.quantity_unit
@@ -1446,18 +1445,21 @@ router.post('/projects/:projectId/ai-process-update', authenticate, requireProje
     WHERE pn.project_id=$1 AND pe.status IN ('not_started','in_progress')
     ORDER BY pn.sequence_number LIMIT 60
   `, [projectId])).rows;
-  if (!procs.length) return res.json({success:true, updates:[], message:'No active processes'});
 
-  const procList = procs.map(p => {
+  const sectionList = Object.entries(SECTIONS)
+    .map(([k,v])=>`${k}: ${v.zh} (${v.th})`).join('\n');
+  const procList = procs.length ? procs.map(p => {
     const lib = LIB[p.master_code]||{};
-    const nameZh = lib.zh || p.master_code;
-    const nameEn = lib.th || '';
-    return `ID:${p.exec_id} | ${nameZh} ${nameEn}${p.floor_no?' F'+p.floor_no:''} | ${Math.round(p.completion_percentage||0)}% done | unit:${p.quantity_unit||'?'} planned:${p.planned_quantity||'?'}`;
-  }).join('\n');
-
+    const nameZh = lib.zh || (typeof p.process_name==='object' ? p.process_name.zh : p.master_code);
+    const nameEn = lib.th || (typeof p.process_name==='object' ? p.process_name.th : '');
+    return `ID:${p.exec_id} | ${nameZh} ${nameEn}${p.floor_no?' F'+p.floor_no:''} | ${Math.round(p.completion_percentage||0)}% done`;
+  }).join('\n') : '(none)';
   const workList = items.map((p,i)=>`${i+1}. "${p.work||''}" unit:${p.unit||'?'} today:${p.today||0} total:${p.total||0}`).join('\n');
 
   const prompt = `You are a construction progress tracker. Workers may write in Thai, Chinese, or English.
+
+SECTIONS (A-I):
+${sectionList}
 
 ACTIVE PROCESSES:
 ${procList}
@@ -1465,23 +1467,34 @@ ${procList}
 TODAY'S WORK (worker input):
 ${workList}
 
-Match each work item to a process. Return ONLY a JSON array:
-[{"exec_id":<number>,"item_index":<1-based>,"progress_delta":<percent points to ADD>,"confidence":<0.0-1.0>,"reason":"brief English explanation"}]
+Return ONLY a JSON object with two arrays:
+{
+  "updates": [{"exec_id":<number>,"item_index":<1-based>,"progress_delta":<percent to ADD>,"confidence":<0.0-1.0>,"reason":"brief English"}],
+  "unmatched": [{"item_index":<1-based>,"name_zh":"<Chinese name>","name_th":"<Thai name>","section":"<A-I>","confidence":<0.0-1.0>,"reason":"brief English"}]
+}
 
-Rules: only include matches with confidence>0.55, estimate progress_delta from today's quantity vs planned, return [] if no matches, NO other text.`;
+Rules:
+- Put in "updates" only items with confidence>0.55 that match an existing process ID above.
+- Put in "unmatched" items that do NOT match any existing process (confidence<=0.55 for all), with your best section classification.
+- For "unmatched", translate the worker's input to Chinese (name_zh) and Thai (name_th) if needed.
+- Each item goes into exactly ONE array (updates or unmatched), never both.
+- Return [] for either array if empty. NO other text outside the JSON object.`;
 
   let text;
   try { text = await callFreeAI(prompt); }
-  catch(e) { return res.json({success:false, message:'AI: '+e.message, updates:[]}); }
+  catch(e) { return res.json({success:false, message:'AI: '+e.message, updates:[], created:[]}); }
 
-  let aiResult = [];
+  let aiResult = {updates:[], unmatched:[]};
   try {
-    const m = text.match(/\[[\s\S]*\]/);
-    aiResult = m ? JSON.parse(m[0]) : [];
-  } catch(e) { return res.json({success:false, message:'Parse error', raw:text.slice(0,300), updates:[]}); }
+    const m = text.match(/\{[\s\S]*\}/);
+    const parsed = m ? JSON.parse(m[0]) : {};
+    aiResult.updates = Array.isArray(parsed.updates) ? parsed.updates : [];
+    aiResult.unmatched = Array.isArray(parsed.unmatched) ? parsed.unmatched : [];
+  } catch(e) { return res.json({success:false, message:'Parse error', updates:[], created:[]}); }
 
+  // Apply updates to existing processes
   const applied = [];
-  for (const upd of aiResult) {
+  for (const upd of aiResult.updates) {
     if (!upd.exec_id || isNaN(Number(upd.exec_id)) || (upd.confidence||0) < 0.55) continue;
     const proc = procs.find(p=>Number(p.exec_id)===Number(upd.exec_id));
     if (!proc) continue;
@@ -1493,7 +1506,49 @@ Rules: only include matches with confidence>0.55, estimate progress_delta from t
     );
     applied.push({exec_id:upd.exec_id, old_pct:Math.round(proc.completion_percentage||0), new_pct:Math.round(newPct), confidence:upd.confidence, reason:upd.reason});
   }
-  res.json({success:true, updates:applied, analyzed:aiResult.length, model_tried:'gemma-4'});
+
+  // Auto-create custom process nodes for unmatched items
+  const validSections = new Set(['A','B','C','D','E','F','G','H','I']);
+  const countR = await pool.query(
+    "SELECT COUNT(*) AS cnt FROM process_nodes WHERE project_id=$1 AND master_code LIKE 'CUSTOM_%'",
+    [projectId]);
+  const baseCount = Number(countR.rows[0].cnt);
+  const seqR = await pool.query(
+    'SELECT COALESCE(MAX(sequence_number),0) AS maxseq FROM process_nodes WHERE project_id=$1',
+    [projectId]);
+  let maxSeq = Number(seqR.rows[0].maxseq);
+
+  const created = [];
+  let createdSoFar = 0;
+  for (const u of aiResult.unmatched) {
+    if ((u.confidence||0) < 0.4) continue;
+    const section = (u.section||'H').toUpperCase();
+    if (!validSections.has(section)) continue;
+    const nameZh = (u.name_zh||'').trim() || u.reason || 'Custom Work';
+    const nameTh = (u.name_th||'').trim();
+    const seq = String(baseCount + createdSoFar + 1).padStart(3, '0');
+    const masterCode = `CUSTOM_${section}_${seq}`;
+    maxSeq += 1;
+    const nodeR = await pool.query(
+      `INSERT INTO process_nodes (project_id, process_code, process_name, master_code, sequence_number, is_custom, custom_section)
+       VALUES ($1,$2,$3::jsonb,$4,$5,true,$6) RETURNING id`,
+      [projectId, masterCode, JSON.stringify({zh:nameZh, th:nameTh}), masterCode, maxSeq, section]
+    );
+    const nodeId = nodeR.rows[0].id;
+    const execR = await pool.query(
+      `INSERT INTO process_execution (process_node_id, status, completion_percentage, updated_at)
+       VALUES ($1,'in_progress',0,CURRENT_TIMESTAMP) RETURNING id`,
+      [nodeId]
+    );
+    createdSoFar++;
+    created.push({
+      node_id: nodeId, exec_id: execR.rows[0].id,
+      master_code: masterCode, section, name_zh: nameZh, name_th: nameTh,
+      reason: u.reason
+    });
+  }
+
+  res.json({success:true, updates:applied, created, analyzed:aiResult.updates.length+aiResult.unmatched.length});
 }));
 
 module.exports = router;

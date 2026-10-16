@@ -79,7 +79,9 @@ const DesignDrawings = {
                 const thumbBg = d.file_type !== 'pdf' ? "url('" + d.file_url + "') center/cover no-repeat" : 'none';
                 html += `
                     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="height:160px;background:#f0f4f8 ${thumbBg};">
+                        <div style="height:160px;background:#f0f4f8 ${thumbBg};cursor:pointer;display:flex;align-items:center;justify-content:center;"
+                             onclick="DesignDrawings.openById(${d.id})" title="点击查看 Click to view">
+                            ${thumbBg === 'none' ? '<span style="font-size:2.5rem;">📐</span>' : ''}
                         </div>
                         <div style="padding:12px;">
                             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -89,7 +91,7 @@ const DesignDrawings = {
                             <div style="font-weight:600;font-size:0.9rem;color:#2d3748;margin-bottom:4px;word-break:break-all;">${this.esc(d.file_name)}</div>
                             ${d.description ? `<div style="font-size:0.8rem;color:#718096;margin-bottom:8px;">${this.esc(d.description)}</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                <button class="sb-btn primary" style="font-size:0.8rem;padding:4px 10px;" onclick="DesignDrawings.openAnnotator(${this.esc(JSON.stringify(JSON.stringify(d)))})">✏️ 标注 Annotate</button>
+                                <button class="sb-btn primary" style="font-size:0.8rem;padding:4px 10px;" onclick="DesignDrawings.openById(${d.id})">✏️ 标注 Annotate</button>
                                 ${canDelete ? `<button class="sb-btn" style="font-size:0.8rem;padding:4px 10px;color:#e53e3e;border-color:#e53e3e;" onclick="DesignDrawings.deleteDrawing(${d.id})">🗑️ 删除 Delete</button>` : ''}
                             </div>
                         </div>
@@ -99,6 +101,12 @@ const DesignDrawings = {
         }
         html += '</div>';
         container.innerHTML = html;
+    },
+
+    /* ── Open by drawing ID (from card click) ───────────────────────── */
+    openById(id) {
+        const d = this.drawings.find(x => x.id === id);
+        if (d) this.openAnnotator(d);
     },
 
     /* ── Upload form modal ───────────────────────────────────────────── */
@@ -178,124 +186,176 @@ const DesignDrawings = {
         }
     },
 
-    /* ── Open the Fabric.js annotator modal ─────────────────────────── */
-    openAnnotator(drawingJson) {
-        const drawing = typeof drawingJson === 'string' ? JSON.parse(drawingJson) : drawingJson;
+    /* ── Open the full-screen viewer / annotator ───────────────────── */
+    openAnnotator(drawing) {
+        if (typeof drawing === 'string') drawing = JSON.parse(drawing);
         this._currentDrawing = drawing;
         this._history = [];
 
-        const isOwner = typeof PermissionManager.isOwner === 'function' && PermissionManager.isOwner();
-        const canvasW = Math.min(window.innerWidth - 48, 1200);
-        const canvasH = Math.min(window.innerHeight - 200, 800);
+        const isOwner = typeof PermissionManager !== 'undefined' &&
+                        typeof PermissionManager.isOwner === 'function' &&
+                        PermissionManager.isOwner();
+        const canAnnotate = !isOwner;
 
         const modal = document.getElementById('modal-container');
         if (!modal) return;
 
-        const toolbarHTML = isOwner ? '' : `
-                        <div style="background:#f0f4f8;height:160px;overflow:hidden;">
-                            <img src="' + d.file_url + '" style="width:100%;height:160px;object-fit:cover" onerror="this.src='';this.style.background='#e2e8f0'" loading="lazy">
-                <button class="sb-btn" id="tool-pencil" onclick="DesignDrawings.setTool('pencil')" title="Pencil">✏️ 笔</button>
-                <button class="sb-btn" id="tool-rect" onclick="DesignDrawings.setTool('rect')" title="Rectangle">⬜ 矩形</button>
-                <button class="sb-btn" id="tool-text" onclick="DesignDrawings.setTool('text')" title="Text">T 文字</button>
-                <button class="sb-btn" id="tool-arrow" onclick="DesignDrawings.setTool('arrow')" title="Arrow">→ 箭头</button>
-                <span style="width:1px;background:#e2e8f0;height:24px;display:inline-block;margin:0 4px;"></span>
-                <button style="width:22px;height:22px;border-radius:50%;background:#e53e3e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#e53e3e')" title="Red"></button>
-                <button style="width:22px;height:22px;border-radius:50%;background:#3182ce;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#3182ce')" title="Blue"></button>
-                <button style="width:22px;height:22px;border-radius:50%;background:#38a169;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#38a169')" title="Green"></button>
-                <button style="width:22px;height:22px;border-radius:50%;background:#1a202c;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#1a202c')" title="Black"></button>
-                <button style="width:22px;height:22px;border-radius:50%;background:#d69e2e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#d69e2e')" title="Yellow"></button>
-                <span style="width:1px;background:#e2e8f0;height:24px;display:inline-block;margin:0 4px;"></span>
-                <button class="sb-btn" onclick="DesignDrawings.undo()" title="Undo">↩ 撤销</button>
-                <button class="sb-btn primary" onclick="DesignDrawings.saveAnnotations()" title="Save">💾 保存</button>
-                <button class="sb-btn" onclick="DesignDrawings._closeAnnotator()" style="margin-left:auto;">✕ 关闭</button>
-            </div>`;
-
-        const ownerBarHTML = isOwner ? `
-            <div style="display:flex;align-items:center;justify-content:flex-end;padding:8px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
-                <span style="color:#718096;font-size:0.85rem;margin-right:auto;">👁 查看模式 View only</span>
-                <button class="sb-btn" onclick="DesignDrawings._closeAnnotator()">✕ 关闭</button>
-            </div>` : '';
-
         modal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:flex;flex-direction:column;">
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;flex-direction:column;">
                 <div style="background:#fff;display:flex;flex-direction:column;height:100vh;max-height:100vh;">
-                    <div style="display:flex;align-items:center;padding:8px 16px;background:#2d3748;color:#fff;gap:12px;">
-                        <span style="font-size:1rem;font-weight:600;">📐 ${this.esc(drawing.file_name)}</span>
+
+                    <!-- Title bar -->
+                    <div style="display:flex;align-items:center;padding:8px 16px;background:#2d3748;color:#fff;gap:12px;flex-shrink:0;">
+                        <span style="font-size:1rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            📐 ${this.esc(drawing.file_name)}
+                        </span>
+                        <button onclick="DesignDrawings._closeAnnotator()"
+                                style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.85rem;">
+                            ✕ 关闭
+                        </button>
                     </div>
-                    ${isOwner ? ownerBarHTML : toolbarHTML}
-                    <div style="flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px;background:#e2e8f0;">
+
+                    <!-- Toolbar -->
+                    <div style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;flex-shrink:0;">
+                        <!-- Zoom -->
+                        <button class="sb-btn" onclick="DesignDrawings._zoomCanvas(-0.25)" title="缩小 Zoom Out">−</button>
+                        <span id="zoom-label" style="min-width:44px;text-align:center;font-size:0.82rem;color:#4a5568;font-weight:600;">100%</span>
+                        <button class="sb-btn" onclick="DesignDrawings._zoomCanvas(0.25)" title="放大 Zoom In">+</button>
+                        <button class="sb-btn" onclick="DesignDrawings._resetZoom()" title="适合屏幕 Fit">⊡</button>
+                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
+                        <span style="font-size:0.78rem;color:#a0aec0;">🖱 滚轮缩放 | Alt+拖拽平移</span>
+                        ${canAnnotate ? `
+                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
+                        <!-- Annotation tools -->
+                        <button class="sb-btn" id="tool-select" onclick="DesignDrawings.setTool('select')" title="选择 Select">↖ 选</button>
+                        <button class="sb-btn" id="tool-pencil" onclick="DesignDrawings.setTool('pencil')" title="画笔 Pencil">✏️</button>
+                        <button class="sb-btn" id="tool-rect"   onclick="DesignDrawings.setTool('rect')"   title="矩形 Rect">⬜</button>
+                        <button class="sb-btn" id="tool-text"   onclick="DesignDrawings.setTool('text')"   title="文字 Text">T</button>
+                        <button class="sb-btn" id="tool-arrow"  onclick="DesignDrawings.setTool('arrow')"  title="箭头 Arrow">→</button>
+                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
+                        <!-- Colors -->
+                        <button style="width:20px;height:20px;border-radius:50%;background:#e53e3e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#e53e3e')" title="Red"></button>
+                        <button style="width:20px;height:20px;border-radius:50%;background:#3182ce;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#3182ce')" title="Blue"></button>
+                        <button style="width:20px;height:20px;border-radius:50%;background:#38a169;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#38a169')" title="Green"></button>
+                        <button style="width:20px;height:20px;border-radius:50%;background:#1a202c;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#1a202c')" title="Black"></button>
+                        <button style="width:20px;height:20px;border-radius:50%;background:#d69e2e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#d69e2e')" title="Yellow"></button>
+                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
+                        <button class="sb-btn" onclick="DesignDrawings.undo()" title="撤销 Undo">↩ 撤销</button>
+                        <button class="sb-btn primary" onclick="DesignDrawings.saveAnnotations()" title="保存 Save">💾 保存</button>
+                        ` : '<span style="font-size:0.8rem;color:#718096;">👁 查看模式 View only</span>'}
+                    </div>
+
+                    <!-- Canvas viewport -->
+                    <div id="annotator-viewport"
+                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;">
                         <canvas id="annotation-canvas"></canvas>
                     </div>
+
                 </div>
             </div>`;
 
-        // Init Fabric canvas
+        const viewportEl = document.getElementById('annotator-viewport');
+        // Use actual rendered dimensions
+        const viewportW = viewportEl.clientWidth  || (window.innerWidth);
+        const viewportH = viewportEl.clientHeight || (window.innerHeight - 120);
+
         const canvasEl = document.getElementById('annotation-canvas');
         if (!canvasEl) return;
-        canvasEl.width = canvasW;
-        canvasEl.height = canvasH;
 
         if (this._fabricCanvas) {
             try { this._fabricCanvas.dispose(); } catch(e) {}
         }
         this._fabricCanvas = new fabric.Canvas('annotation-canvas', {
-            width: canvasW,
-            height: canvasH,
-            selection: !isOwner,
+            width: viewportW,
+            height: viewportH,
+            selection: canAnnotate,
             isDrawingMode: false
         });
 
         const canvas = this._fabricCanvas;
+        const self   = this;
 
-        // Track undo history
-        canvas.on('object:added', () => this._pushHistory());
-        canvas.on('object:modified', () => this._pushHistory());
+        /* ── Mouse-wheel zoom ──────────────────────────────────────── */
+        viewportEl.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.12 : 0.12;
+            const rect  = canvasEl.getBoundingClientRect();
+            const pt    = new fabric.Point(e.clientX - rect.left, e.clientY - rect.top);
+            let zoom = Math.max(0.15, Math.min(8, canvas.getZoom() + delta));
+            canvas.zoomToPoint(pt, zoom);
+            const lbl = document.getElementById('zoom-label');
+            if (lbl) lbl.textContent = Math.round(zoom * 100) + '%';
+        }, { passive: false });
 
-        const self = this;
+        /* ── Alt+drag pan ──────────────────────────────────────────── */
+        let isPanning = false, lastPX = 0, lastPY = 0;
+        canvas.on('mouse:down', (opt) => {
+            const e = opt.e;
+            if (e.altKey || e.button === 1) {
+                isPanning = true;
+                lastPX = e.clientX; lastPY = e.clientY;
+                canvas.setCursor('grabbing');
+                e.preventDefault();
+            }
+        });
+        canvas.on('mouse:move', (opt) => {
+            if (!isPanning) return;
+            const e = opt.e;
+            canvas.relativePan(new fabric.Point(e.clientX - lastPX, e.clientY - lastPY));
+            lastPX = e.clientX; lastPY = e.clientY;
+        });
+        canvas.on('mouse:up', () => { isPanning = false; });
 
-        const loadBackground = (dataUrl) => {
-            fabric.Image.fromURL(dataUrl, (img) => {
-                img.scaleToWidth(canvasW);
-                const scaledH = img.getScaledHeight();
-                if (scaledH > canvasH) {
-                    img.scaleToHeight(canvasH);
-                }
-                canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-                // After bg is set, load existing annotations
-                self._loadAnnotations();
-            }, { crossOrigin: 'anonymous' });
-        };
+        /* ── Undo history ──────────────────────────────────────────── */
+        canvas.on('object:added',    () => self._pushHistory());
+        canvas.on('object:modified', () => self._pushHistory());
 
-        if (drawing.file_type === 'pdf') {
-            if (typeof pdfjsLib === 'undefined') {
-                alert('PDF.js library not loaded');
+        /* ── Load image ────────────────────────────────────────────── */
+        const imgUrl = drawing.file_url.startsWith('http')
+            ? drawing.file_url
+            : (window.location.origin + drawing.file_url);
+
+        fabric.Image.fromURL(imgUrl, (img) => {
+            if (!img || !img.width) {
+                viewportEl.innerHTML = '<div style="color:#fff;padding:32px;text-align:center;">⚠️ 图片加载失败 Image failed to load<br>' + imgUrl + '</div>';
                 return;
             }
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-            const loadingTask = pdfjsLib.getDocument(drawing.file_url);
-            loadingTask.promise.then((pdf) => {
-                return pdf.getPage(1);
-            }).then((page) => {
-                const viewport = page.getViewport({ scale: 1.5 });
-                const offscreen = document.createElement('canvas');
-                offscreen.width = viewport.width;
-                offscreen.height = viewport.height;
-                const ctx = offscreen.getContext('2d');
-                return page.render({ canvasContext: ctx, viewport }).promise.then(() => offscreen);
-            }).then((offscreen) => {
-                loadBackground(offscreen.toDataURL());
-            }).catch((err) => {
-                console.error('PDF load error:', err);
+            // Scale to fit viewport, keeping aspect ratio
+            const scaleX = viewportW  / img.width;
+            const scaleY = viewportH / img.height;
+            const scale  = Math.min(scaleX, scaleY, 1);
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                originX: 'left', originY: 'top',
+                scaleX: scale,   scaleY: scale
             });
-        } else {
-            // Image
-            const imgUrl = drawing.file_url.startsWith('http') ? drawing.file_url : (window.location.origin + drawing.file_url);
-            loadBackground(imgUrl);
-        }
+            // Resize canvas to image
+            canvas.setWidth(Math.max(viewportW, Math.round(img.width  * scale)));
+            canvas.setHeight(Math.max(viewportH, Math.round(img.height * scale)));
+            canvas.renderAll();
+            self._loadAnnotations();
+        }, { crossOrigin: 'anonymous' });
 
-        if (!isOwner) {
-            this.setTool('select');
-        }
+        if (canAnnotate) this.setTool('select');
+    },
+
+    /* ── Zoom helpers ───────────────────────────────────────────────── */
+    _zoomCanvas(delta) {
+        const canvas = this._fabricCanvas;
+        if (!canvas) return;
+        const zoom = Math.max(0.15, Math.min(8, canvas.getZoom() + delta));
+        canvas.setZoom(zoom);
+        canvas.renderAll();
+        const lbl = document.getElementById('zoom-label');
+        if (lbl) lbl.textContent = Math.round(zoom * 100) + '%';
+    },
+
+    _resetZoom() {
+        const canvas = this._fabricCanvas;
+        if (!canvas) return;
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.renderAll();
+        const lbl = document.getElementById('zoom-label');
+        if (lbl) lbl.textContent = '100%';
     },
 
     _closeAnnotator() {

@@ -56,7 +56,7 @@ const ProjectDetail = {
         if (PermissionManager.canViewSite())       list.push({ v: 'site',     icon: '🏗️', zh: '今日现场', th: "Today's Site" });
         if (PermissionManager.canViewGantt())      list.push({ v: 'processes',icon: '🔧', zh: '进度计划', th: 'Progress Plan' });
         if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'Procurement' });
-        if (!PermissionManager.isOwner())          list.push({ v: 'photos',   icon: '📷', zh: '现场照片', th: 'Photos' });
+        list.push({ v: 'photos', icon: '📷', zh: '现场照片', th: 'Photos' }); // All roles can see site photos
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'Overview' });
         return list;
     },

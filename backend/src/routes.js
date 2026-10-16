@@ -31,6 +31,24 @@ const upload = multer({
 });
 
 // ============ ��֤�ӿ� ============
+// Design drawing upload config — PDF/JPG/PNG, up to 20 MB
+const drawingStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => {
+    const unique = `drawing_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
+    cb(null, unique);
+  }
+});
+const drawingUpload = multer({
+  storage: drawingStorage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.pdf', '.jpg', '.jpeg', '.png'].includes(ext)) cb(null, true);
+    else cb(new Error('只支持 PDF / JPG / PNG 格式'));
+  }
+});
+
 router.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -1938,6 +1956,97 @@ router.get('/tasks/my-tasks', authenticate, async (req, res) => {
     `, [req.user.id]);
     
     res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============ 设计图接口 ============
+
+// GET /projects/:projectId/drawings — list drawings
+router.get('/projects/:projectId/drawings', authenticate, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, projectId);
+    if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
+    const result = await pool.query(
+      'SELECT * FROM design_drawings WHERE project_id = $1 ORDER BY sort_order, upload_time DESC',
+      [projectId]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /projects/:projectId/drawings — upload a drawing file
+router.post('/projects/:projectId/drawings', authenticate, drawingUpload.single('drawing'), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!req.file) return res.status(400).json({ success: false, message: '请选择文件' });
+    const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, projectId);
+    if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
+    const ext = path.extname(req.file.originalname).toLowerCase().slice(1);
+    const file_type = ext === 'pdf' ? 'pdf' : 'image';
+    const result = await pool.query(
+      `INSERT INTO design_drawings (project_id, file_name, file_url, file_type, file_size, description, uploaded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [projectId, req.file.originalname, `/uploads/${req.file.filename}`,
+       file_type, req.file.size, req.body.description || '', req.user.id]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /drawings/:id — delete a drawing (manager or uploader)
+router.delete('/drawings/:id', authenticate, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM design_drawings WHERE id = $1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ success: false, message: '设计图不存在' });
+    const drawing = r.rows[0];
+    const isManager = req.user.role === 'manager';
+    if (!isManager && drawing.uploaded_by !== req.user.id) {
+      return res.status(403).json({ success: false, message: '只能删除自己上传的图纸' });
+    }
+    await pool.query('DELETE FROM design_drawings WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drawings/:id/annotations — load annotations for a drawing
+router.get('/drawings/:id/annotations', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM drawing_annotations WHERE drawing_id = $1 ORDER BY page_no',
+      [req.params.id]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /drawings/:id/annotations — save (upsert) annotations for a drawing page
+router.put('/drawings/:id/annotations', authenticate, async (req, res) => {
+  try {
+    const { page_no = 1, objects } = req.body;
+    const result = await pool.query(
+      `INSERT INTO drawing_annotations (drawing_id, page_no, objects, annotated_by, annotated_by_name)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (drawing_id, page_no) DO UPDATE SET
+         objects = EXCLUDED.objects,
+         annotated_by = EXCLUDED.annotated_by,
+         annotated_by_name = EXCLUDED.annotated_by_name,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [req.params.id, page_no, JSON.stringify(objects || []),
+       req.user.id, req.user.full_name || req.user.username]
+    );
+    res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

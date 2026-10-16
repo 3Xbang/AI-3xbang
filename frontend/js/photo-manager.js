@@ -158,6 +158,7 @@ const photoManager = {
             okBtn.disabled = true; okBtn.textContent = '⏳ Uploading...';
             try {
                 if (typeof app !== 'undefined') app.showLoading();
+                let failed = 0;
                 for (const file of files) {
                     const fd = new FormData();
                     fd.append('photo', file);
@@ -167,16 +168,25 @@ const photoManager = {
                     fd.append('photo_category', category);
                     fd.append('report_date', this.currentDate);
                     if (workItem) fd.append('work_item_name', workItem.work||'');
-                    await fetch(window.location.origin+'/api/photos/upload', {
+                    const resp = await fetch(window.location.origin+'/api/photos/upload', {
                         method:'POST',
                         headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},
                         body:fd
                     });
+                    if (!resp.ok) {
+                        const j = await resp.json().catch(()=>({}));
+                        failed++;
+                        console.error('Upload failed:', j.message || resp.statusText);
+                    }
                 }
                 if (typeof app !== 'undefined') app.hideLoading();
                 close();
                 await this.load();
-                if (typeof app !== 'undefined' && app.showToast) app.showToast('✅ Uploaded!','success');
+                if (failed > 0) {
+                    alert(`${failed} photo(s) failed to upload. / ${failed} รูปอัปโหลดไม่สำเร็จ`);
+                } else if (typeof app !== 'undefined' && app.showToast) {
+                    app.showToast('✅ Uploaded!','success');
+                }
             } catch(e) {
                 if (typeof app !== 'undefined') app.hideLoading();
                 okBtn.disabled=false; okBtn.textContent='📤 Upload';

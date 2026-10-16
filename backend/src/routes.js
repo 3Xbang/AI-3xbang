@@ -691,7 +691,7 @@ router.get('/photos/project/:projectId', authenticate, async (req, res) => {
     if (!hasAccess) return res.status(403).json({ success: false, message: 'No access' });
     const date = req.query.date || new Date(Date.now()+7*3600000).toISOString().slice(0,10);
     const result = await pool.query(
-      `SELECT *, photo_category, work_item_name, report_date::text
+      `SELECT *, report_date::text AS report_date
        FROM photos 
        WHERE project_id = $1 AND (report_date = $2 OR (report_date IS NULL AND upload_time::date = $2::date))
        ORDER BY photo_category, upload_time ASC`,

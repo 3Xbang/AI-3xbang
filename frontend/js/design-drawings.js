@@ -145,7 +145,7 @@ const DesignDrawings = {
         formData.append('description', descInput ? descInput.value : '');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken');
             const resp = await fetch(`/api/projects/${this.currentProjectId}/drawings`, {
                 method: 'POST',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {},

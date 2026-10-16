@@ -216,6 +216,25 @@ const ProjectDetail = {
         MaterialManager.init(this.projectId);
     },
 
+    switchProcView(view) {
+        const gantt = document.getElementById('gantt-container');
+        const cards = document.getElementById('processes-list');
+        const btnG  = document.getElementById('btn-gantt');
+        const btnC  = document.getElementById('btn-cards');
+        if (view === 'gantt') {
+            if (gantt) gantt.style.display = '';
+            if (cards) cards.style.display = 'none';
+            if (btnG) { btnG.classList.add('active'); }
+            if (btnC) { btnC.classList.remove('active'); }
+            if (typeof Ganttohart !== 'undefined') Ganttohart.init(this.projectId);
+        } else {
+            if (gantt) gantt.style.display = 'none';
+            if (cards) cards.style.display = '';
+            if (btnG) { btnG.classList.remove('active'); }
+            if (btnC) { btnC.classList.add('active'); }
+            if (typeof ProcessManager !== 'undefined') ProcessManager.init(this.projectId);
+        }
+    },
     _switchProcTab(tab) {
         document.getElementById('proc-tab-mat')?.classList.toggle('active', tab==='mat');
         document.getElementById('proc-tab-ai')?.classList.toggle('active', tab==='ai');

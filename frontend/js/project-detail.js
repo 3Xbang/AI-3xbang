@@ -125,12 +125,10 @@ const ProjectDetail = {
                 {
                 // 日报权限：工头/巡逻填写，管理/主管/采购可查看，业主只看进度看板
                 const _role = PermissionManager.role();
-                const _fills = _role === 'foreman' || _role === 'patrol';
-                const _views = _role === 'manager' || _role === 'supervisor' || _role === 'purchaser';
+                const _fills = _role !== 'owner'; // All internal staff can fill/modify the daily report
+                const _views = _role === 'manager' || _role === 'supervisor'; // These roles also get Site Board access
                 const _force = localStorage.getItem('force_daily_report') === '1';
-                if (_fills && typeof DailyReport !== 'undefined') {
-                    await DailyReport.init(this.projectId); break;
-                }
+
                 await SiteBoard.init(this.projectId);
                 if (_views && typeof DailyReport !== 'undefined') {
                     setTimeout(() => {

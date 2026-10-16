@@ -18,6 +18,9 @@ const app = {
 
     // 初始化
     init() {
+        // Share-link intercept — handle ?share=TOKEN before auth check
+        const _shareToken = new URLSearchParams(window.location.search).get('share');
+        if (_shareToken) { if (typeof ShareViewer !== 'undefined') ShareViewer.init(_shareToken); return; }
         // 检查登录状态
         if (authToken) {
             this.showMainPage();

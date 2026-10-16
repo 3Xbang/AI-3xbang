@@ -93,6 +93,7 @@ const DesignDrawings = {
                             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
                                 <button class="sb-btn primary" style="font-size:0.8rem;padding:4px 10px;" onclick="DesignDrawings.openById(${d.id})">✏️ 标注 Annotate</button>
                                 ${canDelete ? `<button class="sb-btn" style="font-size:0.8rem;padding:4px 10px;color:#e53e3e;border-color:#e53e3e;" onclick="DesignDrawings.deleteDrawing(${d.id})">🗑️ 删除 Delete</button>` : ''}
+                                <button class="sb-btn" style="font-size:0.8rem;padding:4px 10px;color:#3182ce;border-color:#3182ce;" onclick="DesignDrawings.showShareModal(${d.id})">📤 分享</button>
                             </div>
                         </div>
                     </div>`;
@@ -550,14 +551,66 @@ const DesignDrawings = {
                 body: JSON.stringify({ page_no: 1, objects: objects }),
                 headers: { 'Content-Type': 'application/json' }
             });
-            // Show success toast
+            // Show success toast with share shortcut
             const toast = document.createElement('div');
-            toast.textContent = '✅ 标注已保存 Annotations saved';
-            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#38a169;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#38a169;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;';
+            toast.innerHTML = '<span>✅ 标注已保存 Annotations saved</span>';
+            const shareBtn = document.createElement('button');
+            shareBtn.textContent = '📤 立即分享';
+            shareBtn.style.cssText = 'background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.82rem;white-space:nowrap;';
+            const self = this;
+            shareBtn.onclick = () => { toast.remove(); self.showShareModal(self._currentDrawing.id); };
+            toast.appendChild(shareBtn);
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+            setTimeout(() => toast.remove(), 6000);
         } catch (err) {
             alert('保存失败 Save failed: ' + err.message);
+        }
+    },
+
+    /* ── Share modal ─────────────────────────────────────────────────── */
+    async showShareModal(drawingId) {
+        try {
+            const token = localStorage.getItem('authToken');
+            const resp = await fetch(`/api/drawings/${drawingId}/share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+            });
+            const json = await resp.json();
+            if (!json.success) throw new Error(json.message || '分享失败');
+            const data = json.data;
+
+            const modal = document.getElementById('modal-container');
+            if (!modal) return;
+            modal.innerHTML = `
+                <div class="modal-overlay" onclick="DesignDrawings._closeModal(event)" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;">
+                    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+                        <h3 style="margin:0 0 12px;font-size:1.1rem;">📤 分享图纸 Share Drawing</h3>
+                        <div style="font-size:0.82rem;color:#718096;margin-bottom:12px;">⏰ 链接24小时后失效 Link expires in 24 hours</div>
+                        <div style="margin-bottom:14px;">
+                            <label style="display:block;font-size:0.85rem;color:#4a5568;margin-bottom:6px;">分享消息 Share Message（可复制 Copy as needed）</label>
+                            <textarea id="share-msg-box" readonly style="width:100%;box-sizing:border-box;height:160px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.82rem;resize:vertical;background:#f7fafc;color:#2d3748;">${this.esc(data.message)}</textarea>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                            <button class="sb-btn" style="background:#06c755;color:#fff;border-color:#06c755;" onclick="window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('${this.esc(data.url)}')+'&text='+encodeURIComponent(document.getElementById('share-msg-box').value),'_blank')">
+                                💬 LINE 分享
+                            </button>
+                            <button class="sb-btn" style="background:#07c160;color:#fff;border-color:#07c160;" onclick="
+                                navigator.clipboard.writeText(document.getElementById('share-msg-box').value).then(()=>{
+                                    const t=document.createElement('div');
+                                    t.textContent='✅ 已复制！粘贴到微信即可 Copied! Paste to WeChat';
+                                    t.style.cssText='position:fixed;bottom:80px;right:24px;background:#07c160;color:#fff;padding:10px 18px;border-radius:8px;z-index:9999;font-size:0.88rem;';
+                                    document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
+                                }).catch(()=>{ document.getElementById('share-msg-box').select(); document.execCommand('copy'); });
+                            ">
+                                💚 微信复制 WeChat Copy
+                            </button>
+                            <button class="sb-btn" onclick="document.getElementById('modal-container').innerHTML=''">✕ 关闭 Close</button>
+                        </div>
+                    </div>
+                </div>`;
+        } catch (err) {
+            alert('分享失败 Share failed: ' + err.message);
         }
     }
 };

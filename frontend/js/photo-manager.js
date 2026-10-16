@@ -76,7 +76,7 @@ const photoManager = {
 
     _section(category, title, photos, canUpload, workItem, bgColor, color) {
         const photoHtml = photos.map(p => this._photoCard(p)).join('');
-        const uploadBtn = canUpload ? `<button onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem):'null'})"
+        const uploadBtn = canUpload ? `<button onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
             style="width:100px;height:100px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;flex-shrink:0">
             <span style="font-size:28px">+</span>
             <span>Upload</span>

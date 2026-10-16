@@ -122,35 +122,45 @@ const ProjectDetail = {
                 break;
             case 'site':
                 container.innerHTML = '<div id="site-board-container"></div>';
-                // Plan A: role-based view with manager toggle
-                const useDailyReport = !PermissionManager.isManager() && !PermissionManager.isOwner() && !PermissionManager.isSupervisor();
-                const forceDaily = localStorage.getItem('force_daily_report') === '1';
-                if ((useDailyReport || forceDaily) && typeof DailyReport !== 'undefined') {
-                    await DailyReport.init(this.projectId);
-                    // Add toggle button for managers to switch views
-                    if (PermissionManager.isManager() || PermissionManager.isSupervisor()) {
-                        const tog = document.createElement('button');
-                        tog.textContent = '🔄 Switch to Site Board View';
-                        tog.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-                        tog.onclick = () => { localStorage.removeItem('force_daily_report'); ProjectDetail.showSubView('site'); };
-                        document.body.appendChild(tog);
-                    }
-                    break;
-                }
-                if (PermissionManager.isManager() || PermissionManager.isSupervisor()) {
-                    // Add preview button for managers
-                    setTimeout(() => {
-                        if (!document.getElementById('daily-preview-btn')) {
-                            const btn = document.createElement('button');
-                            btn.id = 'daily-preview-btn';
-                            btn.textContent = '📋 Preview Daily Report Form';
-                            btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-                            btn.onclick = () => { localStorage.setItem('force_daily_report','1'); ProjectDetail.showSubView('site'); };
-                            document.body.appendChild(btn);
-                        }
-                    }, 500);
+                {
+                // 日报权限：工头/巡逻填写，管理/主管/采购可查看，业主只看进度看板
+                const _role = PermissionManager.role();
+                const _fills = _role === 'foreman' || _role === 'patrol';
+                const _views = _role === 'manager' || _role === 'supervisor' || _role === 'purchaser';
+                const _force = localStorage.getItem('force_daily_report') === '1';
+                if (_fills && typeof DailyReport !== 'undefined') {
+                    await DailyReport.init(this.projectId); break;
                 }
                 await SiteBoard.init(this.projectId);
+                if (_views && typeof DailyReport !== 'undefined') {
+                    setTimeout(() => {
+                        if (!document.getElementById('view-reports-btn')) {
+                            const _b = document.createElement('button');
+                            _b.id = 'view-reports-btn';
+                            _b.innerHTML = '📋 日报记录<br><small style="font-size:11px">Daily Reports</small>';
+                            _b.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
+                            _b.onclick = () => { localStorage.setItem('force_daily_report','1'); ProjectDetail.showSubView('site'); };
+                            document.body.appendChild(_b);
+                        }
+                    }, 400);
+                }
+                if (_force && _views && typeof DailyReport !== 'undefined') {
+                    localStorage.removeItem('force_daily_report');
+                    container.innerHTML = '<div id="site-board-container"></div>';
+                    await DailyReport.init(this.projectId);
+                    setTimeout(() => {
+                        if (!document.getElementById('back-board-btn')) {
+                            const _back = document.createElement('button');
+                            _back.id = 'back-board-btn';
+                            _back.textContent = '← Site Board 进度看板';
+                            _back.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+                            _back.onclick = () => ProjectDetail.showSubView('site');
+                            document.body.appendChild(_back);
+                        }
+                    }, 300);
+                }
+                break;
+                }
                 break;
             case 'processes':
                 container.innerHTML = `<div class="proc-toolbar">

@@ -2112,6 +2112,98 @@ router.put('/drawings/:id/annotations', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/drawings/:id/share — generate 24h public share token
+router.post('/drawings/:id/share', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Fetch drawing + project name
+    const drawingRes = await pool.query(
+      `SELECT dd.*, p.name AS project_name_json
+       FROM design_drawings dd
+       JOIN projects p ON dd.project_id = p.id
+       WHERE dd.id = $1`,
+      [id]
+    );
+    if (drawingRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '图纸不存在' });
+    }
+    const drawing = drawingRes.rows[0];
+    // Get sharer full_name
+    const userRes = await pool.query('SELECT full_name, username FROM users WHERE id = $1', [req.user.id]);
+    const userRow = userRes.rows[0] || {};
+    const sharedByName = userRow.full_name || userRow.username || req.user.username;
+    // Extract project name (JSONB: {"zh":"...","th":"..."})
+    const projectNameJson = drawing.project_name_json || {};
+    const projectName = (typeof projectNameJson === 'object' ? (projectNameJson.zh || projectNameJson.th || JSON.stringify(projectNameJson)) : String(projectNameJson));
+    // Generate token and expiry
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const timeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false });
+    const shareUrl = `https://winaii.com/?share=${token}`;
+    const message = `📐 图纸已更新 Drawing Updated\n项目 Project：${projectName}\n图纸 Drawing：${drawing.file_name}\n更新人 By：${sharedByName}\n时间 Time：${timeStr}\n\n查看链接（24小时有效）View link (valid 24h):\n${shareUrl}`;
+    // Insert token row
+    await pool.query(
+      `INSERT INTO drawing_share_tokens (token, drawing_id, project_id, shared_by_name, expires_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [token, id, drawing.project_id, sharedByName, expiresAt]
+    );
+    res.json({
+      success: true,
+      data: {
+        token,
+        url: shareUrl,
+        drawing_name: drawing.file_name,
+        project_name: projectName,
+        shared_by_name: sharedByName,
+        expires_at: expiresAt,
+        message
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/share/:token — public share viewer (no auth required)
+router.get('/share/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const result = await pool.query(
+      `SELECT dst.*, dd.file_name, dd.file_url, dd.file_type,
+              p.name AS project_name_json
+       FROM drawing_share_tokens dst
+       JOIN design_drawings dd ON dd.id = dst.drawing_id
+       JOIN projects p ON p.id = dst.project_id
+       WHERE dst.token = $1`,
+      [token]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'not_found' });
+    }
+    const row = result.rows[0];
+    if (new Date(row.expires_at) < new Date()) {
+      return res.status(410).json({ success: false, message: 'expired' });
+    }
+    const projectNameJson = row.project_name_json || {};
+    const projectName = (typeof projectNameJson === 'object' ? (projectNameJson.zh || projectNameJson.th || JSON.stringify(projectNameJson)) : String(projectNameJson));
+    res.json({
+      success: true,
+      data: {
+        drawing_name: row.file_name,
+        file_url: row.file_url,
+        file_type: row.file_type,
+        project_name: projectName,
+        shared_by_name: row.shared_by_name,
+        created_at: row.created_at,
+        expires_at: row.expires_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
 
 // ============ ����ģ��ӿ� ============

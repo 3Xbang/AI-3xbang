@@ -1111,6 +1111,46 @@ async function callGemini(prompt, imagePart) {
   throw lastErr || new Error('模型全部繁忙，请稍后再试 / ระบบ AI ยุ่ง กรุณาลองใหม่ทีหลัง');
 }
 
+// ── Free AI via OpenRouter — for process analysis (Gemma 4, free) ──
+async function callFreeAI(prompt) {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error('OPENROUTER_API_KEY not configured');
+  // Priority: Gemma 4 (best Thai support, free) → DeepSeek fallback
+  const models = [
+    process.env.PROCESS_AI_MODEL || 'google/gemma-4-26b-a4b:free',
+    'google/gemma-4-31b-it:free',
+    'google/gemma-2-27b-it:free',
+    'deepseek/deepseek-chat:free',
+    'qwen/qwen-2.5-72b-instruct:free',
+  ];
+  let lastErr;
+  for (const model of models) {
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://winaii.com',
+          'X-Title': 'Mira Villa Construction'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1200,
+          temperature: 0.1
+        })
+      });
+      if (!resp.ok) { const t = await resp.text(); lastErr = new Error(`${model}: HTTP ${resp.status} ${t.slice(0,100)}`); continue; }
+      const j = await resp.json();
+      const text = (j.choices?.[0]?.message?.content || '').trim();
+      if (text) return text;
+      lastErr = new Error(`${model}: empty response`);
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr || new Error('All free AI models failed');
+}
+
 // ── 确保 ai_rules 列存在 ──
 async function ensureAiRulesCol() {
   await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_rules TEXT');
@@ -1390,4 +1430,70 @@ router.get('/projects/:projectId/daily-reports', authenticate, requireProjectAcc
     [req.params.projectId]);
   res.json({success:true, data:r.rows});
 }));
+// POST /projects/:id/ai-process-update — map daily report work items to processes (FREE AI)
+router.post('/projects/:projectId/ai-process-update', authenticate, requireProjectAccess(), wrap(async(req,res)=>{
+  const projectId = req.params.projectId;
+  const { performance, report_date } = req.body;
+  const items = (performance||[]).filter(p => (p.work||'').trim());
+  if (!items.length) return res.json({success:true, updates:[], message:'No work items'});
+
+  // Get active processes
+  const { LIB } = require('./process-master');
+  const procs = (await pool.query(`
+    SELECT pe.id exec_id, pn.process_name, pn.master_code, pn.floor_no,
+           pe.completion_percentage, pe.status, pe.planned_quantity, pe.quantity_unit
+    FROM process_nodes pn JOIN process_execution pe ON pe.process_node_id=pn.id
+    WHERE pn.project_id=$1 AND pe.status IN ('not_started','in_progress')
+    ORDER BY pn.sequence_number LIMIT 60
+  `, [projectId])).rows;
+  if (!procs.length) return res.json({success:true, updates:[], message:'No active processes'});
+
+  const procList = procs.map(p => {
+    const lib = LIB[p.master_code]||{};
+    const nameZh = lib.zh || p.master_code;
+    const nameEn = lib.th || '';
+    return `ID:${p.exec_id} | ${nameZh} ${nameEn}${p.floor_no?' F'+p.floor_no:''} | ${Math.round(p.completion_percentage||0)}% done | unit:${p.quantity_unit||'?'} planned:${p.planned_quantity||'?'}`;
+  }).join('\n');
+
+  const workList = items.map((p,i)=>`${i+1}. "${p.work||''}" unit:${p.unit||'?'} today:${p.today||0} total:${p.total||0}`).join('\n');
+
+  const prompt = `You are a construction progress tracker. Workers may write in Thai, Chinese, or English.
+
+ACTIVE PROCESSES:
+${procList}
+
+TODAY'S WORK (worker input):
+${workList}
+
+Match each work item to a process. Return ONLY a JSON array:
+[{"exec_id":<number>,"item_index":<1-based>,"progress_delta":<percent points to ADD>,"confidence":<0.0-1.0>,"reason":"brief English explanation"}]
+
+Rules: only include matches with confidence>0.55, estimate progress_delta from today's quantity vs planned, return [] if no matches, NO other text.`;
+
+  let text;
+  try { text = await callFreeAI(prompt); }
+  catch(e) { return res.json({success:false, message:'AI: '+e.message, updates:[]}); }
+
+  let aiResult = [];
+  try {
+    const m = text.match(/\[[\s\S]*\]/);
+    aiResult = m ? JSON.parse(m[0]) : [];
+  } catch(e) { return res.json({success:false, message:'Parse error', raw:text.slice(0,300), updates:[]}); }
+
+  const applied = [];
+  for (const upd of aiResult) {
+    if (!upd.exec_id || (upd.confidence||0) < 0.55) continue;
+    const proc = procs.find(p=>p.exec_id===upd.exec_id);
+    if (!proc) continue;
+    const newPct = Math.min(100, Math.max(0, (proc.completion_percentage||0)+(upd.progress_delta||0)));
+    const newStatus = newPct>=100 ? 'completed' : 'in_progress';
+    await pool.query(
+      'UPDATE process_execution SET completion_percentage=$1,status=$2,updated_at=CURRENT_TIMESTAMP WHERE id=$3',
+      [newPct, newStatus, upd.exec_id]
+    );
+    applied.push({exec_id:upd.exec_id, old_pct:Math.round(proc.completion_percentage||0), new_pct:Math.round(newPct), confidence:upd.confidence, reason:upd.reason});
+  }
+  res.json({success:true, updates:applied, analyzed:aiResult.length, model_tried:'gemma-4'});
+}));
+
 module.exports = router;

@@ -332,15 +332,39 @@ const DailyReport = {
         const btn = document.getElementById('dr-save-btn');
         if (btn) { btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...'; }
         try {
+            const payload = this._collectData();
             await apiRequest('/api/projects/'+this.projectId+'/daily-report', {
-                method: 'PUT', body: JSON.stringify(this._collectData())
+                method: 'PUT', body: JSON.stringify(payload)
             });
             if (typeof app !== 'undefined' && app.showToast) app.showToast('✅ บันทึกแล้ว Saved!', 'success');
+            // Trigger AI process analysis if there are work items
+            const hasWork = (payload.performance||[]).some(p => (p.work||'').trim());
+            if (hasWork) {
+                const btn2 = document.getElementById('dr-save-btn');
+                if (btn2) btn2.textContent = '🤖 AI กำลังวิเคราะห์... Analyzing...';
+                try {
+                    const aiR = await apiRequest('/api/projects/'+this.projectId+'/ai-process-update', {
+                        method:'POST', body:JSON.stringify({performance:payload.performance, report_date:payload.report_date})
+                    });
+                    if (aiR.updates && aiR.updates.length>0) this._showAiResult(aiR.updates);
+                    else if (aiR.success) { if(typeof app!=='undefined'&&app.showToast) app.showToast('🤖 AI: No matching processes found','info'); }
+                } catch(e) { /* AI analysis optional, don't block */ }
+            }
         } catch(e) { alert('บันทึกไม่ได้ / Save failed: '+e.message); }
         finally {
             this.saving = false;
-            if (btn) { btn.disabled=false; btn.textContent='💾 บันทึก / Save Report'; }
+            const b = document.getElementById('dr-save-btn');
+            if (b) { b.disabled=false; b.textContent='💾 บันทึก / Save Report'; }
         }
+    },
+    _showAiResult(updates) {
+        const box = document.createElement('div');
+        box.style.cssText='position:fixed;top:70px;right:12px;z-index:9999;background:#fff;border:2px solid #10b981;border-radius:14px;padding:14px 16px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.18);font-family:sans-serif';
+        box.innerHTML=`<div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:8px">🤖 AI อัปเดตงาน / AI Updated Progress</div>`+
+            updates.map(u=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid #f0fdf4"><span style="color:#374151">${this.esc(u.reason||'Process updated')}</span><br><b style="color:#10b981;font-size:15px">${u.old_pct}% → ${u.new_pct}%</b> <span style="font-size:11px;color:#94a3b8">${Math.round((u.confidence||0)*100)}% match</span></div>`).join('')+
+            `<button onclick="this.parentElement.remove()" style="margin-top:8px;font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;float:right">✕ Close</button>`;
+        document.body.appendChild(box);
+        setTimeout(()=>{ if(box.parentElement) box.remove(); },10000);
     },
 
     async _loadHistory() {

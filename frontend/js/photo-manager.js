@@ -58,7 +58,9 @@ const photoManager = {
             </div>
           </div>
           ${this._section('morning', '☀️ Morning Check-in / เช้า เข้างาน', byCategory.morning, canUpload, null, '#fef9c3', '#ca8a04')}
+          <div style='border-top:2px dashed #e2e8f0;margin:6px 0'></div>
           ${this._section('evening', '🌙 Evening Check-out / เย็น เลิกงาน', byCategory.evening, canUpload, null, '#f0fdf4', '#16a34a')}
+          <div style='border-top:2px dashed #e2e8f0;margin:6px 0'></div>
           ${this.dailyItems.length ? `
           <div style="margin:16px 0 8px;font-size:15px;font-weight:700;color:#1e3a8a">
             🏗️ Today's Work Progress / งานวันนี้
@@ -81,7 +83,7 @@ const photoManager = {
             <span style="font-size:28px">+</span>
             <span>Upload</span>
           </button>` : '';
-        return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:12px">
+        return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:0;border-bottom:2px dashed #d1d5db">
           <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:10px">${title}</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
             ${photoHtml}

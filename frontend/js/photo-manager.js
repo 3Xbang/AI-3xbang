@@ -1,242 +1,229 @@
-﻿// photo-manager.js — 现场照片：所有角色可上传，显示上传人+时间+理由
+﻿// photo-manager.js v2 — Structured daily photos linked to daily report
 const photoManager = {
     currentProjectId: null,
+    currentDate: null,
+    dailyItems: [],
 
     init(projectId) {
         this.currentProjectId = projectId;
-        this.loadPhotos();
+        this.currentDate = new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+        this.load();
     },
 
-    esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+    esc(s) { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
 
-    async loadPhotos() {
+    async load() {
         const grid = document.getElementById('photos-grid');
         if (!grid) return;
-        grid.innerHTML = '<div class="td-empty">Loading... 加载中</div>';
+        grid.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b">Loading...</div>';
         try {
-            const r = await apiRequest('/api/photos/project/' + this.currentProjectId);
-            this.renderPhotos(r.data || []);
+            const [photosR, reportR] = await Promise.all([
+                apiRequest('/api/photos/project/'+this.currentProjectId+'?date='+this.currentDate),
+                apiRequest('/api/projects/'+this.currentProjectId+'/daily-report?date='+this.currentDate).catch(()=>({data:null}))
+            ]);
+            const photos = photosR.data || [];
+            const dates = photosR.dates || [];
+            this.dailyItems = [];
+            if (reportR.data && reportR.data.performance) {
+                this.dailyItems = (reportR.data.performance || []).filter(p => (p.work||'').trim());
+            }
+            this.render(photos, dates);
         } catch(e) {
-            grid.innerHTML = '<div class="td-empty">Load failed 加载失败</div>';
+            if (grid) grid.innerHTML = '<div style="padding:24px;color:#dc2626">Load failed: '+this.esc(e.message)+'</div>';
         }
     },
 
-    renderPhotos(photos) {
+    render(photos, dates) {
         const grid = document.getElementById('photos-grid');
         if (!grid) return;
-        if (!photos.length) {
-            grid.innerHTML = '<div class="ph-empty"><div style="font-size:48px">📷</div><div><b>No photos yet</b></div><div style="font-size:13px;color:#94a3b8">No photos uploaded yet</div></div>';
-            return;
-        }
-        // Group by date
-        const groups = {};
+        const canUpload = !PermissionManager.isOwner();
+        const byCategory = {morning:[], evening:[]};
+        this.dailyItems.forEach((item,i) => { byCategory['work_'+i] = []; });
+        byCategory['general'] = [];
         photos.forEach(p => {
-            const d = p.upload_time ? p.upload_time.slice(0, 10) : 'unknown';
-            if (!groups[d]) groups[d] = [];
-            groups[d].push(p);
+            const cat = p.photo_category || 'general';
+            if (byCategory[cat] !== undefined) byCategory[cat].push(p);
+            else byCategory['general'].push(p);
         });
-        const dateLabel = dateStr => {
-            if (dateStr === 'unknown') return 'Date unknown 日期不详';
-            const d = new Date(dateStr);
-            const today = new Date(); today.setHours(0,0,0,0);
-            const yest = new Date(today); yest.setDate(today.getDate()-1);
-            d.setHours(0,0,0,0);
-            const label = d.getTime()===today.getTime() ? '📅 Today 今天' :
-                          d.getTime()===yest.getTime()  ? '📅 Yesterday 昨天' :
-                          '📅 ' + d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
-            return label;
-        };
-        grid.innerHTML = Object.keys(groups).sort((a,b)=>b.localeCompare(a)).map(date => `
-            <div class="ph-date-group">
-                <div class="ph-date-header">
-                    ${dateLabel(date)}
-                    <span class="ph-date-count">${groups[date].length} photos 张</span>
-                </div>
-                <div class="photo-grid">
-                    ${groups[date].map(p => this.renderCard(p)).join('')}
-                </div>
-            </div>`).join('');
+        const todayFmt = new Date(this.currentDate+'T12:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+        let html = `
+        <div style="max-width:900px;margin:0 auto">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <b style="font-size:15px">📅 ${todayFmt}</b>
+            <input type="date" value="${this.currentDate}" onchange="photoManager.changeDate(this.value)"
+              style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${dates.slice(0,7).map(d => `<button onclick="photoManager.changeDate('${d}')"
+                style="padding:4px 10px;border:1.5px solid ${d===this.currentDate?'#2563eb':'#e2e8f0'};border-radius:16px;cursor:pointer;font-size:12px;background:${d===this.currentDate?'#eff6ff':'#fff'};color:${d===this.currentDate?'#1e40af':'#475569'}">${d.slice(5)}</button>`).join('')}
+            </div>
+          </div>
+          ${this._section('morning', '☀️ Morning Check-in / เช้า เข้างาน', byCategory.morning, canUpload, null, '#fef9c3', '#ca8a04')}
+          ${this._section('evening', '🌙 Evening Check-out / เย็น เลิกงาน', byCategory.evening, canUpload, null, '#f0fdf4', '#16a34a')}
+          ${this.dailyItems.length ? `
+          <div style="margin:16px 0 8px;font-size:15px;font-weight:700;color:#1e3a8a">
+            🏗️ Today's Work Progress / งานวันนี้
+            <small style="font-size:12px;font-weight:400;color:#64748b"> (from daily report)</small>
+          </div>
+          ${this.dailyItems.map((item,i) => this._section('work_'+i, `${i+1}. ${this.esc(item.work||'')}${item.unit?' · '+this.esc(item.unit):''}${item.today?' · '+item.today+' today':''}`, byCategory['work_'+i], canUpload, {work:item.work,unit:item.unit}, '#eff6ff', '#2563eb')).join('')}`
+          : `<div style="background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;color:#94a3b8;margin-top:12px">
+              <div style="font-size:24px">📋</div>
+              <div style="margin-top:6px">No daily report for today yet<br>กรอกรายงานประจำวันก่อน</div>
+             </div>`}
+          ${byCategory.general.length || canUpload ? this._section('general', '📷 Other Photos / รูปอื่นๆ', byCategory.general, canUpload, null, '#f8fafc', '#64748b') : ''}
+        </div>`;
+        grid.innerHTML = html;
     },
 
-    renderCard(p) {
-        const dt = p.upload_time ? new Date(p.upload_time) : null;
-        const dateStr = dt ? dt.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'}) + ' ' + dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
-        const uploader = this.esc(p.uploader_name || p.uploaded_by || '?');
-        const reason = p.reason ? `<div class="ph-reason">📝 ${this.esc(p.reason)}</div>` : '';
-
-        // Show edit/delete: admin can manage any photo, others only their own
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const isManager = PermissionManager.isManager();
-        const isOwn = p.uploaded_by === currentUser.username;
-        const canManage = isManager || isOwn;
-
-        const actions = canManage ? `
-            <div class="ph-actions">
-                <button class="ph-btn-edit" onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" title="Edit Reason 编辑理由">✏️</button>
-                <button class="ph-btn-del" onclick="photoManager.deletePhoto(${p.id})" title="Delete 删除">🗑️</button>
-            </div>` : '';
-
-        return `<div class="ph-card">
-            <div class="ph-img" style="background-image:url('${p.photo_url}')" onclick="photoManager.viewPhoto('${p.photo_url}')">
-                <div class="ph-overlay"></div>
-                ${actions}
-            </div>
-            <div class="ph-meta">
-                <div class="ph-who">👤 <b>${uploader}</b></div>
-                <div class="ph-time">🕐 ${dateStr}</div>
-                ${reason}
-            </div>
+    _section(category, title, photos, canUpload, workItem, bgColor, color) {
+        const photoHtml = photos.map(p => this._photoCard(p)).join('');
+        const uploadBtn = canUpload ? `<button onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem):'null'})"
+            style="width:100px;height:100px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;flex-shrink:0">
+            <span style="font-size:28px">+</span>
+            <span>Upload</span>
+          </button>` : '';
+        return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:10px">${title}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+            ${photoHtml}
+            ${uploadBtn}
+          </div>
         </div>`;
     },
+
+    _photoCard(p) {
+        const dt = p.upload_time ? new Date(p.upload_time) : null;
+        const time = dt ? dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+        const canEdit = PermissionManager.isManager() || (p.uploaded_by === (JSON.parse(localStorage.getItem('user')||'{}').username));
+        return `<div style="position:relative">
+          <div onclick="photoManager.viewPhoto('${p.photo_url}')"
+            style="width:100px;height:100px;background-image:url('${p.photo_url}');background-size:cover;background-position:center;border-radius:10px;cursor:pointer;border:1.5px solid #e2e8f0"></div>
+          <div style="font-size:10px;color:#64748b;margin-top:3px;text-align:center">${time}</div>
+          ${canEdit ? `<div style="position:absolute;top:4px;right:4px;display:flex;gap:2px">
+            <button onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" style="background:rgba(255,255,255,.9);border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:11px">✏️</button>
+            <button onclick="photoManager.deletePhoto(${p.id})" style="background:rgba(220,38,38,.8);border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;color:#fff;font-size:11px">✕</button>
+          </div>` : ''}
+        </div>`;
+    },
+
+    changeDate(d) { this.currentDate = d; this.load(); },
 
     viewPhoto(url) {
         const ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer';
-        ov.innerHTML = `<img src="${this.esc(url)}" style="max-width:95vw;max-height:93vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+        ov.innerHTML = `<img src="${this.esc(url)}" style="max-width:95vw;max-height:93vh;border-radius:10px">
             <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:28px;cursor:pointer;border-radius:50%;width:44px;height:44px">✕</button>`;
         document.body.appendChild(ov);
         ov.onclick = () => ov.remove();
     },
 
-    // 上传表单 — 所有角色可见，泰语优先
-    showUploadForm(processExecutionId = null) {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const userName = user.full_name || user.username || '?';
-
+    showUploadForCategory(category, workItem) {
+        const catLabels = {morning:'☀️ Morning Check-in',evening:'🌙 Evening Check-out',general:'📷 General Photo'};
+        const title = catLabels[category] || (workItem ? `🏗️ ${workItem.work||''}` : '📷 Upload Photo');
         const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
-        dlg.innerHTML = `<div class="sb-dialog" style="max-width:500px">
-            <header style="background:#1e3a8a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
-                <div><b style="font-size:18px">📷 Upload Photos</b><small style="display:block;opacity:.8;font-size:12px">上传现场照片</small></div>
-                <button data-x style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer">&times;</button>
+        dlg.innerHTML = `<div class="sb-dialog" style="max-width:480px">
+            <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+                <b>${title}</b>
+                <button data-x style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
             </header>
-            <div class="sb-body" style="display:flex;flex-direction:column;gap:14px">
-
-                <div style="background:#f0f9ff;border:1.5px dashed #7dd3fc;border-radius:10px;padding:12px;text-align:center">
-                    <div style="font-size:13px;color:#0369a1;margin-bottom:8px">Select Photos 选择照片 *</div>
-                    <input type="file" id="ph-files" accept="image/*" multiple style="font-size:15px;padding:4px 0">
+            <div class="sb-body">
+                <div style="background:#f0f9ff;border:2px dashed #7dd3fc;border-radius:10px;padding:12px;text-align:center;margin-bottom:12px">
+                    <input type="file" id="ph-files" accept="image/*" multiple style="font-size:15px">
                     <div id="ph-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
                 </div>
-
                 <div>
-                    <div style="font-size:13px;color:#475569;margin-bottom:4px"><b>Reason for Photo</b> <small>上传理由 *</small></div>
-                    <input type="text" id="ph-reason" placeholder="e.g. Wall plastering progress / 例如：记录墙面抹灰进度" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
+                    <div style="font-size:13px;color:#475569;margin-bottom:4px">Notes / หมายเหตุ (optional)</div>
+                    <input type="text" id="ph-reason" placeholder="Notes..." 
+                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
                 </div>
-
-                <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;color:#475569">
-                    <b>Uploaded by 上传人：</b><b style="color:#1e3a8a">${this.esc(userName)}</b>
-                    &nbsp;&nbsp; <b>Date/Time 时间：</b>${new Date().toLocaleDateString('th-TH')} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}
-                </div>
-
             </div>
             <footer>
-                <button class="sb-btn" data-cancel>Cancel 取消</button>
-                <button class="sb-btn primary" data-ok>📤 Upload 上传</button>
+                <button class="sb-btn" data-cancel>Cancel</button>
+                <button class="sb-btn primary" data-ok>📤 Upload</button>
             </footer></div>`;
         document.body.appendChild(dlg);
-
-        // Preview
         dlg.querySelector('#ph-files').onchange = (e) => {
             const prev = dlg.querySelector('#ph-preview');
             prev.innerHTML = Array.from(e.target.files).map(f => {
                 const url = URL.createObjectURL(f);
-                return `<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:2px solid #e2e8f0">`;
+                return `<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px">`;
             }).join('');
         };
-
         const close = () => dlg.remove();
         dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
-
         dlg.querySelector('[data-ok]').onclick = async () => {
             const okBtn = dlg.querySelector('[data-ok]');
-            if (okBtn.disabled) return;          // prevent double-submit
+            if (okBtn.disabled) return;
             const files = dlg.querySelector('#ph-files').files;
-            const reason = dlg.querySelector('#ph-reason').value.trim();
-            if (!files.length) { alert('Please select photos / 请选择照片'); return; }
-            if (!reason) { alert('Please enter reason / 请填写上传理由'); return; }
-
-            okBtn.disabled = true;
-            okBtn.textContent = '⏳ Uploading... 上传中...';
+            if (!files.length) { alert('Please select photos / เลือกรูป'); return; }
+            okBtn.disabled = true; okBtn.textContent = '⏳ Uploading...';
             try {
                 if (typeof app !== 'undefined') app.showLoading();
-                let uploaded = 0;
                 for (const file of files) {
                     const fd = new FormData();
                     fd.append('photo', file);
                     fd.append('project_id', this.currentProjectId);
                     fd.append('photo_type', 'progress');
-                    fd.append('reason', reason);
-                    if (processExecutionId) fd.append('process_execution_id', processExecutionId);
-                    const resp = await fetch(window.location.origin + '/api/photos/upload', {
-                        method: 'POST',
-                        headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') },
-                        body: fd
+                    fd.append('reason', dlg.querySelector('#ph-reason').value || title);
+                    fd.append('photo_category', category);
+                    fd.append('report_date', this.currentDate);
+                    if (workItem) fd.append('work_item_name', workItem.work||'');
+                    await fetch(window.location.origin+'/api/photos/upload', {
+                        method:'POST',
+                        headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},
+                        body:fd
                     });
-                    const j = await resp.json();
-                    if (j.success) uploaded++;
                 }
                 if (typeof app !== 'undefined') app.hideLoading();
-                if (typeof app !== 'undefined' && app.showToast) app.showToast(`Uploaded ${uploaded}  photos / 已上传${uploaded}张`, 'success');
                 close();
-                await this.loadPhotos();
+                await this.load();
+                if (typeof app !== 'undefined' && app.showToast) app.showToast('✅ Uploaded!','success');
             } catch(e) {
                 if (typeof app !== 'undefined') app.hideLoading();
-                okBtn.disabled = false;
-                okBtn.textContent = '📤 Upload 上传';
-                alert('Upload failed / 上传失败：' + e.message);
+                okBtn.disabled=false; okBtn.textContent='📤 Upload';
+                alert('Upload failed: '+e.message);
             }
         };
     },
 
     async deletePhoto(photoId) {
-        if (!confirm('Delete this photo? / 确认删除这张照片？')) return;
+        if (!confirm('Delete this photo? / ลบรูปนี้?')) return;
         try {
-            await apiRequest('/api/photos/' + photoId, { method: 'DELETE' });
-            if (typeof app !== 'undefined' && app.showToast) app.showToast('Deleted 已删除', 'success');
-            await this.loadPhotos();
-        } catch(e) {
-            alert('Delete failed 删除失败：' + e.message);
-        }
+            await apiRequest('/api/photos/'+photoId, {method:'DELETE'});
+            if (typeof app!=='undefined'&&app.showToast) app.showToast('Deleted','success');
+            await this.load();
+        } catch(e) { alert('Delete failed: '+e.message); }
     },
 
     editReason(photoId, currentReason) {
-        const dlg = document.createElement('div'); dlg.className = 'sb-overlay';
-        dlg.innerHTML = `<div class="sb-dialog" style="max-width:420px">
-            <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-                <b>✏️ Edit Reason 编辑理由</b>
+        const dlg = document.createElement('div'); dlg.className='sb-overlay';
+        dlg.innerHTML=`<div class="sb-dialog" style="max-width:400px">
+            <header style="background:#1e3a8a;color:#fff;padding:12px 16px;display:flex;justify-content:space-between">
+                <b>✏️ Edit Notes</b>
                 <button data-x style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
             </header>
             <div class="sb-body">
-                <div style="font-size:13px;color:#475569;margin-bottom:6px">Reason/Description 理由/说明</div>
-                <input type="text" id="edit-reason-input" value="${this.esc(currentReason)}" 
-                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
+                <input type="text" id="edit-reason-input" value="${this.esc(currentReason)}"
+                    style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px">
             </div>
             <footer>
-                <button class="sb-btn" data-cancel>Cancel 取消</button>
-                <button class="sb-btn primary" data-ok>💾 Save 保存</button>
+                <button class="sb-btn" data-cancel>Cancel</button>
+                <button class="sb-btn primary" data-ok>💾 Save</button>
             </footer></div>`;
         document.body.appendChild(dlg);
         dlg.querySelector('#edit-reason-input').focus();
-        const close = () => dlg.remove();
-        dlg.querySelector('[data-x]').onclick = dlg.querySelector('[data-cancel]').onclick = close;
-        dlg.querySelector('[data-ok]').onclick = async () => {
-            const reason = dlg.querySelector('#edit-reason-input').value.trim();
+        const close=()=>dlg.remove();
+        dlg.querySelector('[data-x]').onclick=dlg.querySelector('[data-cancel]').onclick=close;
+        dlg.querySelector('[data-ok]').onclick=async()=>{
+            const reason=dlg.querySelector('#edit-reason-input').value.trim();
             try {
-                await apiRequest('/api/photos/' + photoId, { method: 'PUT', body: JSON.stringify({ reason }) });
-                if (typeof app !== 'undefined' && app.showToast) app.showToast('Saved 已保存', 'success');
-                close();
-                await this.loadPhotos();
-            } catch(e) {
-                alert('Save failed 保存失败：' + e.message);
-            }
+                await apiRequest('/api/photos/'+photoId,{method:'PUT',body:JSON.stringify({reason})});
+                if(typeof app!=='undefined'&&app.showToast) app.showToast('Saved','success');
+                close(); await this.load();
+            } catch(e){alert('Save failed: '+e.message);}
         };
     },
 
-    formatFileSize(bytes) {
-        if (!bytes) return '';
-        if (bytes < 1024) return bytes + 'B';
-        if (bytes < 1048576) return (bytes/1024).toFixed(1) + 'KB';
-        return (bytes/1048576).toFixed(1) + 'MB';
-    }
+    showUploadForm(processExecutionId=null) { this.showUploadForCategory('general', null); }
 };
 
 window.photoManager = photoManager;

@@ -655,10 +655,14 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       return res.status(409).json({ success: false, message: '照片已上传 / รูปนี้เพิ่งอัปโหลดไปแล้ว' });
     }
 
+    const photo_category = req.body.photo_category || 'general';
+    const work_item_name = req.body.work_item_name || null;
+    const report_date_val = req.body.report_date || null;
+
     const result = await pool.query(`
       INSERT INTO photos
-      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by, reason, uploader_name)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by, reason, uploader_name, photo_category, work_item_name, report_date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `, [
       project_id,
@@ -669,7 +673,10 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       req.file.size,
       req.user.username,
       req.body.reason || null,
-      req.user.full_name || req.user.username
+      req.user.full_name || req.user.username,
+      photo_category,
+      work_item_name,
+      report_date_val
     ]);
 
     res.json({ success: true, data: result.rows[0] });
@@ -681,12 +688,20 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
 router.get('/photos/project/:projectId', authenticate, async (req, res) => {
   try {
     const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, req.params.projectId);
-    if (!hasAccess) return res.status(403).json({ success: false, message: '��Ȩ���ʴ���Ŀ' });
+    if (!hasAccess) return res.status(403).json({ success: false, message: 'No access' });
+    const date = req.query.date || new Date(Date.now()+7*3600000).toISOString().slice(0,10);
     const result = await pool.query(
-      'SELECT * FROM photos WHERE project_id = $1 ORDER BY upload_time DESC, id DESC',
+      `SELECT *, photo_category, work_item_name, report_date::text
+       FROM photos 
+       WHERE project_id = $1 AND (report_date = $2 OR (report_date IS NULL AND upload_time::date = $2::date))
+       ORDER BY photo_category, upload_time ASC`,
+      [req.params.projectId, date]
+    );
+    const datesR = await pool.query(
+      `SELECT DISTINCT COALESCE(report_date, upload_time::date)::text AS d FROM photos WHERE project_id=$1 ORDER BY d DESC LIMIT 30`,
       [req.params.projectId]
     );
-    res.json({ success: true, data: result.rows });
+    res.json({ success: true, data: result.rows, dates: datesR.rows.map(r=>r.d) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

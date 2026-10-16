@@ -144,6 +144,12 @@ const DesignDrawings = {
         formData.append('drawing', fileInput.files[0]);
         formData.append('description', descInput ? descInput.value : '');
 
+        // Show loading spinner for PDF (can take 10-30s for many pages)
+        const _isPdf = fileInput.files[0].name.toLowerCase().endsWith('.pdf');
+        if (_isPdf) {
+            const _mc = document.getElementById('modal-container');
+            if (_mc) _mc.innerHTML = `<div style='position:fixed;inset:0;background:rgba(15,23,42,.8);display:flex;align-items:center;justify-content:center;z-index:9999'><div style='background:#fff;border-radius:16px;padding:32px 40px;text-align:center;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3)'><style>@keyframes dr-spin{to{transform:rotate(360deg)}}</style><div style='font-size:48px;margin-bottom:16px;display:inline-block;animation:dr-spin 1.5s linear infinite'>⚙️</div><div style='font-size:17px;font-weight:700;color:#1e3a8a;margin-bottom:8px'>正在分解 PDF…</div><div style='font-size:14px;color:#475569;margin-bottom:6px'>Splitting PDF into pages</div><div style='font-size:13px;color:#94a3b8;line-height:1.6'>每页转换为图纸，请稍候<br>Converting pages, please wait…</div></div></div>`;  }
+
         try {
             const token = localStorage.getItem('authToken');
             const resp = await fetch(`/api/projects/${this.currentProjectId}/drawings`, {
@@ -154,6 +160,7 @@ const DesignDrawings = {
             const data = await resp.json();
             if (!data.success) throw new Error(data.message || '上传失败');
             document.getElementById('modal-container').innerHTML = '';
+            if (data.pages && data.pages > 1 && typeof app !== 'undefined' && app.showToast) app.showToast(✅ PDF 分解为 ${data.pages} 张图纸 / Split into ${data.pages} pages, 'success');
             await this.load();
         } catch (err) {
             if (errEl) { errEl.textContent = err.message; errEl.style.display = 'block'; }

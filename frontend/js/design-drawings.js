@@ -76,10 +76,10 @@ const DesignDrawings = {
                     ? '<span style="background:#e9d8fd;color:#6b46c1;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">PDF</span>'
                     : '<span style="background:#bee3f8;color:#2b6cb0;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">IMG</span>';
                 const dateStr = d.upload_time ? new Date(d.upload_time).toLocaleDateString('zh-CN') : '';
+                const thumbBg = d.file_type !== 'pdf' ? 'url(' + JSON.stringify(d.file_url) + ') center/cover no-repeat' : 'none';
                 html += `
                     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="background:#f7fafc;height:120px;display:flex;align-items:center;justify-content:center;font-size:3rem;">
-                            ${d.file_type === 'pdf' ? '📄' : '🖼️'}
+                        <div style="height:160px;background:#f0f4f8 ${thumbBg};">
                         </div>
                         <div style="padding:12px;">
                             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -192,8 +192,8 @@ const DesignDrawings = {
         if (!modal) return;
 
         const toolbarHTML = isOwner ? '' : `
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;">
-                <button class="sb-btn" id="tool-select" onclick="DesignDrawings.setTool('select')" title="Select">↖ 选择</button>
+                        <div style="background:#f0f4f8;height:160px;overflow:hidden;">
+                            <img src="' + d.file_url + '" style="width:100%;height:160px;object-fit:cover" onerror="this.src='';this.style.background='#e2e8f0'" loading="lazy">
                 <button class="sb-btn" id="tool-pencil" onclick="DesignDrawings.setTool('pencil')" title="Pencil">✏️ 笔</button>
                 <button class="sb-btn" id="tool-rect" onclick="DesignDrawings.setTool('rect')" title="Rectangle">⬜ 矩形</button>
                 <button class="sb-btn" id="tool-text" onclick="DesignDrawings.setTool('text')" title="Text">T 文字</button>

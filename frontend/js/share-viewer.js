@@ -20,7 +20,7 @@ const ShareViewer = {
             const json = await resp.json();
 
             if (resp.status === 410 || (json && json.message === 'expired')) {
-                this._showError('⏰ 链接已失效 Link Expired', '此分享链接已超过24小时有效期。\nThis share link has expired (valid 24 hours).');
+                this._showError('⏰ 链接已失效 Link Expired', '此分享链接已过期或已被删除。\nThis share link has expired or has been removed.');
                 return;
             }
             if (resp.status === 404 || !json.success) {
@@ -29,6 +29,10 @@ const ShareViewer = {
             }
 
             const d = json.data;
+            if (json.share_type === 'maintenance') {
+                this._renderMaintenance(json.data);
+                return;
+            }
             const expiryStr = d.expires_at ? new Date(d.expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false }) : '';
             const createdStr = d.created_at ? new Date(d.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false }) : '';
 
@@ -121,6 +125,43 @@ const ShareViewer = {
     _esc(s) {
         if (!s) return '';
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    },
+
+    _renderMaintenance(d) {
+        const beforePhotos = (d.photos || []).filter(p => p.photo_type === 'before');
+        const afterPhotos  = (d.photos || []).filter(p => p.photo_type === 'after');
+        const photoGrid = (photos, label) => photos.length
+            ? `<div style="margin-bottom:20px;">
+         <div style="font-weight:600;color:#e2e8f0;margin-bottom:8px;">${label}</div>
+         <div style="display:flex;flex-wrap:wrap;gap:8px;">
+           ${photos.map(p =>
+               `<img src="${this._esc(p.photo_url)}"
+                   style="width:120px;height:120px;object-fit:cover;border-radius:6px;">`
+             ).join('')}
+         </div>
+       </div>`
+            : '';
+        const expiryStr = d.expires_at
+            ? new Date(d.expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false })
+            : '';
+
+        document.getElementById('sv-root').innerHTML = `
+    <div style="background:#2d3748;color:#fff;padding:12px 16px;flex-shrink:0;">
+      <div style="font-size:1.05rem;font-weight:700;">🛠️ ${this._esc(d.ticket_title)}</div>
+      <div style="color:#a0aec0;font-size:0.85rem;">
+        项目: ${this._esc(d.project_name)} &nbsp;|&nbsp; 分享人: ${this._esc(d.shared_by_name)}
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 16px;color:#e2e8f0;
+                max-width:640px;margin:0 auto;">
+      <p style="color:#cbd5e0;margin-bottom:20px;">${this._esc(d.description || '')}</p>
+      ${photoGrid(beforePhotos, '📷 施工前照片 Before')}
+      ${photoGrid(afterPhotos,  '✅ 完工照片 After')}
+    </div>
+    <div style="background:#2d3748;color:#718096;padding:6px 16px;
+                font-size:0.78rem;text-align:center;flex-shrink:0;">
+      只读查看链接 Read-only &nbsp;|&nbsp; 有效至 Expires: ${this._esc(expiryStr)}
+    </div>`;
     }
 };
 

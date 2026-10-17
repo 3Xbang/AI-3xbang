@@ -56,11 +56,6 @@ const PermissionManager = {
         return ['manager','supervisor','foreman','purchaser'].includes(this.role());
     },
 
-    // 可以看今日现场
-    canViewSite() {
-        return ['manager','owner','supervisor','foreman','patrol'].includes(this.role());
-    },
-
     // 可以上传照片（所有除 owner）
     canUploadPhotos() {
         return !this.isOwner();
@@ -78,7 +73,7 @@ const PermissionManager = {
 
     // 可以看今日现场
     canViewSite() {
-        return ['manager','owner','supervisor','foreman'].includes(this.role());
+        return ['manager','owner','supervisor','foreman','patrol','worker'].includes(this.role());
     },
 
     // 可以看材料设备

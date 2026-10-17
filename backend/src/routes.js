@@ -10,6 +10,26 @@ const SiteService = require('./site-service');
 const multer = require('multer');
 const path = require('path');
 
+const VALID_ROLES = [
+  'manager', 'supervisor', 'foreman', 'purchaser',
+  'owner', 'patrol', 'worker', 'executor'
+];
+
+const VALID_STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
+
+async function checkMaintenanceTicketAccess(pool, userId, userRole, ticketId) {
+  const r = await pool.query(
+    'SELECT * FROM maintenance_tickets WHERE id = $1',
+    [ticketId]
+  );
+  if (!r.rows.length) return { ticket: null, allowed: false };
+  const ticket = r.rows[0];
+  const allowed =
+    ['manager', 'supervisor'].includes(userRole) ||
+    (userRole === 'worker' && ticket.assigned_to === userId);
+  return { ticket, allowed };
+}
+
 // ��Ƭ�ϴ�����
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -677,11 +697,12 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
     const photo_category = req.body.photo_category || 'general';
     const work_item_name = req.body.work_item_name || null;
     const report_date_val = req.body.report_date || null;
+    const ticketId = req.body.ticket_id ? parseInt(req.body.ticket_id, 10) : null;
 
     const result = await pool.query(`
       INSERT INTO photos
-      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by, reason, uploader_name, photo_category, work_item_name, report_date)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      (project_id, process_execution_id, material_id, photo_url, photo_type, file_size, uploaded_by, reason, uploader_name, photo_category, work_item_name, report_date, ticket_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `, [
       project_id,
@@ -695,11 +716,15 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
       req.user.full_name || req.user.username,
       photo_category,
       work_item_name,
-      report_date_val
+      report_date_val,
+      ticketId
     ]);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({ success: false, message: '无效的工单ID invalid ticket_id' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -1490,6 +1515,22 @@ router.get('/users', authenticate, requirePermission('manage_users'), async (req
   }
 });
 
+// GET /api/users/workers — for maintenance assignment dropdowns (manager + supervisor)
+router.get('/users/workers', authenticate, async (req, res) => {
+  if (!['manager', 'supervisor'].includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: '无权访问 No permission' });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT id, username, full_name FROM users WHERE role = 'worker' ORDER BY full_name`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('GET /users/workers error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // �����û����������ߣ�
 router.post('/users', authenticate, requirePermission('manage_users'), async (req, res) => {
   const client = await pool.connect();
@@ -1499,7 +1540,7 @@ router.post('/users', authenticate, requirePermission('manage_users'), async (re
     const { username, password, full_name, role } = req.body;
     
     // ��֤��ɫ
-    if (!['manager', 'purchaser', 'executor'].includes(role)) {
+    if (!VALID_ROLES.includes(role)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ success: false, message: '��Ч�Ľ�ɫ' });
     }
@@ -1557,7 +1598,7 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
       params.push(full_name);
     }
     
-    if (role && ['manager', 'purchaser', 'executor'].includes(role)) {
+    if (role && VALID_ROLES.includes(role)) {
       updates.push(`role = $${paramIndex++}`);
       params.push(role);
     }
@@ -2165,41 +2206,311 @@ router.post('/drawings/:id/share', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/projects/:id/maintenance — list tickets for a project
+router.get('/projects/:id/maintenance', authenticate, async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { id: userId, role } = req.user;
+
+    const hasAccess = await checkProjectAccess(pool, userId, role, projectId);
+    if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
+
+    let whereClause = 'mt.project_id = $1';
+    const params = [projectId];
+
+    if (role === 'worker') {
+      whereClause += ' AND mt.assigned_to = $2';
+      params.push(userId);
+    } else if (role === 'owner') {
+      whereClause += ' AND mt.submitted_by_owner = TRUE AND mt.created_by = $2';
+      params.push(userId);
+    }
+    // manager / supervisor: no additional filter
+
+    const result = await pool.query(
+      `SELECT mt.*,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'id', p.id, 'photo_url', p.photo_url,
+                    'photo_type', p.photo_type, 'uploader_name', p.uploader_name,
+                    'upload_time', p.upload_time
+                  ) ORDER BY p.upload_time
+                ) FILTER (WHERE p.id IS NOT NULL),
+                '[]'::json
+              ) AS photos
+       FROM maintenance_tickets mt
+       LEFT JOIN photos p ON p.ticket_id = mt.id
+       WHERE ${whereClause}
+       GROUP BY mt.id
+       ORDER BY mt.created_at DESC`,
+      params
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('GET /projects/:id/maintenance error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/projects/:id/maintenance — create a new ticket
+router.post('/projects/:id/maintenance', authenticate, async (req, res) => {
+  const { role, id: userId, username } = req.user;
+  if (!['manager', 'supervisor', 'owner'].includes(role)) {
+    return res.status(403).json({ success: false, message: '无权创建工单 No permission' });
+  }
+  try {
+    const hasAccess = await checkProjectAccess(pool, userId, role, req.params.id);
+    if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
+
+    const { title, description, assigned_to, assigned_name, priority } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: '标题不能为空 title required' });
+    }
+
+    const isOwnerSubmit = (role === 'owner');
+
+    const userRow = await pool.query(
+      'SELECT full_name FROM users WHERE id = $1',
+      [userId]
+    );
+    const createdByName = (userRow.rows[0] && userRow.rows[0].full_name) || username;
+
+    const result = await pool.query(
+      `INSERT INTO maintenance_tickets
+         (project_id, title, description, assigned_to, assigned_name,
+          priority, submitted_by_owner, created_by, created_by_name, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
+       RETURNING *`,
+      [
+        req.params.id,
+        title.trim(),
+        description || null,
+        isOwnerSubmit ? null : (assigned_to || null),
+        isOwnerSubmit ? null : (assigned_name || null),
+        priority || 'normal',
+        isOwnerSubmit,
+        userId,
+        createdByName
+      ]
+    );
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('POST /projects/:id/maintenance error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /api/maintenance/:id — update a ticket
+router.put('/maintenance/:id', authenticate, async (req, res) => {
+  try {
+    const { ticket, allowed } = await checkMaintenanceTicketAccess(
+      pool, req.user.id, req.user.role, req.params.id
+    );
+    if (!ticket) return res.status(404).json({ success: false, message: '工单不存在' });
+    if (!allowed) return res.status(403).json({ success: false, message: '无权操作此工单' });
+
+    const { role, id: userId } = req.user;
+    const { status, assigned_to, assigned_name, description, priority } = req.body;
+
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: '无效的工单状态 invalid status' });
+    }
+
+    if (role === 'worker') {
+      if (status !== 'completed') {
+        return res.status(403).json({ success: false, message: '工人只能标记工单为完成' });
+      }
+      const photoCheck = await pool.query(
+        `SELECT id FROM photos WHERE ticket_id = $1 AND photo_type = 'after' LIMIT 1`,
+        [ticket.id]
+      );
+      if (!photoCheck.rows.length) {
+        return res.status(400).json({ success: false, message: '请先上传完工照片 Upload completion photo first' });
+      }
+    }
+
+    const updates = ['updated_at = NOW()'];
+    const params = [];
+    let i = 1;
+
+    if (status !== undefined) {
+      updates.push(`status = $${i++}`); params.push(status);
+      if (status === 'completed') {
+        updates.push(`completed_at = NOW()`);
+      }
+    }
+    if (role !== 'worker') {
+      if (assigned_to !== undefined) { updates.push(`assigned_to = $${i++}`);   params.push(assigned_to || null); }
+      if (assigned_name)             { updates.push(`assigned_name = $${i++}`);  params.push(assigned_name); }
+      if (description !== undefined) { updates.push(`description = $${i++}`);    params.push(description); }
+      if (priority)                  { updates.push(`priority = $${i++}`);       params.push(priority); }
+    }
+    params.push(ticket.id);
+
+    const result = await pool.query(
+      `UPDATE maintenance_tickets SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      params
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('PUT /maintenance/:id error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/maintenance/:id — delete a ticket (manager only, pending/cancelled)
+router.delete('/maintenance/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'manager') {
+    return res.status(403).json({ success: false, message: '只有管理员可以删除工单' });
+  }
+  try {
+    const { ticket } = await checkMaintenanceTicketAccess(
+      pool, req.user.id, req.user.role, req.params.id
+    );
+    if (!ticket) return res.status(404).json({ success: false, message: '工单不存在' });
+
+    if (!['pending', 'cancelled'].includes(ticket.status)) {
+      return res.status(409).json({ success: false, message: '进行中或已完成的工单不能删除' });
+    }
+
+    await pool.query('DELETE FROM photos WHERE ticket_id = $1', [ticket.id]);
+    await pool.query('DELETE FROM maintenance_tickets WHERE id = $1', [ticket.id]);
+    res.json({ success: true, message: '工单已删除' });
+  } catch (error) {
+    console.error('DELETE /maintenance/:id error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/maintenance/:id/share — generate share link (manager only)
+router.post('/maintenance/:id/share', authenticate, async (req, res) => {
+  if (req.user.role !== 'manager') {
+    return res.status(403).json({ success: false, message: '只有管理员可以生成分享链接' });
+  }
+  try {
+    const ticketRes = await pool.query(
+      'SELECT * FROM maintenance_tickets WHERE id = $1', [req.params.id]
+    );
+    if (!ticketRes.rows.length) {
+      return res.status(404).json({ success: false, message: '工单不存在' });
+    }
+    const ticket = ticketRes.rows[0];
+
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const userRow = await pool.query('SELECT full_name FROM users WHERE id = $1', [req.user.id]);
+    const sharedByName = (userRow.rows[0] && userRow.rows[0].full_name) || req.user.username;
+
+    await pool.query(
+      `INSERT INTO drawing_share_tokens
+         (token, drawing_id, project_id, shared_by_name, expires_at, share_type, ticket_id)
+       VALUES ($1, NULL, $2, $3, $4, 'maintenance', $5)`,
+      [token, ticket.project_id, sharedByName, expiresAt, ticket.id]
+    );
+
+    const baseUrl = process.env.FRONTEND_URL || 'https://winaii.com';
+    const share_url = `${baseUrl}/?share=${token}`;
+
+    res.json({ success: true, data: { token, share_url, expires_at: expiresAt } });
+  } catch (error) {
+    console.error('POST /maintenance/:id/share error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/share/:token — public share viewer (no auth required)
 router.get('/share/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const result = await pool.query(
-      `SELECT dst.*, dd.file_name, dd.file_url, dd.file_type,
-              p.name AS project_name_json
+
+    // Step 1: fetch the token row (no drawing join — drawing_id may be NULL for maintenance)
+    const tokenRes = await pool.query(
+      `SELECT dst.*, p.name AS project_name_json
        FROM drawing_share_tokens dst
-       JOIN design_drawings dd ON dd.id = dst.drawing_id
        JOIN projects p ON p.id = dst.project_id
        WHERE dst.token = $1`,
       [token]
     );
-    if (result.rows.length === 0) {
+    if (!tokenRes.rows.length) {
       return res.status(404).json({ success: false, message: 'not_found' });
     }
-    const row = result.rows[0];
+    const row = tokenRes.rows[0];
+
     if (new Date(row.expires_at) < new Date()) {
       return res.status(410).json({ success: false, message: 'expired' });
     }
+
     const projectNameJson = row.project_name_json || {};
-    const projectName = (typeof projectNameJson === 'object' ? (projectNameJson.zh || projectNameJson.th || JSON.stringify(projectNameJson)) : String(projectNameJson));
-    res.json({
+    const projectName = typeof projectNameJson === 'object'
+      ? (projectNameJson.zh || projectNameJson.th || JSON.stringify(projectNameJson))
+      : String(projectNameJson);
+
+    // Step 2: branch on share_type
+    if (row.share_type === 'maintenance') {
+      if (!row.ticket_id) {
+        return res.status(404).json({ success: false, message: 'ticket_not_found' });
+      }
+      const ticketRes = await pool.query(
+        `SELECT mt.*,
+                COALESCE(
+                  json_agg(
+                    json_build_object(
+                      'id', ph.id, 'photo_url', ph.photo_url,
+                      'photo_type', ph.photo_type
+                    ) ORDER BY ph.upload_time
+                  ) FILTER (WHERE ph.id IS NOT NULL),
+                  '[]'::json
+                ) AS photos
+         FROM maintenance_tickets mt
+         LEFT JOIN photos ph ON ph.ticket_id = mt.id
+         WHERE mt.id = $1
+         GROUP BY mt.id`,
+        [row.ticket_id]
+      );
+      if (!ticketRes.rows.length) {
+        return res.status(404).json({ success: false, message: 'ticket_not_found' });
+      }
+      const t = ticketRes.rows[0];
+      return res.json({
+        success: true,
+        share_type: 'maintenance',
+        data: {
+          ticket_title:   t.title,
+          description:    t.description,
+          status:         t.status,
+          project_name:   projectName,
+          shared_by_name: row.shared_by_name,
+          created_at:     row.created_at,
+          expires_at:     row.expires_at,
+          photos:         t.photos
+        }
+      });
+    }
+
+    // Step 3: existing drawing path
+    const ddRes = await pool.query(
+      'SELECT file_name, file_url, file_type FROM design_drawings WHERE id = $1',
+      [row.drawing_id]
+    );
+    const dd = ddRes.rows[0] || {};
+    return res.json({
       success: true,
+      share_type: 'drawing',
       data: {
-        drawing_name: row.file_name,
-        file_url: row.file_url,
-        file_type: row.file_type,
-        project_name: projectName,
+        drawing_name:   dd.file_name,
+        file_url:       dd.file_url,
+        file_type:      dd.file_type,
+        project_name:   projectName,
         shared_by_name: row.shared_by_name,
-        created_at: row.created_at,
-        expires_at: row.expires_at
+        created_at:     row.created_at,
+        expires_at:     row.expires_at
       }
     });
   } catch (error) {
+    console.error('GET /share/:token error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

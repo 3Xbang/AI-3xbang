@@ -28,7 +28,9 @@ const PERMISSIONS = {
     // 巡逻员 — 查看现场、上传巡逻照片
     patrol: [
         'view_assigned_projects', 'update_progress'
-    ]
+    ],
+    // 工人 — 查看派单项目、上传完工照片
+    worker: ['view_assigned_projects', 'update_progress']
 };
 
 // 检查用户是否有权限访问项目

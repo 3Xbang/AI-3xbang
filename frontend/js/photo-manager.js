@@ -79,13 +79,13 @@ const photoManager = {
     _section(category, title, photos, canUpload, workItem, bgColor, color) {
         const photoHtml = photos.map(p => this._photoCard(p)).join('');
         const uploadBtn = canUpload ? `<button onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
-            style="width:100px;height:100px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;flex-shrink:0">
+            style="aspect-ratio:1/1;width:100%;border:2px dashed #cbd5e1;border-radius:8px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">
             <span style="font-size:28px">+</span>
             <span>Upload</span>
           </button>` : '';
         return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:0;border-bottom:2px dashed #d1d5db">
           <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:10px">${title}</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+          <div class="photo-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;">
             ${photoHtml}
             ${uploadBtn}
           </div>
@@ -96,14 +96,21 @@ const photoManager = {
         const dt = p.upload_time ? new Date(p.upload_time) : null;
         const time = dt ? dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
         const canEdit = PermissionManager.isManager() || (p.uploaded_by === (JSON.parse(localStorage.getItem('user')||'{}').username));
-        return `<div style="position:relative">
-          <div onclick="photoManager.viewPhoto('${p.photo_url}')"
-            style="width:100px;height:100px;background-image:url('${p.photo_url}');background-size:cover;background-position:center;border-radius:10px;cursor:pointer;border:1.5px solid #e2e8f0"></div>
-          <div style="font-size:10px;color:#64748b;margin-top:3px;text-align:center">${time}</div>
-          ${canEdit ? `<div style="position:absolute;top:4px;right:4px;display:flex;gap:2px">
-            <button onclick="photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')" style="background:rgba(255,255,255,.9);border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:11px">✏️</button>
-            <button onclick="photoManager.deletePhoto(${p.id})" style="background:rgba(220,38,38,.8);border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;color:#fff;font-size:11px">✕</button>
-          </div>` : ''}
+        const escapedUrl = this.esc(p.photo_url);
+        const escapedTime = this.esc(time);
+        return `<div class="photo-card-wrap" style="position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:8px;background:#e2e8f0;">
+          <img src="${escapedUrl}" alt="site photo"
+            data-photo-url="${escapedUrl}" data-photo-time="${escapedTime}"
+            onclick="photoManager._showLightbox(this.dataset.photoUrl,this.dataset.photoTime)"
+            style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;"
+            loading="lazy">
+          ${time ? `<div style="position:absolute;bottom:0;left:0;right:0;padding:2px 4px;font-size:10px;color:#fff;background:rgba(0,0,0,0.35);text-align:center;pointer-events:none;">${escapedTime}</div>` : ''}
+          ${canEdit ? `
+            <button class="photo-overlay-btn" onclick="event.stopPropagation();photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')"
+              style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✏️</button>
+            <button class="photo-overlay-btn" onclick="event.stopPropagation();photoManager.deletePhoto(${p.id})"
+              style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+          ` : ''}
         </div>`;
     },
 
@@ -116,6 +123,30 @@ const photoManager = {
             <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:28px;cursor:pointer;border-radius:50%;width:44px;height:44px">✕</button>`;
         document.body.appendChild(ov);
         ov.onclick = () => ov.remove();
+    },
+
+    _showLightbox(imgUrl, timestamp) {
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;display:flex;align-items:center;justify-content:center;';
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.style.cssText = 'max-width:100vw;max-height:100vh;object-fit:contain;';
+        img.onclick = (e) => e.stopPropagation();
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'photo-lb-close';
+        closeBtn.innerHTML = '✕';
+        closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;';
+        closeBtn.onclick = (e) => { e.stopPropagation(); ov.remove(); };
+        ov.appendChild(img);
+        ov.appendChild(closeBtn);
+        if (timestamp) {
+            const tsDiv = document.createElement('div');
+            tsDiv.textContent = timestamp;
+            tsDiv.style.cssText = 'position:absolute;bottom:16px;left:0;right:0;text-align:center;color:#fff;font-size:12px;opacity:0.8;pointer-events:none;';
+            ov.appendChild(tsDiv);
+        }
+        ov.onclick = () => ov.remove();
+        document.body.appendChild(ov);
     },
 
     showUploadForCategory(category, workItem) {

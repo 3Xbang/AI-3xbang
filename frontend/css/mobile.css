@@ -260,6 +260,44 @@
 }
 
 /* ────────────────────────────────────────
+   现场照片 Photo Grid
+───────────────────────────────────────── */
+
+/* Photo overlay buttons — always small & circular, override global min-height/radius rules */
+.photo-overlay-btn {
+  min-height: 28px !important;
+  min-width: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+/* Lightbox close button — keep 44px square & circular */
+.photo-lb-close {
+  min-height: 44px !important;
+  min-width: 44px !important;
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 22px !important;
+}
+
+/* Photo grid — desktop 3-col, mobile 2-col already set in JS */
+@media (min-width:769px) {
+  .photo-grid { grid-template-columns: repeat(3,1fr) !important; gap:12px !important; }
+}
+
+/* Overlay buttons: hidden on desktop until hover */
+@media (hover:hover) {
+  .photo-card-wrap .photo-overlay-btn { opacity:0; transition:opacity 0.2s; }
+  .photo-card-wrap:hover .photo-overlay-btn { opacity:1; }
+}
+
+/* ────────────────────────────────────────
    小屏手机额外适配 (≤ 390px)
 ───────────────────────────────────────── */
 @media (max-width: 390px) {

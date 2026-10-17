@@ -2421,6 +2421,64 @@ router.post('/maintenance/:id/share', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/maintenance — cross-project maintenance overview
+router.get('/maintenance', authenticate, async (req, res) => {
+  try {
+    const { id: userId, role } = req.user;
+    if (!['manager', 'supervisor', 'worker', 'owner'].includes(role)) {
+      return res.status(403).json({ success: false, message: '无权访问' });
+    }
+    let whereClause = '1=1';
+    const params = [];
+    let i = 1;
+    if (role === 'worker') {
+      whereClause = `mt.assigned_to = $${i++}`;
+      params.push(userId);
+    } else if (role === 'owner') {
+      whereClause = `mt.submitted_by_owner = TRUE AND mt.created_by = $${i++}`;
+      params.push(userId);
+    }
+    const result = await pool.query(
+      `SELECT mt.*,
+              p.name AS project_name_raw,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'id', ph.id, 'photo_url', ph.photo_url,
+                    'photo_type', ph.photo_type, 'uploader_name', ph.uploader_name,
+                    'upload_time', ph.upload_time
+                  ) ORDER BY ph.upload_time
+                ) FILTER (WHERE ph.id IS NOT NULL),
+                '[]'::json
+              ) AS photos
+       FROM maintenance_tickets mt
+       LEFT JOIN projects p ON p.id = mt.project_id
+       LEFT JOIN photos ph ON ph.ticket_id = mt.id
+       WHERE ${whereClause}
+       GROUP BY mt.id, p.name
+       ORDER BY mt.created_at DESC`,
+      params
+    );
+    const rows = result.rows.map(row => {
+      const raw = row.project_name_raw;
+      let project_name;
+      if (!raw) {
+        project_name = '';
+      } else if (typeof raw === 'object') {
+        project_name = raw.zh || raw.th || JSON.stringify(raw);
+      } else {
+        try { const n = JSON.parse(raw); project_name = n.zh || n.th || raw; }
+        catch (_) { project_name = raw; }
+      }
+      return { ...row, project_name };
+    });
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('GET /maintenance error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/share/:token — public share viewer (no auth required)
 router.get('/share/:token', async (req, res) => {
   try {

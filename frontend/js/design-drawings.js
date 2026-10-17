@@ -248,12 +248,13 @@ const DesignDrawings = {
                         <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
                         <button class="sb-btn" onclick="DesignDrawings.undo()" title="撤销 Undo">↩ 撤销</button>
                         <button class="sb-btn primary" onclick="DesignDrawings.saveAnnotations()" title="保存 Save">💾 保存</button>
+                        <button class="sb-btn" onclick="DesignDrawings.clearAnnotations()" style="color:#e53e3e;border-color:#e53e3e;" title="清除全部标注 Clear all">🗑️ 清除</button>
                         ` : '<span style="font-size:0.8rem;color:#718096;">👁 查看模式 View only</span>'}
                     </div>
 
                     <!-- Canvas viewport -->
                     <div id="annotator-viewport"
-                         style="flex:1;overflow:auto;position:relative;background:#525659;cursor:grab;display:flex;align-items:center;justify-content:center;">
+                         style="flex:1;overflow:auto;position:relative;background:#525659;cursor:grab;">
                         <canvas id="annotation-canvas" style="display:block;"></canvas>
                     </div>
 
@@ -331,14 +332,18 @@ const DesignDrawings = {
             const scaleY = viewportH / img.height;
             const scale  = Math.min(scaleX, scaleY, 1);
 
-            // Canvas = scaled image size (no wasted gray area)
-            const canvasW = Math.round(img.width  * scale);
-            const canvasH = Math.round(img.height * scale);
+            // Canvas = full viewport, image centered inside it (no zoom clipping)
+            const canvasW = viewportW;
+            const canvasH = viewportH;
+            const offsetX = Math.round((canvasW - img.width  * scale) / 2);
+            const offsetY = Math.round((canvasH - img.height * scale) / 2);
+
             canvas.setWidth(canvasW);
             canvas.setHeight(canvasH);
 
             canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
                 originX: 'left', originY: 'top',
+                left: offsetX,   top: offsetY,
                 scaleX: scale,   scaleY: scale
             });
             canvas.renderAll();
@@ -640,9 +645,30 @@ const DesignDrawings = {
         });
     },
 
-    /* ── Save annotations ────────────────────────────────────────────── */
-    async saveAnnotations() {
+    /* ── Clear all annotations ───────────────────────────────────────── */
+    async clearAnnotations() {
         if (!this._fabricCanvas || !this._currentDrawing) return;
+        if (!confirm('清除全部标注？此操作无法撤销。\nClear all annotations? This cannot be undone.')) return;
+        this._fabricCanvas.getObjects().forEach(obj => this._fabricCanvas.remove(obj));
+        this._fabricCanvas.renderAll();
+        this._history = [];
+        // Save empty annotations to server
+        try {
+            await apiRequest(`/api/drawings/${this._currentDrawing.id}/annotations`, {
+                method: 'PUT',
+                body: JSON.stringify({ page_no: 1, objects: [] }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const toast = document.createElement('div');
+            toast.textContent = '🗑️ 标注已清除 Annotations cleared';
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#718096;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-size:0.9rem;';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        } catch (err) { alert('清除失败: ' + err.message); }
+    },
+
+    /* ── Save annotations ────────────────────────────────────────────── */
+    async saveAnnotations() {        if (!this._fabricCanvas || !this._currentDrawing) return;
         const objects = this._fabricCanvas.toJSON().objects;
         try {
             await apiRequest(`/api/drawings/${this._currentDrawing.id}/annotations`, {

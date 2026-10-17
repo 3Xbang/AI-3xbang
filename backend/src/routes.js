@@ -2421,6 +2421,31 @@ router.post('/maintenance/:id/share', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/maintenance — create standalone ticket (no project required)
+router.post('/maintenance', authenticate, async (req, res) => {
+  if (!['manager', 'supervisor', 'owner'].includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: '无权创建工单' });
+  }
+  try {
+    const { title, description, customer_name, priority, assigned_to, assigned_name } = req.body;
+    if (!title || !customer_name) {
+      return res.status(400).json({ success: false, message: '标题和客户名称必填' });
+    }
+    const isOwner = req.user.role === 'owner';
+    const result = await pool.query(
+      `INSERT INTO maintenance_tickets
+       (title, description, customer_name, priority, assigned_to, assigned_name, created_by, created_by_name, status, submitted_by_owner)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9) RETURNING *`,
+      [title, description || '', customer_name, priority || 'normal',
+       assigned_to || null, assigned_name || null,
+       req.user.id, req.user.full_name || req.user.username, isOwner]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // GET /api/maintenance — cross-project maintenance overview
 router.get('/maintenance', authenticate, async (req, res) => {
   try {

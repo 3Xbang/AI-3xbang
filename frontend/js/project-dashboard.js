@@ -779,7 +779,7 @@ const ProjectDashboard = {
             <span style="font-weight:600;font-size:1rem;flex:1;">${esc(t.title)}</span>
           </div>
           <div style="font-size:0.82rem;color:#718096;display:flex;gap:10px;flex-wrap:wrap;">
-            <span>📁 ${esc(t.project_name || '')}</span>
+            <span>📁 ${esc(t.customer_name || t.project_name || '—')}</span>
             <span>👷 ${esc(t.assigned_name || '未指派')}</span>
             <span>🕐 ${t.updated_at ? new Date(t.updated_at).toLocaleDateString('zh-CN') : ''}</span>
             ${t.priority === 'urgent' ? '<span style="color:#e53e3e;font-weight:600;">⚡ 紧急</span>' : ''}
@@ -803,18 +803,6 @@ const ProjectDashboard = {
 
     // 显示新建工单模态框
     async showCreateTicketModal() {
-        let projectOptions = '';
-        try {
-            const pRes = await apiRequest('/api/projects');
-            const projects = (pRes && pRes.data) ? pRes.data : [];
-            const esc = typeof Maintenance !== 'undefined' ? Maintenance.esc.bind(Maintenance) : (s => String(s||''));
-            projectOptions = projects.map(p => {
-                const name = p.name_zh || p.name_th ||
-                    (p.name && typeof p.name === 'object' ? (p.name.zh || p.name.th) : String(p.name || ''));
-                return `<option value="${p.id}">${esc(name)}</option>`;
-            }).join('');
-        } catch (_) {}
-
         const isOwner = PermissionManager.isOwner();
         const esc = typeof Maintenance !== 'undefined' ? Maintenance.esc.bind(Maintenance) : (s => String(s||''));
         let workerOptions = '';
@@ -835,12 +823,10 @@ const ProjectDashboard = {
       <div class="modal-content" style="max-width:480px;width:95vw;padding:24px;">
         <h3 style="margin:0 0 16px;">${isOwner ? '📋 申报维修' : '➕ 新建工单'}</h3>
         <form id="maint-dash-create-form" onsubmit="ProjectDashboard._submitCreateTicket(event)">
-          <div class="sb-field">
-            <label>项目 Project *</label>
-            <select id="mdc-project" class="sb-input" required>
-              <option value="">— 选择项目 —</option>
-              ${projectOptions}
-            </select>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;margin-bottom:4px;font-weight:600;">客户名称 Customer *</label>
+            <input type="text" id="create-ticket-customer" placeholder="请输入客户姓名或地址"
+                   style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;font-size:1rem;">
           </div>
           <div class="sb-field">
             <label>标题 Title *</label>
@@ -880,18 +866,21 @@ const ProjectDashboard = {
     // 提交新建工单
     async _submitCreateTicket(e) {
         e.preventDefault();
-        const projectId = document.getElementById('mdc-project')?.value;
-        const title     = document.getElementById('mdc-title')?.value.trim();
-        if (!projectId || !title) return;
-        const workerSel    = document.getElementById('mdc-worker');
-        const assigned_to  = workerSel?.value || null;
+        const customer_name = document.getElementById('create-ticket-customer')?.value.trim();
+        const title         = document.getElementById('mdc-title')?.value.trim();
+        if (!customer_name || !title) {
+            app.showToast('请填写标题和客户名称 Title and customer name required', 'error');
+            return;
+        }
+        const workerSel     = document.getElementById('mdc-worker');
+        const assigned_to   = workerSel?.value || null;
         const assigned_name = workerSel?.options[workerSel.selectedIndex]?.dataset.name || null;
-        const priority     = document.getElementById('mdc-priority')?.value || 'normal';
-        const description  = document.getElementById('mdc-desc')?.value || null;
+        const priority      = document.getElementById('mdc-priority')?.value || 'normal';
+        const description   = document.getElementById('mdc-desc')?.value || null;
         try {
-            const res = await apiRequest(`/api/projects/${projectId}/maintenance`, {
+            const res = await apiRequest('/api/maintenance', {
                 method: 'POST',
-                body: JSON.stringify({ title, description, assigned_to, assigned_name, priority })
+                body: JSON.stringify({ title, description, customer_name, priority, assigned_to, assigned_name })
             });
             if (!res.success) throw new Error(res.message);
             document.getElementById('modal-container').innerHTML = '';

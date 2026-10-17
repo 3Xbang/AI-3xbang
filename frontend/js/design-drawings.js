@@ -1,8 +1,8 @@
 ﻿/**
- * design-drawings.js
- * Module for managing design drawings: list, upload, delete, and Fabric.js annotation.
+ * design-drawings.js  v18
+ * Module for managing design drawings: list, upload, delete, and Fabric.js viewer.
  * Exposes window.DesignDrawings with init, load, render, showUploadForm, deleteDrawing,
- * openAnnotator, setTool, setColor, saveAnnotations, undo.
+ * openAnnotator, shareDrawing, showShareModal.
  */
 
 const DesignDrawings = {
@@ -10,12 +10,6 @@ const DesignDrawings = {
     drawings: [],
     _fabricCanvas: null,
     _currentDrawing: null,
-    _activeTool: 'select',
-    _color: '#e53e3e',
-    _history: [],
-    _mouseDown: false,
-    _startPoint: null,
-    _activeObj: null,
 
     /* ── HTML escape helper ─────────────────────────────────────────── */
     esc(s) {
@@ -194,11 +188,6 @@ const DesignDrawings = {
         this._history = [];
         this._rotation = 0;
 
-        const isOwner = typeof PermissionManager !== 'undefined' &&
-                        typeof PermissionManager.isOwner === 'function' &&
-                        PermissionManager.isOwner();
-        const canAnnotate = !isOwner;
-
         const modal = document.getElementById('modal-container');
         if (!modal) return;
 
@@ -231,31 +220,18 @@ const DesignDrawings = {
                         <button class="sb-btn" onclick="DesignDrawings._resetZoom()" title="适合屏幕 Fit">⊡</button>
                         <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
                         <span style="font-size:0.78rem;color:#a0aec0;">🖱 滚轮缩放 | Alt+拖拽平移</span>
-                        ${canAnnotate ? `
-                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
-                        <!-- Annotation tools -->
-                        <button class="sb-btn" id="tool-select" onclick="DesignDrawings.setTool('select')" title="选择 Select">↖ 选</button>
-                        <button class="sb-btn" id="tool-pencil" onclick="DesignDrawings.setTool('pencil')" title="画笔 Pencil">✏️</button>
-                        <button class="sb-btn" id="tool-rect"   onclick="DesignDrawings.setTool('rect')"   title="矩形 Rect">⬜</button>
-                        <button class="sb-btn" id="tool-arrow"  onclick="DesignDrawings.setTool('arrow')"  title="箭头 Arrow">→</button>
-                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
-                        <!-- Colors -->
-                        <button style="width:20px;height:20px;border-radius:50%;background:#e53e3e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#e53e3e')" title="Red"></button>
-                        <button style="width:20px;height:20px;border-radius:50%;background:#3182ce;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#3182ce')" title="Blue"></button>
-                        <button style="width:20px;height:20px;border-radius:50%;background:#38a169;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#38a169')" title="Green"></button>
-                        <button style="width:20px;height:20px;border-radius:50%;background:#1a202c;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#1a202c')" title="Black"></button>
-                        <button style="width:20px;height:20px;border-radius:50%;background:#d69e2e;border:2px solid transparent;cursor:pointer;" onclick="DesignDrawings.setColor('#d69e2e')" title="Yellow"></button>
-                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
-                        <button class="sb-btn" onclick="DesignDrawings.undo()" title="撤销 Undo">↩ 撤销</button>
-                        <button class="sb-btn primary" onclick="DesignDrawings.saveAnnotations()" title="保存 Save">💾 保存</button>
-                        <button class="sb-btn" onclick="DesignDrawings.clearAnnotations()" style="color:#e53e3e;border-color:#e53e3e;" title="清除全部标注 Clear all">🗑️ 清除</button>
-                        ` : '<span style="font-size:0.8rem;color:#718096;">👁 查看模式 View only</span>'}
+                        <button class="sb-btn" onclick="DesignDrawings.showShareModal(${drawing.id})" title="分享 Share">📤 分享</button>
                     </div>
 
-                    <!-- Canvas viewport -->
-                    <div id="annotator-viewport"
-                         style="flex:1;overflow:auto;position:relative;background:#525659;cursor:grab;">
-                        <canvas id="annotation-canvas" style="display:block;"></canvas>
+                    <!-- Main area: canvas + revision panel -->
+                    <div id="annotator-main-area" style="flex:1;display:flex;overflow:hidden;">
+                        <div id="annotator-viewport"
+                             style="flex:1;overflow:auto;position:relative;background:#525659;cursor:grab;">
+                            <canvas id="annotation-canvas" style="display:block;"></canvas>
+                        </div>
+                        <div id="revision-panel"
+                             style="display:none;width:320px;min-width:220px;border-left:1px solid #e2e8f0;background:#fff;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;">
+                        </div>
                     </div>
 
                 </div>
@@ -275,7 +251,7 @@ const DesignDrawings = {
         this._fabricCanvas = new fabric.Canvas('annotation-canvas', {
             width: viewportW,
             height: viewportH,
-            selection: canAnnotate,
+            selection: false,
             isDrawingMode: false
         });
 
@@ -313,10 +289,6 @@ const DesignDrawings = {
         });
         canvas.on('mouse:up', () => { isPanning = false; });
 
-        /* ── Undo history ──────────────────────────────────────────── */
-        canvas.on('object:added',    () => self._pushHistory());
-        canvas.on('object:modified', () => self._pushHistory());
-
         /* ── Load image ────────────────────────────────────────────── */
         const imgUrl = drawing.file_url.startsWith('http')
             ? drawing.file_url
@@ -347,10 +319,8 @@ const DesignDrawings = {
                 scaleX: scale,   scaleY: scale
             });
             canvas.renderAll();
-            self._loadAnnotations();
+            self._loadRevisions();
         }, { crossOrigin: 'anonymous' });
-
-        if (canAnnotate) this.setTool('select');
     },
 
     /* ── Rotation ───────────────────────────────────────────────────── */
@@ -420,276 +390,133 @@ const DesignDrawings = {
         if (modal) modal.innerHTML = '';
     },
 
-    /* ── Load existing annotations ───────────────────────────────────── */
-    async _loadAnnotations() {
-        if (!this._currentDrawing || !this._fabricCanvas) return;
-        try {
-            const res = await apiRequest(`/api/drawings/${this._currentDrawing.id}/annotations`);
-            const rows = (res && res.data) ? res.data : [];
-            const page1 = rows.find(r => r.page_no === 1);
-            if (!page1 || !page1.objects || !page1.objects.length) return;
 
-            const canvas = this._fabricCanvas;
-            const bgImg = canvas.backgroundImage;
-            canvas.loadFromJSON({ version: '5.3.0', objects: page1.objects }, () => {
-                if (bgImg) canvas.setBackgroundImage(bgImg, canvas.renderAll.bind(canvas));
-                else canvas.renderAll();
-                // Clear history after load so user can undo from clean state
-                this._history = [];
-            });
+    /* ── shareDrawing — alias for showShareModal ──────────────────── */
+    shareDrawing(id) {
+        return this.showShareModal(id || (this._currentDrawing && this._currentDrawing.id));
+    },
+
+    /* ── Load revision notes ─────────────────────────────────────── */
+    async _loadRevisions() {
+        if (!this._currentDrawing) return;
+        try {
+            const res = await apiRequest(`/api/drawings/${this._currentDrawing.id}/revisions`);
+            const revisions = (res && res.data) ? res.data : [];
+            this._renderRevisions(revisions);
         } catch (err) {
-            console.error('Load annotations error:', err);
+            console.error('Load revisions error:', err);
         }
     },
 
-    /* ── Set active drawing tool ─────────────────────────────────────── */
-    setTool(tool) {
-        this._activeTool = tool;
-        const canvas = this._fabricCanvas;
-        if (!canvas) return;
-
-        // Remove any existing mouse listeners
-        canvas.off('mouse:down');
-        canvas.off('mouse:move');
-        canvas.off('mouse:up');
-
-        // Highlight active tool button
-        ['select','pencil','rect','text','arrow'].forEach(t => {
-            const btn = document.getElementById('tool-' + t);
-            if (btn) btn.style.fontWeight = (t === tool) ? '700' : '';
-        });
-
-        if (tool === 'pencil') {
-            canvas.isDrawingMode = true;
-            canvas.freeDrawingBrush.color = this._color;
-            canvas.freeDrawingBrush.width = 3;
+    /* ── Render revision panel ───────────────────────────────────── */
+    _renderRevisions(revisions) {
+        const panel = document.getElementById('revision-panel');
+        if (!panel) return;
+        const role    = typeof PermissionManager !== 'undefined' ? PermissionManager.role() : '';
+        const canAdd  = role === 'manager' || role === 'supervisor';
+        const canDel  = role === 'manager';
+        if (revisions.length > 0 || canAdd) {
+            panel.style.display = 'flex';
+            panel.style.flexDirection = 'column';
         } else {
-            canvas.isDrawingMode = false;
+            panel.style.display = 'none';
         }
-
-        if (tool === 'select') return;
-
-        if (tool === 'rect') {
-            let isDown = false, origX, origY, rect;
-            canvas.on('mouse:down', (o) => {
-                isDown = true;
-                const p = canvas.getPointer(o.e);
-                origX = p.x; origY = p.y;
-                rect = new fabric.Rect({
-                    left: origX, top: origY,
-                    width: 0, height: 0,
-                    fill: 'transparent',
-                    stroke: this._color,
-                    strokeWidth: 2,
-                    selectable: true
-                });
-                canvas.add(rect);
-            });
-            canvas.on('mouse:move', (o) => {
-                if (!isDown || !rect) return;
-                const p = canvas.getPointer(o.e);
-                if (p.x < origX) rect.set({ left: p.x, width: origX - p.x });
-                else rect.set({ width: p.x - origX });
-                if (p.y < origY) rect.set({ top: p.y, height: origY - p.y });
-                else rect.set({ height: p.y - origY });
-                canvas.renderAll();
-            });
-            canvas.on('mouse:up', () => {
-                isDown = false;
-                rect = null;
+        let html = `
+            <div style="padding:12px;border-bottom:1px solid #e2e8f0;background:#f7fafc;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <span style="font-weight:600;color:#2d3748;font-size:0.9rem;">📝 修改意见 Revisions (${revisions.length})</span>
+                ${canAdd ? '<button class="sb-btn primary" style="font-size:0.78rem;padding:3px 8px;" onclick="DesignDrawings._showAddRevision()">+ 添加</button>' : ''}
+            </div>
+            <div id="revision-list" style="flex:1;overflow-y:auto;padding:8px;">`;
+        if (revisions.length === 0) {
+            html += '<div style="padding:20px;text-align:center;color:#a0aec0;font-size:0.85rem;">暂无修改意见<br>No revisions yet</div>';
+        } else {
+            revisions.forEach(r => {
+                const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('zh-CN') : '';
+                html += `
+                    <div style="border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:8px;background:#fff;">
+                        ${r.image_url ? `<img src="${this.esc(r.image_url)}" style="width:100%;border-radius:4px;margin-bottom:8px;cursor:pointer;" onclick="window.open('${this.esc(r.image_url)}','_blank')">` : ''}
+                        ${r.note_text ? `<div style="font-size:0.85rem;color:#2d3748;margin-bottom:6px;">${this.esc(r.note_text)}</div>` : ''}
+                        <div style="font-size:0.75rem;color:#a0aec0;display:flex;justify-content:space-between;align-items:center;">
+                            <span>${this.esc(r.created_by_name || '')} · ${this.esc(dateStr)}</span>
+                            ${canDel ? `<button style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.78rem;padding:0;" onclick="DesignDrawings._deleteRevision(${r.id})">🗑️</button>` : ''}
+                        </div>
+                    </div>`;
             });
         }
+        html += '</div>';
+        panel.innerHTML = html;
+    },
 
-        if (tool === 'text') {
-            const self = this;
-            canvas.on('mouse:down', (o) => {
-                if (o.target) return; // clicked existing object, don't place new text
-                const p = canvas.getPointer(o.e);
+    /* ── Show add-revision inline form ───────────────────────────── */
+    _showAddRevision() {
+        const list = document.getElementById('revision-list');
+        if (!list) return;
+        const existing = document.getElementById('add-revision-form');
+        if (existing) { existing.remove(); return; }
+        const formDiv = document.createElement('div');
+        formDiv.id = 'add-revision-form';
+        formDiv.style.cssText = 'border:1px solid #3182ce;border-radius:6px;padding:10px;margin-bottom:8px;background:#ebf8ff;';
+        formDiv.innerHTML = `
+            <div style="font-size:0.82rem;font-weight:600;color:#2b6cb0;margin-bottom:8px;">添加修改意见 Add Revision</div>
+            <textarea id="revision-note" placeholder="修改说明（可选）Optional note..."
+                      style="width:100%;box-sizing:border-box;padding:6px;border:1px solid #bee3f8;border-radius:4px;font-size:0.82rem;resize:vertical;min-height:60px;"></textarea>
+            <div style="margin-top:6px;">
+                <label style="font-size:0.78rem;color:#4a5568;display:block;margin-bottom:4px;">附图（可选）Image (optional)</label>
+                <input type="file" id="revision-image" accept=".jpg,.jpeg,.png" style="font-size:0.78rem;">
+            </div>
+            <div id="revision-error" style="color:#e53e3e;font-size:0.78rem;margin-top:4px;display:none;"></div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="sb-btn primary" style="font-size:0.78rem;padding:3px 10px;" onclick="DesignDrawings._submitRevision()">提交</button>
+                <button class="sb-btn" style="font-size:0.78rem;padding:3px 10px;" onclick="document.getElementById('add-revision-form').remove()">取消</button>
+            </div>`;
+        list.insertBefore(formDiv, list.firstChild);
+        formDiv.querySelector('#revision-note').focus();
+    },
 
-                // Build inline floating input at click position
-                const vp = document.getElementById('annotator-viewport');
-                const rect = vp ? vp.getBoundingClientRect() : { left: 0, top: 0 };
-                const zoom = canvas.getZoom();
-                const vpt  = canvas.viewportTransform;
-                const screenX = Math.round(p.x * zoom + vpt[4] + rect.left);
-                const screenY = Math.round(p.y * zoom + vpt[5] + rect.top);
-
-                // Remove any existing inline input
-                const old = document.getElementById('text-tool-input');
-                if (old) old.remove();
-
-                const inp = document.createElement('input');
-                inp.id = 'text-tool-input';
-                inp.type = 'text';
-                inp.placeholder = '输入文字 / Enter text';
-                inp.style.cssText = [
-                    'position:fixed',
-                    `left:${screenX}px`,
-                    `top:${screenY}px`,
-                    'min-width:140px',
-                    'padding:4px 8px',
-                    `border:2px solid ${self._color}`,
-                    'border-radius:4px',
-                    'font-size:16px',
-                    `color:${self._color}`,
-                    'background:rgba(255,255,255,0.96)',
-                    'box-shadow:0 2px 8px rgba(0,0,0,0.25)',
-                    'z-index:9999',
-                    'outline:none'
-                ].join(';');
-                document.body.appendChild(inp);
-                inp.focus();
-
-                const commit = () => {
-                    const text = inp.value.trim();
-                    const existing = document.getElementById('text-tool-input');
-                    if (existing) existing.remove();
-                    if (!text) return;
-                    const itext = new fabric.IText(text, {
-                        left: p.x, top: p.y,
-                        fontSize: 20,
-                        fill: self._color,
-                        selectable: true,
-                        hasControls: true,
-                        shadow: null,
-                        fontFamily: 'sans-serif'
-                    });
-                    canvas.add(itext);
-                    canvas.discardActiveObject();
-                    canvas.renderAll();
-                    self.setTool('select'); // auto-switch so zoom works right away
-                };
-
-                inp.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); commit(); }
-                    if (e.key === 'Escape') {
-                        const el = document.getElementById('text-tool-input');
-                        if (el) el.remove();
-                    }
-                });
-                inp.addEventListener('blur', () => setTimeout(commit, 200));
-            });
+    /* ── Submit new revision ─────────────────────────────────────── */
+    async _submitRevision() {
+        if (!this._currentDrawing) return;
+        const note     = document.getElementById('revision-note');
+        const imgInput = document.getElementById('revision-image');
+        const err      = document.getElementById('revision-error');
+        const noteText = note ? note.value.trim() : '';
+        const imgFile  = imgInput && imgInput.files && imgInput.files[0] ? imgInput.files[0] : null;
+        if (!noteText && !imgFile) {
+            if (err) { err.textContent = '请输入说明或选择图片 Please add a note or image'; err.style.display = 'block'; }
+            return;
         }
-
-        if (tool === 'arrow') {
-            let isDown = false, origX, origY, line, arrowHead;
-            canvas.on('mouse:down', (o) => {
-                isDown = true;
-                const p = canvas.getPointer(o.e);
-                origX = p.x; origY = p.y;
-                line = new fabric.Line([origX, origY, origX, origY], {
-                    stroke: this._color, strokeWidth: 2, selectable: false
-                });
-                arrowHead = new fabric.Triangle({
-                    width: 12, height: 12,
-                    fill: this._color,
-                    left: origX, top: origY,
-                    selectable: false
-                });
-                canvas.add(line);
-                canvas.add(arrowHead);
-            });
-            canvas.on('mouse:move', (o) => {
-                if (!isDown || !line) return;
-                const p = canvas.getPointer(o.e);
-                line.set({ x2: p.x, y2: p.y });
-                const angle = Math.atan2(p.y - origY, p.x - origX) * 180 / Math.PI;
-                arrowHead.set({ left: p.x, top: p.y, angle: angle + 90 });
-                canvas.renderAll();
-            });
-            canvas.on('mouse:up', () => {
-                isDown = false;
-                line = null; arrowHead = null;
-            });
-        }
-    },
-
-    /* ── Set annotation color ────────────────────────────────────────── */
-    setColor(color) {
-        this._color = color;
-        const canvas = this._fabricCanvas;
-        if (!canvas) return;
-        if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
-            canvas.freeDrawingBrush.color = color;
-        }
-        // Update color swatch borders to indicate active
-        document.querySelectorAll('[onclick^="DesignDrawings.setColor"]').forEach(btn => {
-            btn.style.border = (btn.title.toLowerCase() === this._colorName(color)) ? '3px solid #2d3748' : '2px solid transparent';
-        });
-    },
-
-    _colorName(hex) {
-        const map = { '#e53e3e': 'red', '#3182ce': 'blue', '#38a169': 'green', '#1a202c': 'black', '#d69e2e': 'yellow' };
-        return map[hex] || '';
-    },
-
-    /* ── Undo history ────────────────────────────────────────────────── */
-    _pushHistory() {
-        if (!this._fabricCanvas) return;
-        const json = JSON.stringify(this._fabricCanvas.toJSON());
-        this._history.push(json);
-        if (this._history.length > 20) this._history.shift();
-    },
-
-    undo() {
-        if (!this._fabricCanvas || this._history.length < 2) return;
-        this._history.pop(); // remove current
-        const prev = this._history[this._history.length - 1];
-        if (!prev) return;
-        const canvas = this._fabricCanvas;
-        const bgImg = canvas.backgroundImage;
-        const parsed = JSON.parse(prev);
-        canvas.loadFromJSON(parsed, () => {
-            if (bgImg) canvas.setBackgroundImage(bgImg, canvas.renderAll.bind(canvas));
-            else canvas.renderAll();
-        });
-    },
-
-    /* ── Clear all annotations ───────────────────────────────────────── */
-    async clearAnnotations() {
-        if (!this._fabricCanvas || !this._currentDrawing) return;
-        if (!confirm('清除全部标注？此操作无法撤销。\nClear all annotations? This cannot be undone.')) return;
-        this._fabricCanvas.getObjects().forEach(obj => this._fabricCanvas.remove(obj));
-        this._fabricCanvas.renderAll();
-        this._history = [];
-        // Save empty annotations to server
+        const formData = new FormData();
+        if (noteText) formData.append('note_text', noteText);
+        if (imgFile)  formData.append('revision_image', imgFile);
         try {
-            await apiRequest(`/api/drawings/${this._currentDrawing.id}/annotations`, {
-                method: 'PUT',
-                body: JSON.stringify({ page_no: 1, objects: [] }),
-                headers: { 'Content-Type': 'application/json' }
+            const token = localStorage.getItem('authToken');
+            const resp = await fetch(`/api/drawings/${this._currentDrawing.id}/revisions`, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
             });
-            const toast = document.createElement('div');
-            toast.textContent = '🗑️ 标注已清除 Annotations cleared';
-            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#718096;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-size:0.9rem;';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
-        } catch (err) { alert('清除失败: ' + err.message); }
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.message || '提交失败');
+            await this._loadRevisions();
+        } catch (e) {
+            if (err) { err.textContent = e.message; err.style.display = 'block'; }
+        }
     },
 
-    /* ── Save annotations ────────────────────────────────────────────── */
-    async saveAnnotations() {        if (!this._fabricCanvas || !this._currentDrawing) return;
-        const objects = this._fabricCanvas.toJSON().objects;
+    /* ── Delete a revision ───────────────────────────────────────── */
+    async _deleteRevision(revisionId) {
+        if (!confirm('确定删除此修改意见？Delete this revision?')) return;
         try {
-            await apiRequest(`/api/drawings/${this._currentDrawing.id}/annotations`, {
-                method: 'PUT',
-                body: JSON.stringify({ page_no: 1, objects: objects }),
-                headers: { 'Content-Type': 'application/json' }
+            const token = localStorage.getItem('authToken');
+            const resp  = await fetch(`/api/drawings/revisions/${revisionId}`, {
+                method: 'DELETE',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
-            // Show success toast with share shortcut
-            const toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#38a169;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;';
-            toast.innerHTML = '<span>✅ 标注已保存 Annotations saved</span>';
-            const shareBtn = document.createElement('button');
-            shareBtn.textContent = '📤 立即分享';
-            shareBtn.style.cssText = 'background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.82rem;white-space:nowrap;';
-            const self = this;
-            shareBtn.onclick = () => { toast.remove(); self.showShareModal(self._currentDrawing.id); };
-            toast.appendChild(shareBtn);
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 6000);
-        } catch (err) {
-            alert('保存失败 Save failed: ' + err.message);
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.message || '删除失败');
+            await this._loadRevisions();
+        } catch (e) {
+            alert('删除失败 Delete failed: ' + e.message);
         }
     },
 

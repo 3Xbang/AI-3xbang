@@ -254,15 +254,15 @@ const DesignDrawings = {
 
                     <!-- Canvas viewport -->
                     <div id="annotator-viewport"
-                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;">
-                        <canvas id="annotation-canvas"></canvas>
+                         style="flex:1;overflow:auto;position:relative;background:#525659;cursor:grab;display:flex;align-items:center;justify-content:center;">
+                        <canvas id="annotation-canvas" style="display:block;"></canvas>
                     </div>
 
                 </div>
             </div>`;
 
         const viewportEl = document.getElementById('annotator-viewport');
-        // Use actual rendered dimensions
+        // Start with viewport size; will be resized to image size after load
         const viewportW = viewportEl.clientWidth  || (window.innerWidth);
         const viewportH = viewportEl.clientHeight || (window.innerHeight - 120);
 
@@ -331,13 +331,17 @@ const DesignDrawings = {
             const scaleX = viewportW  / img.width;
             const scaleY = viewportH / img.height;
             const scale  = Math.min(scaleX, scaleY, 1);
+
+            // Canvas = scaled image size (no wasted gray area)
+            const canvasW = Math.round(img.width  * scale);
+            const canvasH = Math.round(img.height * scale);
+            canvas.setWidth(canvasW);
+            canvas.setHeight(canvasH);
+
             canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
                 originX: 'left', originY: 'top',
                 scaleX: scale,   scaleY: scale
             });
-            // Resize canvas to image
-            canvas.setWidth(Math.max(viewportW, Math.round(img.width  * scale)));
-            canvas.setHeight(Math.max(viewportH, Math.round(img.height * scale)));
             canvas.renderAll();
             self._loadAnnotations();
         }, { crossOrigin: 'anonymous' });

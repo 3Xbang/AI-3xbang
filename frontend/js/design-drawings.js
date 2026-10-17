@@ -192,6 +192,7 @@ const DesignDrawings = {
         if (typeof drawing === 'string') drawing = JSON.parse(drawing);
         this._currentDrawing = drawing;
         this._history = [];
+        this._rotation = 0;
 
         const isOwner = typeof PermissionManager !== 'undefined' &&
                         typeof PermissionManager.isOwner === 'function' &&
@@ -218,6 +219,11 @@ const DesignDrawings = {
 
                     <!-- Toolbar -->
                     <div style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:#f7fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;flex-shrink:0;">
+                        <!-- Rotate -->
+                        <button class="sb-btn" onclick="DesignDrawings._rotateView(-90)" title="向左旋转 Rotate Left">↺</button>
+                        <span id="rotation-label" style="min-width:32px;text-align:center;font-size:0.82rem;color:#4a5568;font-weight:600;">0°</span>
+                        <button class="sb-btn" onclick="DesignDrawings._rotateView(90)" title="向右旋转 Rotate Right">↻</button>
+                        <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
                         <!-- Zoom -->
                         <button class="sb-btn" onclick="DesignDrawings._zoomCanvas(-0.25)" title="缩小 Zoom Out">−</button>
                         <span id="zoom-label" style="min-width:44px;text-align:center;font-size:0.82rem;color:#4a5568;font-weight:600;">100%</span>
@@ -248,8 +254,10 @@ const DesignDrawings = {
 
                     <!-- Canvas viewport -->
                     <div id="annotator-viewport"
-                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;">
-                        <canvas id="annotation-canvas"></canvas>
+                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;display:flex;align-items:center;justify-content:center;">
+                        <div id="annotator-rotate-wrap" style="transform-origin:center center;transition:transform 0.25s ease;">
+                            <canvas id="annotation-canvas"></canvas>
+                        </div>
                     </div>
 
                 </div>
@@ -337,6 +345,34 @@ const DesignDrawings = {
         }, { crossOrigin: 'anonymous' });
 
         if (canAnnotate) this.setTool('select');
+    },
+
+    /* ── Rotation ───────────────────────────────────────────────────── */
+    _rotateView(delta) {
+        this._rotation = (((this._rotation || 0) + delta) + 360) % 360;
+        const wrap = document.getElementById('annotator-rotate-wrap');
+        if (wrap) {
+            const r = this._rotation;
+            // When 90/270 deg, swap width/height so image fills the screen
+            if (r === 90 || r === 270) {
+                const vp = document.getElementById('annotator-viewport');
+                const w = vp ? vp.clientWidth : window.innerWidth;
+                const h = vp ? vp.clientHeight : window.innerHeight;
+                wrap.style.transform = `rotate(${r}deg)`;
+                wrap.style.width  = h + 'px';
+                wrap.style.height = w + 'px';
+                wrap.style.marginLeft = ((w - h) / 2) + 'px';
+                wrap.style.marginTop  = ((h - w) / 2) + 'px';
+            } else {
+                wrap.style.transform = `rotate(${r}deg)`;
+                wrap.style.width  = '';
+                wrap.style.height = '';
+                wrap.style.marginLeft = '';
+                wrap.style.marginTop  = '';
+            }
+        }
+        const lbl = document.getElementById('rotation-label');
+        if (lbl) lbl.textContent = this._rotation + '°';
     },
 
     /* ── Zoom helpers ───────────────────────────────────────────────── */

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -28,74 +28,74 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 </head>
 <body>
-    <!-- µÇÂ¼Ò³Ãæ -->
+    <!-- ç™»å½•é¡µé¢ -->
     <div id="login-page" class="page active">
         <div class="login-container">
             <div class="logo">
                 <h1>Mira Villa</h1>
-                <p>½¨ÖşÏîÄ¿¹ÜÀíÏµÍ³ Construction Project Management System</p>
+                <p>å»ºç­‘é¡¹ç›®ç®¡ç†ç³»ç»Ÿ Construction Project Management System</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
-                    <label>ÓÃ»§Ãû Username</label>
+                    <label>ç”¨æˆ·å Username</label>
                     <input type="text" id="username" required>
                 </div>
                 <div class="form-group">
-                    <label>ÃÜÂë Password</label>
+                    <label>å¯†ç  Password</label>
                     <input type="password" id="password" autocomplete="current-password" required>
                 </div>
-                <button type="submit" class="btn-primary">µÇÂ¼ Login</button>
+                <button type="submit" class="btn-primary">ç™»å½• Login</button>
                 <div id="login-error" class="error-message"></div>
             </form>
         </div>
     </div>
 
-    <!-- Ö÷Ò³Ãæ -->
+    <!-- ä¸»é¡µé¢ -->
     <div id="main-page" class="page">
-        <!-- ¶¥²¿µ¼º½ -->
+        <!-- é¡¶éƒ¨å¯¼èˆª -->
         <header class="header">
             <div class="header-left">
                 <h2>Mira Villa</h2>
             </div>
             <div class="header-right">
                 <span id="user-name"></span>
-                <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">?? ÓÃ»§¹ÜÀí</button>
-                <button onclick="app.logout()" class="btn-link">ÍË³ö Logout</button>
+                <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">ğŸ‘¥ ç”¨æˆ·ç®¡ç†</button>
+                <button onclick="app.logout()" class="btn-link">é€€å‡º Logout</button>
             </div>
         </header>
 
-        <!-- Ö÷ÄÚÈİÇø -->
+        <!-- ä¸»å†…å®¹åŒº -->
         <div class="main-container">
-            <!-- ÏîÄ¿ÒÇ±íÅÌÊÓÍ¼ -->
+            <!-- é¡¹ç›®ä»ªè¡¨ç›˜è§†å›¾ -->
             <div id="dashboard-view" class="view active">
                 <div id="project-dashboard-container"></div>
             </div>
 
-            <!-- ÏîÄ¿ÏêÇéÊÓÍ¼ -->
+            <!-- é¡¹ç›®è¯¦æƒ…è§†å›¾ -->
             <div id="project-detail-view" class="view">
                 <div id="project-detail-container"></div>
             </div>
 
-            <!-- ÓÃ»§¹ÜÀíÊÓÍ¼£¨½ö¹ÜÀíÔ±£© -->
+            <!-- ç”¨æˆ·ç®¡ç†è§†å›¾ï¼ˆä»…ç®¡ç†å‘˜ï¼‰ -->
             <div id="users-view" class="view">
                 <div class="td-head" style="padding:12px 16px;border-bottom:1px solid #e2e8f0">
                     <div>
-                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">¡û ·µ»Ø Back</button>
-                        <h2 class="td-title">?? ÓÃ»§¹ÜÀí <small class="td-th">Manage Users</small></h2>
+                        <button class="sb-btn" onclick="app.showView('dashboard')" style="margin-bottom:4px">â† è¿”å› Back</button>
+                        <h2 class="td-title">ğŸ‘¥ ç”¨æˆ·ç®¡ç† <small class="td-th">Manage Users</small></h2>
                     </div>
-                    <button class="sb-btn primary" onclick="userManager.showAdd()">? Ìí¼ÓÓÃ»§ Add User</button>
+                    <button class="sb-btn primary" onclick="userManager.showAdd()">â• æ·»åŠ ç”¨æˆ· Add User</button>
                 </div>
                 <div id="user-mgmt-body" style="padding:16px;max-width:900px;margin:0 auto">
-                    <div class="td-empty">¼ÓÔØÖĞ¡­</div>
+                    <div class="td-empty">åŠ è½½ä¸­â€¦</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Ä£Ì¬¿òÈİÆ÷ -->
+    <!-- æ¨¡æ€æ¡†å®¹å™¨ -->
     <div id="modal-container"></div>
 
-    <!-- ¼ÓÔØÌáÊ¾ -->
+    <!-- åŠ è½½æç¤º -->
     <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
     </div>

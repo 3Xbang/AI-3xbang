@@ -86,7 +86,9 @@ const photoManager = {
     _section(category, title, photos, canUpload, workItem, bgColor, color) {
         const { cardW, cardH } = this._cardDimensions();
         const photoHtml = photos.map(p => this._photoCard(p, cardW, cardH)).join('');
-        const uploadBtn = canUpload ? `<div onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
+        const uploadBtn = canUpload ? `<div role="button" tabindex="0"
+            onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})}"
             style="flex-shrink:0;width:${cardW}px;height:${cardH}px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;scroll-snap-align:start;">
             <span style="font-size:36px;line-height:1">+</span>
             <span style="margin-top:6px">Upload</span>

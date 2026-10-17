@@ -298,6 +298,19 @@
 }
 
 /* ────────────────────────────────────────
+   现场照片 横向滚动条 Photo Strip
+───────────────────────────────────────── */
+
+/* Hide scrollbar for photo strips */
+.photo-strip::-webkit-scrollbar { display: none; }
+.photo-strip { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Desktop: slightly larger cards */
+@media (min-width: 769px) {
+  .photo-strip { gap: 16px; padding: 8px 20px 20px; }
+}
+
+/* ────────────────────────────────────────
    小屏手机额外适配 (≤ 390px)
 ───────────────────────────────────────── */
 @media (max-width: 390px) {

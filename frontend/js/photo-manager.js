@@ -1,4 +1,4 @@
-﻿// photo-manager.js v2 — Structured daily photos linked to daily report
+﻿// photo-manager.js v116 — Horizontal-scroll strip layout (mobile-first)
 const photoManager = {
     currentProjectId: null,
     currentDate: null,
@@ -48,13 +48,13 @@ const photoManager = {
         const todayFmt = new Date(this.currentDate+'T12:00:00').toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});
         let html = `
         <div style="max-width:900px;margin:0 auto">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;padding:0 16px">
             <b class="photo-date-display" style="font-size:15px">📅 ${todayFmt}</b>
             <input type="date" value="${this.currentDate}" onchange="photoManager.changeDate(this.value)"
               style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div style="display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px">
               ${dates.slice(0,7).map(d => `<button onclick="photoManager.changeDate('${d}')"
-                style="padding:4px 10px;border:1.5px solid ${d===this.currentDate?'#2563eb':'#e2e8f0'};border-radius:16px;cursor:pointer;font-size:12px;background:${d===this.currentDate?'#eff6ff':'#fff'};color:${d===this.currentDate?'#1e40af':'#475569'}">${d.slice(5)}</button>`).join('')}
+                style="flex:0 0 auto;padding:4px 10px;border:1.5px solid ${d===this.currentDate?'#2563eb':'#e2e8f0'};border-radius:16px;cursor:pointer;font-size:12px;background:${d===this.currentDate?'#eff6ff':'#fff'};color:${d===this.currentDate?'#1e40af':'#475569'}">${d.slice(5)}</button>`).join('')}
             </div>
           </div>
           ${this._section('morning', '☀️ Morning Check-in / เช้า เข้างาน', byCategory.morning, canUpload, null, '#fef9c3', '#ca8a04')}
@@ -62,12 +62,12 @@ const photoManager = {
           ${this._section('evening', '🌙 Evening Check-out / เย็น เลิกงาน', byCategory.evening, canUpload, null, '#f0fdf4', '#16a34a')}
           <div style='border-top:2px dashed #e2e8f0;margin:6px 0'></div>
           ${this.dailyItems.length ? `
-          <div style="margin:16px 0 8px;font-size:15px;font-weight:700;color:#1e3a8a">
+          <div style="margin:16px 0 8px;font-size:15px;font-weight:700;color:#1e3a8a;padding:0 16px">
             🏗️ Today's Work Progress / งานวันนี้
             <small style="font-size:12px;font-weight:400;color:#64748b"> (from daily report)</small>
           </div>
           ${this.dailyItems.map((item,i) => this._section('work_'+i, `${i+1}. ${this.esc(item.work||'')}${item.unit?' · '+this.esc(item.unit):''}${item.today?' · '+item.today+' today':''}`, byCategory['work_'+i], canUpload, {work:item.work,unit:item.unit}, '#eff6ff', '#2563eb')).join('')}`
-          : `<div style="background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;color:#94a3b8;margin-top:12px">
+          : `<div style="background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;color:#94a3b8;margin:12px 16px 0">
               <div style="font-size:24px">📋</div>
               <div style="margin-top:6px">No daily report for today yet<br>กรอกรายงานประจำวันก่อน</div>
              </div>`}
@@ -76,40 +76,52 @@ const photoManager = {
         grid.innerHTML = html;
     },
 
+    _cardDimensions() {
+        const isMobile = window.innerWidth <= 768;
+        const cardW = isMobile ? Math.round(window.innerWidth * 0.75) : 300;
+        const cardH = isMobile ? Math.round(window.innerWidth * 0.56) : 220;
+        return { cardW, cardH };
+    },
+
     _section(category, title, photos, canUpload, workItem, bgColor, color) {
-        const photoHtml = photos.map(p => this._photoCard(p)).join('');
-        const uploadBtn = canUpload ? `<button onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
-            style="aspect-ratio:1/1;width:100%;border:2px dashed #cbd5e1;border-radius:8px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">
-            <span style="font-size:28px">+</span>
-            <span>Upload</span>
-          </button>` : '';
-        return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:0;border-bottom:2px dashed #d1d5db">
-          <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:10px">${title}</div>
-          <div class="photo-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;">
+        const { cardW, cardH } = this._cardDimensions();
+        const photoHtml = photos.map(p => this._photoCard(p, cardW, cardH)).join('');
+        const uploadBtn = canUpload ? `<div onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
+            style="flex-shrink:0;width:${cardW}px;height:${cardH}px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;scroll-snap-align:start;">
+            <span style="font-size:36px;line-height:1">+</span>
+            <span style="margin-top:6px">Upload</span>
+          </div>` : '';
+        const emptyState = (!photos.length && !canUpload)
+            ? `<div style="padding:16px;color:#a0aec0;font-size:0.9rem;">暂无照片 No photos yet</div>`
+            : '';
+        return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;margin-bottom:0;border-bottom:2px dashed #d1d5db;overflow:hidden">
+          <div style="font-size:1.1rem;font-weight:700;padding:16px 16px 6px;color:#2d3748">${title}</div>
+          ${emptyState}
+          <div class="photo-strip" style="display:flex;flex-direction:row;overflow-x:auto;gap:12px;padding:8px 16px 16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
             ${photoHtml}
             ${uploadBtn}
           </div>
         </div>`;
     },
 
-    _photoCard(p) {
+    _photoCard(p, cardW, cardH) {
         const dt = p.upload_time ? new Date(p.upload_time) : null;
         const time = dt ? dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
         const canEdit = PermissionManager.isManager() || (p.uploaded_by === (JSON.parse(localStorage.getItem('user')||'{}').username));
         const escapedUrl = this.esc(p.photo_url);
         const escapedTime = this.esc(time);
-        return `<div class="photo-card-wrap" style="position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:8px;background:#e2e8f0;">
+        return `<div style="position:relative;flex-shrink:0;width:${cardW}px;height:${cardH}px;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.15);scroll-snap-align:start;background:#e2e8f0;">
           <img src="${escapedUrl}" alt="site photo"
             data-photo-url="${escapedUrl}" data-photo-time="${escapedTime}"
             onclick="photoManager._showLightbox(this.dataset.photoUrl,this.dataset.photoTime)"
             style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;"
             loading="lazy">
-          ${time ? `<div style="position:absolute;bottom:0;left:0;right:0;padding:2px 4px;font-size:10px;color:#fff;background:rgba(0,0,0,0.35);text-align:center;pointer-events:none;">${escapedTime}</div>` : ''}
+          ${time ? `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.55));color:#fff;font-size:11px;padding:4px 8px;pointer-events:none;">${escapedTime}</div>` : ''}
           ${canEdit ? `
             <button class="photo-overlay-btn" onclick="event.stopPropagation();photoManager.editReason(${p.id},'${this.esc(p.reason||'')}')"
-              style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✏️</button>
+              style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
             <button class="photo-overlay-btn" onclick="event.stopPropagation();photoManager.deletePhoto(${p.id})"
-              style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+              style="position:absolute;top:6px;right:6px;background:rgba(220,38,38,0.75);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
           ` : ''}
         </div>`;
     },

@@ -493,19 +493,73 @@ const DesignDrawings = {
         }
 
         if (tool === 'text') {
+            const self = this;
             canvas.on('mouse:down', (o) => {
+                if (o.target) return; // clicked existing object, don't place new text
                 const p = canvas.getPointer(o.e);
-                const text = prompt('输入文字 Enter text:');
-                if (!text) return;
-                const itext = new fabric.IText(text, {
-                    left: p.x, top: p.y,
-                    fontSize: 18,
-                    fill: this._color,
-                    selectable: true
+
+                // Build inline floating input at click position
+                const vp = document.getElementById('annotator-viewport');
+                const rect = vp ? vp.getBoundingClientRect() : { left: 0, top: 0 };
+                const zoom = canvas.getZoom();
+                const vpt  = canvas.viewportTransform;
+                const screenX = Math.round(p.x * zoom + vpt[4] + rect.left);
+                const screenY = Math.round(p.y * zoom + vpt[5] + rect.top);
+
+                // Remove any existing inline input
+                const old = document.getElementById('text-tool-input');
+                if (old) old.remove();
+
+                const inp = document.createElement('input');
+                inp.id = 'text-tool-input';
+                inp.type = 'text';
+                inp.placeholder = '输入文字 / Enter text';
+                inp.style.cssText = [
+                    'position:fixed',
+                    `left:${screenX}px`,
+                    `top:${screenY}px`,
+                    'min-width:140px',
+                    'padding:4px 8px',
+                    `border:2px solid ${self._color}`,
+                    'border-radius:4px',
+                    'font-size:16px',
+                    `color:${self._color}`,
+                    'background:rgba(255,255,255,0.96)',
+                    'box-shadow:0 2px 8px rgba(0,0,0,0.25)',
+                    'z-index:9999',
+                    'outline:none'
+                ].join(';');
+                document.body.appendChild(inp);
+                inp.focus();
+
+                const commit = () => {
+                    const text = inp.value.trim();
+                    const existing = document.getElementById('text-tool-input');
+                    if (existing) existing.remove();
+                    if (!text) return;
+                    const itext = new fabric.IText(text, {
+                        left: p.x, top: p.y,
+                        fontSize: 20,
+                        fill: self._color,
+                        selectable: true,
+                        hasControls: true,
+                        shadow: null,
+                        fontFamily: 'sans-serif'
+                    });
+                    canvas.add(itext);
+                    canvas.discardActiveObject();
+                    canvas.renderAll();
+                    self.setTool('select'); // auto-switch so zoom works right away
+                };
+
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                    if (e.key === 'Escape') {
+                        const el = document.getElementById('text-tool-input');
+                        if (el) el.remove();
+                    }
                 });
-                canvas.add(itext);
-                canvas.setActiveObject(itext);
-                canvas.renderAll();
+                inp.addEventListener('blur', () => setTimeout(commit, 200));
             });
         }
 

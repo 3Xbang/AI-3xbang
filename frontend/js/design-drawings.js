@@ -254,10 +254,8 @@ const DesignDrawings = {
 
                     <!-- Canvas viewport -->
                     <div id="annotator-viewport"
-                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;display:flex;align-items:center;justify-content:center;">
-                        <div id="annotator-rotate-wrap" style="transform-origin:center center;transition:transform 0.25s ease;">
-                            <canvas id="annotation-canvas"></canvas>
-                        </div>
+                         style="flex:1;overflow:hidden;position:relative;background:#525659;cursor:grab;">
+                        <canvas id="annotation-canvas"></canvas>
                     </div>
 
                 </div>
@@ -350,29 +348,37 @@ const DesignDrawings = {
     /* ── Rotation ───────────────────────────────────────────────────── */
     _rotateView(delta) {
         this._rotation = (((this._rotation || 0) + delta) + 360) % 360;
-        const wrap = document.getElementById('annotator-rotate-wrap');
-        if (wrap) {
-            const r = this._rotation;
-            // When 90/270 deg, swap width/height so image fills the screen
-            if (r === 90 || r === 270) {
-                const vp = document.getElementById('annotator-viewport');
-                const w = vp ? vp.clientWidth : window.innerWidth;
-                const h = vp ? vp.clientHeight : window.innerHeight;
-                wrap.style.transform = `rotate(${r}deg)`;
-                wrap.style.width  = h + 'px';
-                wrap.style.height = w + 'px';
-                wrap.style.marginLeft = ((w - h) / 2) + 'px';
-                wrap.style.marginTop  = ((h - w) / 2) + 'px';
-            } else {
-                wrap.style.transform = `rotate(${r}deg)`;
-                wrap.style.width  = '';
-                wrap.style.height = '';
-                wrap.style.marginLeft = '';
-                wrap.style.marginTop  = '';
-            }
-        }
+        const canvas = this._fabricCanvas;
+        if (!canvas) return;
+
+        const img = canvas.backgroundImage;
+        if (!img) return;
+
+        const vW = canvas.getWidth();
+        const vH = canvas.getHeight();
+        const r  = this._rotation;
+
+        // Rotate the image itself
+        img.set({ angle: r, originX: 'center', originY: 'center',
+                  left: vW / 2, top: vH / 2 });
+
+        // Rescale to fit viewport — swap dimensions at 90°/270°
+        const rawW = img.width;
+        const rawH = img.height;
+        const scale = (r === 90 || r === 270)
+            ? Math.min(vW / rawH, vH / rawW)
+            : Math.min(vW / rawW, vH / rawH);
+        img.set({ scaleX: scale, scaleY: scale });
+
+        // Reset pan/zoom so image stays in view
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.renderAll();
+
         const lbl = document.getElementById('rotation-label');
-        if (lbl) lbl.textContent = this._rotation + '°';
+        if (lbl) lbl.textContent = r + '°';
+
+        const zlbl = document.getElementById('zoom-label');
+        if (zlbl) zlbl.textContent = '100%';
     },
 
     /* ── Zoom helpers ───────────────────────────────────────────────── */

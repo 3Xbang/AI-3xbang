@@ -159,7 +159,7 @@ const ProjectDetail = {
                                 const _b = document.createElement('button');
                                 _b.id = 'to-board-btn';
                                 _b.innerHTML = '📊 进度看板<br><small style="font-size:11px">Site Board</small>';
-                                _b.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
+                                _b.style.cssText = 'position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:20px;z-index:999;background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5';
                                 _b.onclick = () => { localStorage.setItem('force_site_board','1'); ProjectDetail.showSubView('site'); };
                                 document.body.appendChild(_b);
                             }
@@ -280,7 +280,7 @@ const ProjectDetail = {
         return `<div style="padding:16px;max-width:900px;margin:0 auto">
             <div class="td-head">
                 <div><h2 class="td-title">📷 Site Photos <small class="td-th">现场照片</small></h2>
-                <div class="td-sub">Upload construction progress photos · 上传施工进度照片</div></div>
+                <div class="td-sub"><span class="td-sub-en">Upload construction progress photos · </span>上传施工进度照片</div></div>
                 <button class="sb-btn primary" onclick="photoManager.showUploadForm()">📷 Upload 上传照片</button>
             </div>
             <div id="photos-grid" class="photo-grid" style="margin-top:12px"></div>

@@ -157,6 +157,41 @@
   .gc-section-row { min-height: 48px !important; }
   .gc-label { font-size: 13px !important; padding: 6px 8px !important; }
 
+  /* Issue 2: Date display larger/bolder — mobile only */
+  .photo-date-display { font-size: 18px !important; font-weight: 700 !important; }
+
+  /* Issue 3: Hide English part of Photos subtitle on mobile */
+  .td-sub-en { display: none; }
+
+  /* Issue 4: Gantt % labels — sit clearly outside/right of bar */
+  .gc-bar { overflow: visible !important; max-width: 65% !important; }
+  .gc-bar-label {
+    right: -34px !important;
+    background: transparent !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+  .gc-track-weight { display: none !important; }
+  .gc-label-head, .gc-label, .gc-label.sub { flex: 0 0 100px !important; min-width: 100px !important; }
+
+  /* Issue 5: Padding so floating button doesn't cover content */
+  .dr2-wrap, #daily-report-container, #site-board-container { padding-bottom: 80px !important; }
+  /* Issue 5b: Move floating button to bottom-right on mobile only */
+  #to-board-btn { right: 20px !important; left: auto !important; }
+
+  /* Issue 6: Primary buttons extra large for gloved hands */
+  .sb-btn.primary, button.primary, .btn-primary {
+    min-height: 52px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    padding: 12px 20px !important;
+  }
+  button[class*="btn"] {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
   /* ── 进度计划卡片 ── */
   .process-card { padding: 10px 12px !important; }
   .process-card-title { font-size: 14px !important; }
@@ -183,6 +218,13 @@
   /* ── 主导航 (顶栏) ── */
   .main-header { padding: 8px 12px !important; }
   .header-title { font-size: 1.1rem !important; }
+
+  /* Issue 1: Nav bar — hide username text, keep icon + compact logout */
+  .header { padding: 8px 12px !important; flex-wrap: nowrap; overflow: hidden; }
+  .header-right { gap: 8px !important; flex-shrink: 1; min-width: 0; overflow: hidden; }
+  #user-name { display: none !important; }
+  .header-left h2 { font-size: 1.1rem !important; white-space: nowrap; }
+  #btn-user-mgmt { font-size: 13px !important; padding: 6px 8px !important; min-height: 44px !important; }
 
   /* ── 通用表单 ── */
   input[type="text"], input[type="number"], input[type="email"],

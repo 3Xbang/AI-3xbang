@@ -45,11 +45,11 @@ const photoManager = {
             if (byCategory[cat] !== undefined) byCategory[cat].push(p);
             else byCategory['general'].push(p);
         });
-        const todayFmt = new Date(this.currentDate+'T12:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+        const todayFmt = new Date(this.currentDate+'T12:00:00').toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});
         let html = `
         <div style="max-width:900px;margin:0 auto">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-            <b style="font-size:15px">📅 ${todayFmt}</b>
+            <b class="photo-date-display" style="font-size:15px">📅 ${todayFmt}</b>
             <input type="date" value="${this.currentDate}" onchange="photoManager.changeDate(this.value)"
               style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
             <div style="display:flex;gap:6px;flex-wrap:wrap">

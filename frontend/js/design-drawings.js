@@ -433,12 +433,15 @@ const DesignDrawings = {
             revisions.forEach(r => {
                 const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('zh-CN') : '';
                 html += `
-                    <div style="border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:8px;background:#fff;">
+                    <div data-rev-id="${r.id}" style="border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:8px;background:#fff;">
                         ${r.image_url ? `<img src="${this.esc(r.image_url)}" style="width:100%;border-radius:4px;margin-bottom:8px;cursor:pointer;" onclick="window.open('${this.esc(r.image_url)}','_blank')">` : ''}
-                        ${r.note_text ? `<div style="font-size:0.85rem;color:#2d3748;margin-bottom:6px;">${this.esc(r.note_text)}</div>` : ''}
+                        ${r.note_text ? `<div class="rev-note-text" style="font-size:0.85rem;color:#2d3748;margin-bottom:6px;">${this.esc(r.note_text)}</div>` : '<div class="rev-note-text" style="display:none;"></div>'}
                         <div style="font-size:0.75rem;color:#a0aec0;display:flex;justify-content:space-between;align-items:center;">
                             <span>${this.esc(r.created_by_name || '')} · ${this.esc(dateStr)}</span>
-                            ${canDel ? `<button style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.78rem;padding:0;" onclick="DesignDrawings._deleteRevision(${r.id})">🗑️</button>` : ''}
+                            <span>
+                                ${canDel ? `<button style="background:none;border:none;color:#3182ce;cursor:pointer;font-size:0.78rem;padding:0 6px 0 0;" onclick="DesignDrawings._editRevision(${r.id}, this)">✏️</button>` : ''}
+                                ${canDel ? `<button style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.78rem;padding:0;" onclick="DesignDrawings._deleteRevision(${r.id})">🗑️</button>` : ''}
+                            </span>
                         </div>
                     </div>`;
             });
@@ -501,6 +504,45 @@ const DesignDrawings = {
         } catch (e) {
             if (err) { err.textContent = e.message; err.style.display = 'block'; }
         }
+    },
+
+    /* ── Edit a revision (inline) ───────────────────────────────────── */
+    _editRevision(id, btnEl) {
+        const card = btnEl.closest('[data-rev-id]');
+        if (!card) return;
+        const noteDiv = card.querySelector('.rev-note-text');
+        if (!noteDiv) return;
+        const current = noteDiv.textContent.trim();
+
+        noteDiv.style.display = 'none';
+        const wrap = document.createElement('div');
+        wrap.id = 'edit-wrap-' + id;
+        wrap.innerHTML = `
+            <textarea id="edit-rev-${id}" style="width:100%;box-sizing:border-box;padding:6px;border:1px solid #3182ce;border-radius:4px;font-size:0.82rem;resize:vertical;min-height:50px;">${this.esc(current)}</textarea>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+                <button class="sb-btn primary" style="font-size:0.75rem;padding:2px 8px;" onclick="DesignDrawings._saveEditRevision(${id})">✓ 保存</button>
+                <button class="sb-btn" style="font-size:0.75rem;padding:2px 8px;" onclick="document.getElementById('edit-wrap-${id}').remove();document.querySelector('[data-rev-id=\\'${id}\\'] .rev-note-text').style.display='';">取消</button>
+            </div>`;
+        noteDiv.parentNode.insertBefore(wrap, noteDiv.nextSibling);
+        document.getElementById('edit-rev-' + id).focus();
+    },
+
+    async _saveEditRevision(id) {
+        const ta = document.getElementById('edit-rev-' + id);
+        if (!ta) return;
+        const newText = ta.value.trim();
+        if (!newText) { alert('内容不能为空'); return; }
+        try {
+            const token = localStorage.getItem('authToken');
+            const resp = await fetch(`/api/drawings/revisions/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+                body: JSON.stringify({ note_text: newText })
+            });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.message || '更新失败');
+            await this._loadRevisions();
+        } catch (e) { alert('保存失败: ' + e.message); }
     },
 
     /* ── Delete a revision ───────────────────────────────────────── */

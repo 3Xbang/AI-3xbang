@@ -2239,6 +2239,27 @@ router.post('/drawings/:id/revisions', authenticate, drawingUpload.single('revis
   }
 });
 
+// PUT /drawings/revisions/:id — edit revision note text (manager/supervisor)
+router.put('/drawings/revisions/:id', authenticate, async (req, res) => {
+  try {
+    if (!['manager', 'supervisor'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: '无权修改' });
+    }
+    const { note_text } = req.body;
+    if (!note_text || !note_text.trim()) {
+      return res.status(400).json({ success: false, message: '内容不能为空' });
+    }
+    const result = await pool.query(
+      'UPDATE drawing_revisions SET note_text=$1 WHERE id=$2 RETURNING *',
+      [note_text.trim(), req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ success: false, message: '未找到' });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // DELETE /drawings/revisions/:id — delete revision (manager only)
 router.delete('/drawings/revisions/:id', authenticate, async (req, res) => {
   try {

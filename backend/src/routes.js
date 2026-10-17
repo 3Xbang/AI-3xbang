@@ -2646,6 +2646,13 @@ router.get('/share/:token', async (req, res) => {
       [row.drawing_id]
     );
     const dd = ddRes.rows[0] || {};
+
+    // Also fetch revisions for this drawing (public — included in share)
+    const revRes = await pool.query(
+      'SELECT id, note_text, image_url, created_by_name, created_at FROM drawing_revisions WHERE drawing_id = $1 ORDER BY created_at ASC',
+      [row.drawing_id]
+    );
+
     return res.json({
       success: true,
       share_type: 'drawing',
@@ -2656,7 +2663,8 @@ router.get('/share/:token', async (req, res) => {
         project_name:   projectName,
         shared_by_name: row.shared_by_name,
         created_at:     row.created_at,
-        expires_at:     row.expires_at
+        expires_at:     row.expires_at,
+        revisions:      revRes.rows
       }
     });
   } catch (error) {

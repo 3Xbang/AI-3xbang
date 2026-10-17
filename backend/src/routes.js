@@ -2206,6 +2206,52 @@ router.post('/drawings/:id/share', authenticate, async (req, res) => {
   }
 });
 
+// GET /drawings/:id/revisions — list revisions
+router.get('/drawings/:id/revisions', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM drawing_revisions WHERE drawing_id = $1 ORDER BY created_at ASC',
+      [req.params.id]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /drawings/:id/revisions — add revision note/image (manager or supervisor only)
+router.post('/drawings/:id/revisions', authenticate, drawingUpload.single('revision_image'), async (req, res) => {
+  try {
+    if (!['manager', 'supervisor'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: '只有管理员或监管员才能添加修改意见' });
+    }
+    const { note_text } = req.body;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const result = await pool.query(
+      `INSERT INTO drawing_revisions (drawing_id, note_text, image_url, created_by, created_by_name)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.params.id, note_text || null, image_url,
+       req.user.id, req.user.full_name || req.user.username]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /drawings/revisions/:id — delete revision (manager only)
+router.delete('/drawings/revisions/:id', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'manager') {
+      return res.status(403).json({ success: false, message: '只有管理员才能删除修改意见' });
+    }
+    await pool.query('DELETE FROM drawing_revisions WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/projects/:id/maintenance — list tickets for a project
 router.get('/projects/:id/maintenance', authenticate, async (req, res) => {
   try {

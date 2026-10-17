@@ -237,7 +237,6 @@ const DesignDrawings = {
                         <button class="sb-btn" id="tool-select" onclick="DesignDrawings.setTool('select')" title="选择 Select">↖ 选</button>
                         <button class="sb-btn" id="tool-pencil" onclick="DesignDrawings.setTool('pencil')" title="画笔 Pencil">✏️</button>
                         <button class="sb-btn" id="tool-rect"   onclick="DesignDrawings.setTool('rect')"   title="矩形 Rect">⬜</button>
-                        <button class="sb-btn" id="tool-text"   onclick="DesignDrawings.setTool('text')"   title="文字 Text">T</button>
                         <button class="sb-btn" id="tool-arrow"  onclick="DesignDrawings.setTool('arrow')"  title="箭头 Arrow">→</button>
                         <span style="width:1px;background:#e2e8f0;height:20px;display:inline-block;margin:0 4px;"></span>
                         <!-- Colors -->

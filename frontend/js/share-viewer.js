@@ -70,7 +70,7 @@ const ShareViewer = {
               </div>
               <!-- Main: drawing + revision panel -->
               <div style="flex:1;display:flex;flex-direction:${isMobile ? 'column' : 'row'};overflow:hidden;min-height:0;">
-                <div id="sv-viewport" style="flex:1;${isMobile ? 'min-height:40vh;max-height:45vh;' : ''}overflow:hidden;display:flex;align-items:center;justify-content:center;background:#525659;cursor:grab;position:relative;">
+                <div id="sv-viewport" style="flex:1;${isMobile ? 'min-height:40vh;max-height:45vh;' : ''}overflow:hidden;display:flex;align-items:center;justify-content:center;background:#525659;cursor:grab;position:relative;touch-action:none;">
                   <img id="sv-img" src="${this._esc(d.file_url)}"
                        style="max-width:100%;max-height:100%;transform-origin:center center;user-select:none;pointer-events:none;"
                        draggable="false" alt="${this._esc(d.drawing_name)}" />
@@ -139,6 +139,7 @@ const ShareViewer = {
         let lastTap = 0;
 
         viewport.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // prevent browser default pinch-zoom / scroll
             if (e.touches.length === 1) {
                 tpan = true;
                 tSX = e.touches[0].clientX; tSY = e.touches[0].clientY;
@@ -151,7 +152,7 @@ const ShareViewer = {
                 tmx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 tmy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             }
-        }, { passive: true });
+        }, { passive: false });
 
         viewport.addEventListener('touchmove', (e) => {
             e.preventDefault();

@@ -98,55 +98,106 @@ const ShareViewer = {
     },
 
     _initZoom() {
-        const imgEl = document.getElementById('sv-img');
+        const imgEl   = document.getElementById('sv-img');
         const viewport = document.getElementById('sv-viewport');
         if (!imgEl || !viewport) return;
-        let scale = 1, translateX = 0, translateY = 0;
-        let isPanning = false, startX = 0, startY = 0, startTX = 0, startTY = 0;
 
-        function applyTransform() {
-            imgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        let scale = 1, ox = 0, oy = 0;
+
+        function apply() {
+            imgEl.style.transform = `translate(${ox}px,${oy}px) scale(${scale})`;
         }
 
-        imgEl.addEventListener('wheel', (e) => {
+        /* ── Mouse: wheel zoom + drag pan ───────────────────────── */
+        viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
-            scale = Math.max(0.2, Math.min(5, scale + (e.deltaY > 0 ? -0.1 : 0.1)));
-            applyTransform();
+            const r   = viewport.getBoundingClientRect();
+            const cx  = e.clientX - r.left - r.width  / 2;
+            const cy  = e.clientY - r.top  - r.height / 2;
+            const ns  = Math.max(0.5, Math.min(6, scale + (e.deltaY > 0 ? -0.15 : 0.15)));
+            const rat = ns / scale;
+            ox = cx - rat * (cx - ox);
+            oy = cy - rat * (cy - oy);
+            scale = ns;
+            apply();
         }, { passive: false });
 
+        let mPan = false, mSX = 0, mSY = 0, mSOX = 0, mSOY = 0;
         viewport.addEventListener('mousedown', (e) => {
-            isPanning = true;
-            startX = e.clientX; startY = e.clientY;
-            startTX = translateX; startTY = translateY;
-            viewport.style.cursor = 'grabbing';
+            mPan = true; mSX = e.clientX; mSY = e.clientY; mSOX = ox; mSOY = oy;
+            viewport.style.cursor = 'grabbing'; e.preventDefault();
         });
         window.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            translateX = startTX + (e.clientX - startX);
-            translateY = startTY + (e.clientY - startY);
-            applyTransform();
+            if (!mPan) return;
+            ox = mSOX + e.clientX - mSX; oy = mSOY + e.clientY - mSY; apply();
         });
-        window.addEventListener('mouseup', () => {
-            isPanning = false;
-            viewport.style.cursor = 'grab';
-        });
+        window.addEventListener('mouseup', () => { mPan = false; viewport.style.cursor = 'grab'; });
 
-        // Touch zoom (pinch)
-        let lastTouchDist = null;
+        /* ── Touch: pinch-zoom + single-finger pan + double-tap ─── */
+        let td = 0, tmx = 0, tmy = 0;           // pinch tracking
+        let tpan = false, tSX = 0, tSY = 0, tSOX = 0, tSOY = 0; // 1-finger pan
+        let lastTap = 0;
+
         viewport.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            if (e.touches.length === 1) {
+                tpan = true;
+                tSX = e.touches[0].clientX; tSY = e.touches[0].clientY;
+                tSOX = ox; tSOY = oy; td = 0;
+            } else if (e.touches.length === 2) {
+                tpan = false;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                td  = Math.hypot(dx, dy);
+                tmx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                tmy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             }
         }, { passive: true });
+
         viewport.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2 && lastTouchDist) {
-                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                scale = Math.max(0.2, Math.min(5, scale * (dist / lastTouchDist)));
-                lastTouchDist = dist;
-                applyTransform();
+            e.preventDefault();
+            if (e.touches.length === 1 && tpan) {
+                ox = tSOX + e.touches[0].clientX - tSX;
+                oy = tSOY + e.touches[0].clientY - tSY;
+                apply();
+            } else if (e.touches.length === 2 && td) {
+                const dx  = e.touches[0].clientX - e.touches[1].clientX;
+                const dy  = e.touches[0].clientY - e.touches[1].clientY;
+                const nd  = Math.hypot(dx, dy);
+                const nmx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const nmy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const r   = viewport.getBoundingClientRect();
+                const cx  = tmx - r.left - r.width  / 2;
+                const cy  = tmy - r.top  - r.height / 2;
+                const ns  = Math.max(0.5, Math.min(6, scale * (nd / td)));
+                const rat = ns / scale;
+                ox = cx - rat * (cx - ox) + (nmx - tmx);
+                oy = cy - rat * (cy - oy) + (nmy - tmy);
+                scale = ns; td = nd; tmx = nmx; tmy = nmy;
+                apply();
             }
+        }, { passive: false });
+
+        viewport.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) td = 0;
+            if (e.touches.length === 0) { tpan = false; }
+
+            // Double-tap: zoom 2.5× or reset
+            const now = Date.now();
+            if (now - lastTap < 280 && e.changedTouches.length === 1) {
+                if (scale > 1.5) {
+                    scale = 1; ox = 0; oy = 0;
+                } else {
+                    const r  = viewport.getBoundingClientRect();
+                    const cx = e.changedTouches[0].clientX - r.left - r.width  / 2;
+                    const cy = e.changedTouches[0].clientY - r.top  - r.height / 2;
+                    scale = 2.5;
+                    ox = -cx * (scale - 1);
+                    oy = -cy * (scale - 1);
+                }
+                apply();
+            }
+            lastTap = now;
         }, { passive: true });
-        viewport.addEventListener('touchend', () => { lastTouchDist = null; }, { passive: true });
     },
 
     _esc(s) {

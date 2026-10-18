@@ -37,9 +37,13 @@ const ShareViewer = {
             const createdStr = d.created_at ? new Date(d.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false }) : '';
 
             const revisions = d.revisions || [];
+            const isMobile = window.innerWidth <= 768;
+
             const revPanelHtml = revisions.length > 0 ? `
-              <div style="width:300px;min-width:220px;max-width:360px;background:#fff;border-left:1px solid #e2e8f0;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;">
-                <div style="padding:12px;border-bottom:1px solid #e2e8f0;background:#f7fafc;font-weight:700;font-size:0.9rem;color:#2d3748;flex-shrink:0;">
+              <div style="${isMobile
+                ? 'background:#fff;border-top:2px solid #e2e8f0;overflow-y:auto;flex-shrink:0;max-height:55vh;'
+                : 'width:300px;min-width:220px;max-width:360px;background:#fff;border-left:1px solid #e2e8f0;overflow-y:auto;flex-shrink:0;'}display:flex;flex-direction:column;">
+                <div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;background:#f7fafc;font-weight:700;font-size:0.88rem;color:#2d3748;flex-shrink:0;">
                   📝 修改意见 Revisions (${revisions.length})
                 </div>
                 <div style="padding:8px;overflow-y:auto;flex:1;">
@@ -47,7 +51,7 @@ const ShareViewer = {
                     const rDate = r.created_at ? new Date(r.created_at).toLocaleDateString('zh-CN') : '';
                     return `<div style="border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:8px;background:#fff;">
                       ${r.image_url ? `<img src="${this._esc(r.image_url)}" style="width:100%;border-radius:4px;margin-bottom:8px;cursor:pointer;" onclick="window.open('${this._esc(r.image_url)}','_blank')">` : ''}
-                      ${r.note_text ? `<div style="font-size:0.85rem;color:#2d3748;margin-bottom:6px;">${this._esc(r.note_text)}</div>` : ''}
+                      ${r.note_text ? `<div style="font-size:0.9rem;color:#2d3748;margin-bottom:6px;">${this._esc(r.note_text)}</div>` : ''}
                       <div style="font-size:0.75rem;color:#a0aec0;">${this._esc(r.created_by_name || '')} · ${this._esc(rDate)}</div>
                     </div>`;
                   }).join('')}
@@ -56,15 +60,17 @@ const ShareViewer = {
 
             document.getElementById('sv-root').innerHTML = `
               <!-- Top bar -->
-              <div style="background:#2d3748;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0;z-index:10;">
-                <span style="font-size:1rem;font-weight:700;">📐 ${this._esc(d.drawing_name)}</span>
-                <span style="color:#a0aec0;font-size:0.85rem;">项目: ${this._esc(d.project_name)}</span>
-                <span style="color:#a0aec0;font-size:0.85rem;">分享人: ${this._esc(d.shared_by_name)} ${this._esc(createdStr)}</span>
-                <span style="color:#f6ad55;font-size:0.82rem;">⚠️ 链接24小时有效 Valid 24h</span>
+              <div style="background:#2d3748;color:#fff;padding:8px 12px;flex-shrink:0;z-index:10;">
+                <div style="font-size:${isMobile ? '0.88rem' : '1rem'};font-weight:700;margin-bottom:4px;">📐 ${this._esc(d.drawing_name)}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.78rem;color:#a0aec0;">
+                  <span>项目: ${this._esc(d.project_name)}</span>
+                  <span>分享人: ${this._esc(d.shared_by_name)} ${this._esc(createdStr)}</span>
+                  <span style="color:#f6ad55;">⚠️ 链接24小时有效 Valid 24h</span>
+                </div>
               </div>
               <!-- Main: drawing + revision panel -->
-              <div style="flex:1;display:flex;overflow:hidden;">
-                <div id="sv-viewport" style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#525659;cursor:grab;position:relative;">
+              <div style="flex:1;display:flex;flex-direction:${isMobile ? 'column' : 'row'};overflow:hidden;min-height:0;">
+                <div id="sv-viewport" style="flex:1;${isMobile ? 'min-height:40vh;max-height:45vh;' : ''}overflow:hidden;display:flex;align-items:center;justify-content:center;background:#525659;cursor:grab;position:relative;">
                   <img id="sv-img" src="${this._esc(d.file_url)}"
                        style="max-width:100%;max-height:100%;transform-origin:center center;user-select:none;pointer-events:none;"
                        draggable="false" alt="${this._esc(d.drawing_name)}" />
@@ -72,7 +78,7 @@ const ShareViewer = {
                 ${revPanelHtml}
               </div>
               <!-- Bottom bar -->
-              <div style="background:#2d3748;color:#718096;padding:6px 16px;font-size:0.78rem;text-align:center;flex-shrink:0;">
+              <div style="background:#2d3748;color:#718096;padding:5px 12px;font-size:0.72rem;text-align:center;flex-shrink:0;">
                 此为只读查看链接 This is a read-only view link &nbsp;|&nbsp; 有效至 Expires: ${this._esc(expiryStr)}
               </div>`;
 

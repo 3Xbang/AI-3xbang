@@ -86,14 +86,14 @@ const Maintenance = {
                     '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" value="' + Number(item.qty || 0) + '" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
                     '<input class="td-item-unit" type="text" placeholder="ชิ้น" value="' + this.esc(item.unit || '') + '" style="' + iStyle + 'flex:1;min-width:48px;">' +
                     '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" value="' + Number(item.unit_price || 0) + '" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
-                    '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:36px;">✕</button>' +
+                    '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;">✕</button>' +
                     '</div>';
             });
             quoteSectionHtml = '<div style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px;margin-bottom:16px;">' +
                 '<div style="font-weight:600;color:#2b6cb0;margin-bottom:8px;">🏷️ 发送报价 Send Quote</div>' +
                 (t.quote_amount ? '<div style="font-size:0.85rem;color:#4a5568;margin-bottom:8px;">当前报价: <strong>฿' + curAmt + '</strong>' + (t.scheduled_date ? '　📅 ' + curDate : '') + '</div>' : '') +
                 '<div id="td-items-container">' + itemRowsHtml + '</div>' +
-                '<button class="sb-btn" style="width:100%;margin-bottom:8px;min-height:40px;" onclick="Maintenance._addQuoteItem()">+ 添加材料 Add Material</button>' +
+                '<button class="sb-btn" style="width:100%;margin-bottom:8px;min-height:44px;" onclick="Maintenance._addQuoteItem()">+ 添加材料 Add Material</button>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
                 '<input id="td-labor-cost" type="number" min="0" step="0.01" placeholder="工费 Labor ฿" value="' + (curLaborCost || '') + '" style="flex:1;min-width:110px;padding:8px;border:1px solid #bee3f8;border-radius:6px;font-size:0.95rem;" oninput="Maintenance._updateQuoteTotal()">' +
                 '<input id="td-scheduled-date" type="date" value="' + curDate + '" style="flex:1;min-width:130px;padding:8px;border:1px solid #bee3f8;border-radius:6px;font-size:0.95rem;"></div>' +
@@ -239,7 +239,7 @@ const Maintenance = {
             '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
             '<input class="td-item-unit" type="text" placeholder="ชิ้น" style="' + iStyle + 'flex:1;min-width:48px;">' +
             '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
-            '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:36px;">✕</button>';
+            '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;">✕</button>';
         container.appendChild(row);
     },
 

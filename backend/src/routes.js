@@ -2507,16 +2507,20 @@ router.post('/maintenance/:id/quote', authenticate, async (req, res) => {
     if (!ticketRes.rows.length) {
       return res.status(404).json({ success: false, message: '工单不存在' });
     }
-    const { quote_amount, scheduled_date } = req.body;
+    const { quote_amount: rawAmount, quote_items, labor_cost, scheduled_date } = req.body;
+    let quote_amount = Number(rawAmount || 0);
+    if (Array.isArray(quote_items) && quote_items.length > 0) {
+      quote_amount = quote_items.reduce((s, i) => s + Number(i.unit_price || 0) * Number(i.qty || 0), 0) + Number(labor_cost || 0);
+    }
     if (!quote_amount || Number(quote_amount) <= 0) {
       return res.status(400).json({ success: false, message: '报价金额必须大于0' });
     }
     const result = await pool.query(
       `UPDATE maintenance_tickets
-       SET quote_amount=$1, quote_status='quoted', scheduled_date=$2,
-           status='pending_quote', updated_at=NOW()
-       WHERE id=$3 RETURNING *`,
-      [quote_amount, scheduled_date || null, req.params.id]
+       SET quote_amount=$1, quote_items=$2, labor_cost=$3, scheduled_date=$4,
+           quote_status='quoted', status='pending_quote', updated_at=NOW()
+       WHERE id=$5 RETURNING *`,
+      [quote_amount, JSON.stringify(quote_items || []), Number(labor_cost) || 0, scheduled_date || null, req.params.id]
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {

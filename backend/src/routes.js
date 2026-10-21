@@ -2403,6 +2403,9 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
 
     // Owner approving/rejecting quote
     if (role === 'owner') {
+      if ((reqQuoteStatus === 'approved' || reqQuoteStatus === 'rejected') && ticket.quote_status !== 'quoted') {
+        return res.status(409).json({ success: false, message: '没有待确认的报价 No pending quote to approve/reject' });
+      }
       if (reqQuoteStatus === 'approved') {
         const result = await pool.query(
           `UPDATE maintenance_tickets
@@ -2681,7 +2684,7 @@ router.get('/share/:token', async (req, res) => {
     const tokenRes = await pool.query(
       `SELECT dst.*, p.name AS project_name_json
        FROM drawing_share_tokens dst
-       JOIN projects p ON p.id = dst.project_id
+       LEFT JOIN projects p ON p.id = dst.project_id
        WHERE dst.token = $1`,
       [token]
     );

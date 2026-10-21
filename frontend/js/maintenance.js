@@ -239,7 +239,10 @@ const Maintenance = {
             if (!inp.files[0]) return;
             const fd = new FormData();
             fd.append('photo', inp.files[0]);
-            fd.append('project_id', this.projectId);
+            // Use the ticket's own project_id (null for standalone tickets)
+            const tkObj = this.tickets.find(x => x.id === ticketId);
+            const projId = tkObj ? tkObj.project_id : null;
+            if (projId) fd.append('project_id', projId);
             fd.append('ticket_id', ticketId);
             fd.append('photo_type', photoType);
             fd.append('photo_category', 'maintenance');

@@ -675,21 +675,33 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
   try {
     const { project_id, process_execution_id, material_id } = req.body;
     const photo_type = req.body.photo_type || 'other';
+    // Parse ticketId early — needed for maintenance photo access check
+    const ticketId = req.body.ticket_id ? parseInt(req.body.ticket_id, 10) : null;
     if (!req.file) {
-      return res.status(400).json({ success: false, message: '��ѡ����Ƭ' });
+      return res.status(400).json({ success: false, message: '请选择照片' });
     }
 
-    // �����Ŀ����Ȩ��
-    const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, project_id);
-    if (!hasAccess) {
-      return res.status(403).json({ success: false, message: '��Ȩ���ʴ���Ŀ' });
+    // Access check — project-based OR maintenance-ticket-based for standalone tickets
+    if (project_id) {
+      const hasAccess = await checkProjectAccess(pool, req.user.id, req.user.role, project_id);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, message: '无权访问该项目' });
+      }
+    } else if (ticketId) {
+      // Standalone maintenance ticket (project_id is null) — verify ticket access
+      const { allowed } = await checkMaintenanceTicketAccess(pool, req.user.id, req.user.role, ticketId);
+      if (!allowed) {
+        return res.status(403).json({ success: false, message: '无权操作此工单' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: '缺少 project_id 或 ticket_id' });
     }
 
     // Duplicate check: same file size from same user in last 30 seconds
     const dupCheck = await pool.query(
-      `SELECT id FROM photos WHERE project_id=$1 AND uploaded_by=$2 AND file_size=$3
+      `SELECT id FROM photos WHERE project_id IS NOT DISTINCT FROM $1 AND uploaded_by=$2 AND file_size=$3
        AND upload_time > NOW() - INTERVAL '30 seconds' LIMIT 1`,
-      [project_id, req.user.username, req.file.size]
+      [project_id || null, req.user.username, req.file.size]
     );
     if (dupCheck.rows.length) {
       return res.status(409).json({ success: false, message: '照片已上传 / รูปนี้เพิ่งอัปโหลดไปแล้ว' });
@@ -698,7 +710,6 @@ router.post('/photos/upload', authenticate, upload.single('photo'), async (req, 
     const photo_category = req.body.photo_category || 'general';
     const work_item_name = req.body.work_item_name || null;
     const report_date_val = req.body.report_date || null;
-    const ticketId = req.body.ticket_id ? parseInt(req.body.ticket_id, 10) : null;
 
     const result = await pool.query(`
       INSERT INTO photos
@@ -2331,7 +2342,7 @@ router.post('/projects/:id/maintenance', authenticate, async (req, res) => {
     const hasAccess = await checkProjectAccess(pool, userId, role, req.params.id);
     if (!hasAccess) return res.status(403).json({ success: false, message: '无权访问该项目' });
 
-    const { title, description, assigned_to, assigned_name, priority } = req.body;
+    const { title, description, assigned_to, assigned_name, priority, location, category } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ success: false, message: '标题不能为空 title required' });
     }
@@ -2347,8 +2358,8 @@ router.post('/projects/:id/maintenance', authenticate, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO maintenance_tickets
          (project_id, title, description, assigned_to, assigned_name,
-          priority, submitted_by_owner, created_by, created_by_name, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
+          priority, submitted_by_owner, created_by, created_by_name, status, location, category)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10,$11)
        RETURNING *`,
       [
         req.params.id,
@@ -2359,7 +2370,9 @@ router.post('/projects/:id/maintenance', authenticate, async (req, res) => {
         priority || 'normal',
         isOwnerSubmit,
         userId,
-        createdByName
+        createdByName,
+        location || null,
+        category || null
       ]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -2415,6 +2428,9 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
     if (role === 'worker') {
       if (status !== 'completed') {
         return res.status(403).json({ success: false, message: '工人只能标记工单为完成' });
+      }
+      if (ticket.status !== 'in-progress') {
+        return res.status(400).json({ success: false, message: '工单尚未开始施工，无法完工 Ticket must be in-progress before completion' });
       }
       const photoCheck = await pool.query(
         `SELECT id FROM photos WHERE ticket_id = $1 AND photo_type = 'after' LIMIT 1`,

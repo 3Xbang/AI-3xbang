@@ -1072,8 +1072,12 @@ function getGemini(modelOverride) {
   return genAI.getGenerativeModel({ model });
 }
 
-// 自动轮换模型，处理 503/429 过载
+// 自动轮换模型，处理 503/429 过载。若无 GEMINI_API_KEY，直接用 OpenRouter。
 async function callGemini(prompt, imagePart) {
+  // No Gemini key — fall back to OpenRouter (already configured)
+  if (!process.env.GEMINI_API_KEY) {
+    return await callFreeAI(prompt);
+  }
   const tried = new Set();
   // 从可用列表里尽量多放几个，冷门模型往往不堵
   const queue = [
@@ -1206,8 +1210,7 @@ router.post('/projects/:projectId/ai-extract-contract', authenticate, requirePro
 
   const model = getGemini();
 
-  const prompt = `คุณเป็นผู้เชี่ยวชาญสัญญาก่อสร้าง
-คุณต้องอ่านสัญญาก่อสร้างนี้และดึงข้อกำหนดเรื่องความรับผิดชอบออกมา
+  const prompt = `คุณเป็นผู้เชี่ยวชาญสัญญาก่อสร้างและดึงข้อกำหนดเรื่องความรับผิดชอบออกมา
 
 โดยเฉพาะ:
 1. วัสดุหลัก (主材) = สิ่งที่เจ้าของโครงการ (甲方) ต้องจัดหาและจ่าย
@@ -1367,21 +1370,20 @@ ${RECORDS_TEXT}
 
     send('status',{message:'AI กำลังประมวลผล... / AI正在推理...'});
 
-    const model = getGemini();
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    const text = await callFreeAI(prompt);
+    const cleanedAI = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
 
     send('status',{message:'กำลังประมวลผลผลลัพธ์... / 正在处理结果...'});
 
     try {
-      const analysis = JSON.parse(text);
+      const analysis = JSON.parse(cleanedAI);
       // Attach analysis to records for frontend
       const analysisMap = {};
       analysis.forEach(a => { analysisMap[a.id] = a; });
       const enriched = records.map(r => ({ ...r, ai: analysisMap[r.id] || { flags:[], status:'normal', reason_th:'ไม่ได้วิเคราะห์', reason_cn:'未分析' } }));
       send('result',{ records: enriched, total: records.length, analyzed: analysis.length });
     } catch(e) {
-      send('error',{ message:'แยก JSON ไม่ได้ / 解析失败: '+text.slice(0,300) });
+      send('error',{ message:'แยก JSON ไม่ได้ / 解析失败: '+cleanedAI.slice(0,300) });
     }
   } catch(e) {
     send('error',{ message: e.message });

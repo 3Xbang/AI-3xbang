@@ -936,6 +936,7 @@ const ProjectDashboard = {
                 preview.innerHTML += `<img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">`;
             });
         });
+    },
 
     // 提交新建工单
     async _submitCreateTicket(e) {

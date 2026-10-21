@@ -58,7 +58,6 @@ const ProjectDetail = {
         if (['manager','supervisor','purchaser','foreman','owner'].includes(PermissionManager.role())) list.push({ v: 'procurement', icon: '📦', zh: '采购总览', th: 'Procurement' });
         list.push({ v: 'photos', icon: '📷', zh: '现场照片', th: 'Photos' }); // All roles can see site photos
         list.push({ v: 'drawings', icon: '📐', zh: '设计图', th: 'Drawings' }); // All roles can view design drawings
-        list.push({ v: 'maintenance', icon: '🛠️', zh: '维修', th: 'Maintenance' });
         if (PermissionManager.canViewOverview())   list.push({ v: 'overview', icon: '📊', zh: '总览提醒', th: 'Overview' });
         return list;
     },
@@ -190,10 +189,6 @@ const ProjectDetail = {
             case 'drawings':
                 container.innerHTML = '<div id="drawings-container"></div>';
                 if (typeof DesignDrawings !== 'undefined') DesignDrawings.init(this.projectId);
-                break;
-            case 'maintenance':
-                container.innerHTML = '<div id="maintenance-container"></div>';
-                if (typeof Maintenance !== 'undefined') Maintenance.init(this.projectId);
                 break;
             case 'photos':
                 container.innerHTML = this.renderPhotos();

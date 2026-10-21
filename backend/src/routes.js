@@ -15,7 +15,7 @@ const VALID_ROLES = [
   'owner', 'patrol', 'worker', 'executor'
 ];
 
-const VALID_STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
+const VALID_STATUSES = ['pending', 'pending_quote', 'in-progress', 'completed', 'cancelled'];
 
 async function checkMaintenanceTicketAccess(pool, userId, userRole, ticketId) {
   const r = await pool.query(
@@ -26,7 +26,8 @@ async function checkMaintenanceTicketAccess(pool, userId, userRole, ticketId) {
   const ticket = r.rows[0];
   const allowed =
     ['manager', 'supervisor'].includes(userRole) ||
-    (userRole === 'worker' && ticket.assigned_to === userId);
+    (userRole === 'worker' && ticket.assigned_to === userId) ||
+    (userRole === 'owner' && ticket.submitted_by_owner && String(ticket.created_by) === String(userId));
   return { ticket, allowed };
 }
 
@@ -2378,10 +2379,37 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
     if (!allowed) return res.status(403).json({ success: false, message: '无权操作此工单' });
 
     const { role, id: userId } = req.user;
-    const { status, assigned_to, assigned_name, description, priority } = req.body;
+    const { status, assigned_to, assigned_name, description, priority,
+            quote_amount, scheduled_date,
+            completion_note, warranty_months,
+            quote_status: reqQuoteStatus } = req.body;
 
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ success: false, message: '无效的工单状态 invalid status' });
+    }
+
+    // Owner approving/rejecting quote
+    if (role === 'owner') {
+      if (reqQuoteStatus === 'approved') {
+        const result = await pool.query(
+          `UPDATE maintenance_tickets
+           SET quote_status='approved', quote_approved_at=NOW(), status='in-progress', updated_at=NOW()
+           WHERE id=$1 RETURNING *`,
+          [ticket.id]
+        );
+        return res.json({ success: true, data: result.rows[0] });
+      }
+      if (reqQuoteStatus === 'rejected') {
+        const result = await pool.query(
+          `UPDATE maintenance_tickets
+           SET quote_status='rejected', quote_amount=NULL, scheduled_date=NULL, status='pending', updated_at=NOW()
+           WHERE id=$1 RETURNING *`,
+          [ticket.id]
+        );
+        return res.json({ success: true, data: result.rows[0] });
+      }
+      // Owner has no other editable fields
+      return res.status(403).json({ success: false, message: '业主只能批准或拒绝报价' });
     }
 
     if (role === 'worker') {
@@ -2395,8 +2423,19 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
       if (!photoCheck.rows.length) {
         return res.status(400).json({ success: false, message: '请先上传完工照片 Upload completion photo first' });
       }
+      const result = await pool.query(
+        `UPDATE maintenance_tickets
+         SET status='completed', completed_at=NOW(),
+             completion_note=COALESCE($1, completion_note),
+             warranty_months=COALESCE($2, warranty_months),
+             updated_at=NOW()
+         WHERE id=$3 RETURNING *`,
+        [completion_note || null, warranty_months != null ? warranty_months : null, ticket.id]
+      );
+      return res.json({ success: true, data: result.rows[0] });
     }
 
+    // Manager / supervisor
     const updates = ['updated_at = NOW()'];
     const params = [];
     let i = 1;
@@ -2407,14 +2446,22 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
         updates.push(`completed_at = NOW()`);
       }
     }
-    if (role !== 'worker') {
-      if (assigned_to !== undefined) { updates.push(`assigned_to = $${i++}`);   params.push(assigned_to || null); }
-      if (assigned_name)             { updates.push(`assigned_name = $${i++}`);  params.push(assigned_name); }
-      if (description !== undefined) { updates.push(`description = $${i++}`);    params.push(description); }
-      if (priority)                  { updates.push(`priority = $${i++}`);       params.push(priority); }
-    }
-    params.push(ticket.id);
+    if (assigned_to !== undefined) { updates.push(`assigned_to = $${i++}`);   params.push(assigned_to || null); }
+    if (assigned_name)             { updates.push(`assigned_name = $${i++}`);  params.push(assigned_name); }
+    if (description !== undefined) { updates.push(`description = $${i++}`);    params.push(description); }
+    if (priority)                  { updates.push(`priority = $${i++}`);       params.push(priority); }
 
+    // Manager/supervisor may set quote fields
+    if (quote_amount !== undefined) {
+      updates.push(`quote_amount = $${i++}`);  params.push(quote_amount);
+      updates.push(`quote_status = 'quoted'`);
+      updates.push(`status = 'pending_quote'`);
+    }
+    if (scheduled_date !== undefined) {
+      updates.push(`scheduled_date = $${i++}`); params.push(scheduled_date || null);
+    }
+
+    params.push(ticket.id);
     const result = await pool.query(
       `UPDATE maintenance_tickets SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
       params
@@ -2422,6 +2469,36 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('PUT /maintenance/:id error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/maintenance/:id/quote — set quote (manager/supervisor only)
+router.post('/maintenance/:id/quote', authenticate, async (req, res) => {
+  if (!['manager', 'supervisor'].includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: '只有管理员或主管可以提交报价' });
+  }
+  try {
+    const ticketRes = await pool.query(
+      'SELECT * FROM maintenance_tickets WHERE id = $1', [req.params.id]
+    );
+    if (!ticketRes.rows.length) {
+      return res.status(404).json({ success: false, message: '工单不存在' });
+    }
+    const { quote_amount, scheduled_date } = req.body;
+    if (!quote_amount || Number(quote_amount) <= 0) {
+      return res.status(400).json({ success: false, message: '报价金额必须大于0' });
+    }
+    const result = await pool.query(
+      `UPDATE maintenance_tickets
+       SET quote_amount=$1, quote_status='quoted', scheduled_date=$2,
+           status='pending_quote', updated_at=NOW()
+       WHERE id=$3 RETURNING *`,
+      [quote_amount, scheduled_date || null, req.params.id]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('POST /maintenance/:id/quote error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -2494,18 +2571,19 @@ router.post('/maintenance', authenticate, async (req, res) => {
     return res.status(403).json({ success: false, message: '无权创建工单' });
   }
   try {
-    const { title, description, customer_name, priority, assigned_to, assigned_name } = req.body;
+    const { title, description, customer_name, priority, assigned_to, assigned_name, location, category } = req.body;
     if (!title || !customer_name) {
       return res.status(400).json({ success: false, message: '标题和客户名称必填' });
     }
     const isOwner = req.user.role === 'owner';
     const result = await pool.query(
       `INSERT INTO maintenance_tickets
-       (title, description, customer_name, priority, assigned_to, assigned_name, created_by, created_by_name, status, submitted_by_owner)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9) RETURNING *`,
+       (title, description, customer_name, priority, assigned_to, assigned_name, created_by, created_by_name, status, submitted_by_owner, location, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11) RETURNING *`,
       [title, description || '', customer_name, priority || 'normal',
        assigned_to || null, assigned_name || null,
-       req.user.id, req.user.full_name || req.user.username, isOwner]
+       req.user.id, req.user.full_name || req.user.username, isOwner,
+       location || null, category || null]
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -2562,7 +2640,14 @@ router.get('/maintenance', authenticate, async (req, res) => {
         try { const n = JSON.parse(raw); project_name = n.zh || n.th || raw; }
         catch (_) { project_name = raw; }
       }
-      return { ...row, project_name };
+      const QUOTE_LABELS = {
+        no_quote: '无报价',
+        quoted: '已报价(等待确认)',
+        approved: '已批准',
+        rejected: '已拒绝'
+      };
+      const quote_status_label = QUOTE_LABELS[row.quote_status] || row.quote_status || '无报价';
+      return { ...row, project_name, quote_status_label };
     });
     res.json({ success: true, data: rows });
   } catch (error) {

@@ -769,26 +769,60 @@ const ProjectDashboard = {
             tickets.forEach(t => {
                 const esc = typeof Maintenance !== 'undefined' ? Maintenance.esc.bind(Maintenance) : (s => String(s||''));
                 const badge = typeof Maintenance !== 'undefined' ? Maintenance._badgeHtml(t.status) : '';
+                const catBadge = this._categoryBadgeHtml(t.category);
+
+                // Owner compact status timeline
+                let ownerTimeline = '';
+                if (isOwner) {
+                    const qs = t.quote_status || 'no_quote';
+                    let active = 0;
+                    if (['pending_quote','in-progress','completed'].includes(t.status) || ['quoted','approved'].includes(qs)) active = 1;
+                    if (qs === 'approved' || ['in-progress','completed'].includes(t.status)) active = 2;
+                    if (['in-progress','completed'].includes(t.status)) active = 3;
+                    if (t.status === 'completed') active = 4;
+                    const tlLabels = ['提交','报价中','等待确认','施工中','已完工'];
+                    ownerTimeline = '<div style="display:flex;align-items:flex-start;padding:4px 12px 8px;background:#f7fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;margin-top:-2px;margin-bottom:6px;">' +
+                        tlLabels.map(function(lbl, i, arr) {
+                            const done = i <= active;
+                            const dot  = '<div style="display:flex;flex-direction:column;align-items:center;"><div style="width:14px;height:14px;border-radius:50%;background:' + (done?'#38a169':'#e2e8f0') + ';border:2px solid ' + (done?'#276749':'#cbd5e0') + ';"></div><div style="font-size:0.55rem;color:' + (done?'#276749':'#a0aec0') + ';white-space:nowrap;margin-top:2px;">' + lbl + '</div></div>';
+                            const conn = i < arr.length-1 ? '<div style="flex:1;height:2px;background:' + (i<active?'#38a169':'#e2e8f0') + ';margin-top:7px;margin-left:1px;margin-right:1px;flex-shrink:1;"></div>' : '';
+                            return dot + conn;
+                        }).join('') + '</div>';
+                }
+
                 html += `
         <div onclick="ProjectDashboard._openTicketDetail(${t.id})"
-             style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;
-                    padding:14px 16px;margin-bottom:12px;cursor:pointer;
+             style="background:#fff;border:1px solid #e2e8f0;border-radius:${isOwner?'10px 10px 0 0':'10px'};
+                    padding:14px 16px;margin-bottom:${isOwner?'0':'12px'};cursor:pointer;
                     box-shadow:0 1px 3px rgba(0,0,0,.06);">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
             ${badge}
             <span style="font-weight:600;font-size:1rem;flex:1;">${esc(t.title)}</span>
+            ${catBadge}
           </div>
-          <div style="font-size:0.82rem;color:#718096;display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:0.82rem;color:#718096;display:flex;gap:8px;flex-wrap:wrap;">
             <span>📁 ${esc(t.customer_name || t.project_name || '—')}</span>
+            ${t.location ? `<span>📍 ${esc(t.location)}</span>` : ''}
             <span>👷 ${esc(t.assigned_name || '未指派')}</span>
             <span>🕐 ${t.updated_at ? new Date(t.updated_at).toLocaleDateString('zh-CN') : ''}</span>
             ${t.priority === 'urgent' ? '<span style="color:#e53e3e;font-weight:600;">⚡ 紧急</span>' : ''}
+            ${t.quote_amount ? `<span style="color:#c05621;font-weight:600;">🏷️ ฿${Number(t.quote_amount).toLocaleString()}</span>` : ''}
           </div>
-        </div>`;
+        </div>
+        ${ownerTimeline}`;
             });
         }
         html += '</div>';
         panel.innerHTML = html;
+    },
+
+    // Category badge helper (mirrors Maintenance._categoryBadgeHtml — decoupled copy)
+    _categoryBadgeHtml(category) {
+        if (!category) return '';
+        const esc = typeof Maintenance !== 'undefined' ? Maintenance.esc.bind(Maintenance) : (s => String(s||''));
+        const colors = {'防水/漏水':'#3182ce','电气/照明':'#d69e2e','木工/门窗':'#744210','泳池/户外':'#2c7a7b','空调/通风':'#2b6cb0','瓷砖/地板':'#c05621','外墙/涂料':'#276749','其他':'#718096'};
+        const bg = colors[category] || '#718096';
+        return `<span style="background:${bg};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600;white-space:nowrap;">${esc(category)}</span>`;
     },
 
     // 打开工单详情
@@ -836,6 +870,24 @@ const ProjectDashboard = {
             <label>描述 Description</label>
             <textarea id="mdc-desc" class="sb-input" rows="3" placeholder="详细说明…"></textarea>
           </div>
+          <div class="sb-field">
+            <label>位置 Location</label>
+            <input id="mdc-location" class="sb-input" maxlength="200" placeholder="哪个房间/区域 e.g. 主卧卫生间, 客厅, 泳池">
+          </div>
+          <div class="sb-field">
+            <label>类别 Category</label>
+            <select id="mdc-category" class="sb-input">
+              <option value="">— 请选择 —</option>
+              <option value="防水/漏水">防水/漏水</option>
+              <option value="电气/照明">电气/照明</option>
+              <option value="木工/门窗">木工/门窗</option>
+              <option value="泳池/户外">泳池/户外</option>
+              <option value="空调/通风">空调/通风</option>
+              <option value="瓷砖/地板">瓷砖/地板</option>
+              <option value="外墙/涂料">外墙/涂料</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
           ${!isOwner ? `
           <div class="sb-field">
             <label>指派工人 Assign Worker</label>
@@ -877,10 +929,12 @@ const ProjectDashboard = {
         const assigned_name = workerSel?.options[workerSel.selectedIndex]?.dataset.name || null;
         const priority      = document.getElementById('mdc-priority')?.value || 'normal';
         const description   = document.getElementById('mdc-desc')?.value || null;
+        const location      = document.getElementById('mdc-location')?.value.trim() || null;
+        const category      = document.getElementById('mdc-category')?.value || null;
         try {
             const res = await apiRequest('/api/maintenance', {
                 method: 'POST',
-                body: JSON.stringify({ title, description, customer_name, priority, assigned_to, assigned_name })
+                body: JSON.stringify({ title, description, customer_name, priority, assigned_to, assigned_name, location, category })
             });
             if (!res.success) throw new Error(res.message);
             document.getElementById('modal-container').innerHTML = '';

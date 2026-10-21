@@ -1,8 +1,8 @@
 ﻿// purchase-audit.js -- lt Purchase ludit System v5
 const PurchaseAudit = {
-    purchases: [], boq: [], projecttd: null, analyzing: false,
+    purchases: [], boq: [], projectId: null, analyzing: false,
 
-    init(pid) { this.projecttd=pid; this.purchases=[]; this.boq=[]; this.render(); },
+    init(pid) { this.projectId=pid; this.purchases=[]; this.boq=[]; this.render(); },
     esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
     fmt(n,d=0){ return n==null?'-':Number(n).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); },
     fmtDate(v){ if(!v) return ''; return String(v).slice(0,10); },
@@ -123,7 +123,7 @@ const PurchaseAudit = {
 
     async _loadRules() {
         try {
-            const r=await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
+            const r=await apiRequest('/api/projects/'+this.projectId+'/ai-rules');
             const rules=r.data&&r.data.rules;
             if(rules&&rules.trim()){
                 const card=document.getElementById('pa-saved-rules-card');
@@ -144,8 +144,8 @@ const PurchaseAudit = {
             if(typeof app!=='undefined') app.showLoading();
             const fd=new FormData();
             fd.append('contract',file);
-            const r=await fetch(window.location.origin+'/api/projects/'+this.projecttd+'/ai-extract-contract',
-                {method:'POST',headers:{luthorization:'Bearer '+localStorage.getttem('authToken')},body:fd});
+            const r=await fetch(window.location.origin+'/api/projects/'+this.projectId+'/ai-extract-contract',
+                {method:'POST',headers:{Authorization:'Bearer '+localStorage.getItem('authToken')},body:fd});
             const j=await r.json();
             if(typeof app!=='undefined') app.hideLoading();
             if(!j.success) throw new Error(j.message);
@@ -174,7 +174,7 @@ const PurchaseAudit = {
         const rules=(document.getElementById('pa-rules-text')||{}).value||'';
         if(!rules.trim()){alert('Please enter rules first');return;}
         try {
-            await apiRequest('/api/projects/'+this.projecttd+'/ai-rules',{method:'PUT',body:JSON.stringify({rules})});
+            await apiRequest('/api/projects/'+this.projectId+'/ai-rules',{method:'PUT',body:JSON.stringify({rules})});
             if(typeof app!=='undefined'&&app.showToast) app.showToast('Rules saved 规则已保存','success');
             const card=document.getElementById('pa-saved-rules-card');
             const pre=document.getElementById('pa-saved-rules-pre');
@@ -223,7 +223,7 @@ const PurchaseAudit = {
 
     async _checkRulesWarning() {
         try {
-            const r = await apiRequest('/api/projects/'+this.projecttd+'/ai-rules');
+            const r = await apiRequest('/api/projects/'+this.projectId+'/ai-rules');
             const rules = r.data && r.data.rules;
             const warn = document.getElementById('pa-rules-warning');
             if (!warn) return;
@@ -244,7 +244,7 @@ const PurchaseAudit = {
 
     async _loadFromDB() {
         try {
-            const r=await apiRequest('/api/purchase-records?limit=300'+(this.projecttd?'&project_id='+this.projecttd:''));
+            const r=await apiRequest('/api/purchase-records?limit=300'+(this.projectId?'&project_id='+this.projectId:''));
             this.purchases=(r.data||[]).map(row=>({...row, _date: row.purchase_date?String(row.purchase_date).slice(0,10):''}));
             const bar=document.getElementById('pa-analyze-bar');
             if(bar) bar.style.display=this.purchases.length?'':'none';
@@ -262,7 +262,7 @@ const PurchaseAudit = {
             // luto-load cached analysis result
             if(this.purchases.length) {
                 try {
-                    const cached=localStorage.getttem('pa_result_'+this.projecttd);
+                    const cached=localStorage.getItem('pa_result_'+this.projectId);
                     if(cached){
                         const {d,ts}=JSON.parse(cached);
                         if(bar) bar.style.display='none'; // hide big button while cached shown
@@ -279,7 +279,7 @@ const PurchaseAudit = {
                             report.insertBefore(div.firstChild,report.firstChild);
                         }
                     }
-                } catch(e){ localStorage.removettem('pa_result_'+this.projecttd); }
+                } catch(e){ localStorage.removeItem('pa_result_'+this.projectId); }
             }
         } catch(e){ console.error('loadFromDB',e); }
     },
@@ -306,9 +306,9 @@ const PurchaseAudit = {
         const setBar=p=>{const el=document.getElementById('pa-ai-bar');if(el)el.style.width=p+'%';};
 
         const doRun=async()=>{
-            const token=localStorage.getttem('authToken');
-            const resp=await fetch(window.location.origin+'/api/projects/'+this.projecttd+'/ai-analyze',
-                {method:'POST',headers:{'Content-Type':'application/json','luthorization':'Bearer '+token},body:JSON.stringify({boq:this.boq})});
+            const token=localStorage.getItem('authToken');
+            const resp=await fetch(window.location.origin+'/api/projects/'+this.projectId+'/ai-analyze',
+                {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({boq:this.boq})});
             if(!resp.ok) throw new Error('Server error '+resp.status);
             const reader=resp.body.getReader();
             const dec=new TextDecoder();
@@ -330,7 +330,7 @@ const PurchaseAudit = {
                     try{
                         const d=JSON.parse(data);
                         if(ev==='status'){log(d.message);setBar(60);}
-                        if(ev==='result'){setBar(100);this._renderReport(d);try{localStorage.setttem('pa_result_'+this.projecttd,JSON.stringify({d,ts:Date.now()}));}catch(_){}}
+                        if(ev==='result'){setBar(100);this._renderReport(d);try{localStorage.setItem('pa_result_'+this.projectId,JSON.stringify({d,ts:Date.now()}));}catch(_){}}
                         if(ev==='error'){
                             const msg=d.message||'';
                             if(msg.includes('503')||msg.includes('high demand')||msg.includes('Service Unavailable')) throw new Error('__RETRY__:'+msg);
@@ -382,9 +382,9 @@ const PurchaseAudit = {
         const mixedRows=records.filter(r=>r.ai&&(r.ai.status==='mixed_review'||r.ai.flags&&r.ai.flags.includes('mixed_review')));
         const dupRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('duplicate'));
         const highRows=records.filter(r=>r.ai&&r.ai.flags&&r.ai.flags.includes('price_high'));
-        const totallmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
-        const deductlmt=deductRows.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
-        const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_lmount||0),0);
+        const totalAmt=records.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
+        const deductAmt=deductRows.reduce((s,r)=>s+gn(r,'Total_Price','total_price'),0);
+        const boqTotal=this.boq.reduce((s,b)=>s+Number(b.Total_Amount||0),0);
         const report=document.getElementById('pa-report');
         if(!report) return;
 
@@ -392,20 +392,20 @@ const PurchaseAudit = {
 
         // Store for later use by agreement toggle and print
         this._lastDeductRows = deductRows;
-        this._lastDeductlmt = deductlmt;
+        this._lastDeductAmt = deductAmt;
 
         // Load existing agreements
         this._agreements = this._agreements || new Set();
-        apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements').then(r=>{
+        apiRequest('/api/projects/'+this.projectId+'/deduction-agreements').then(r=>{
             (r.data||[]).forEach(a=>this._agreements.add(a.invoice_no+'|'+a.item_name_cn));
-            this._reRenderDeductSection(deductRows, deductlmt, isAdmin);
+            this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
         }).catch(()=>{});
 
         let html='';
         html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
-          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totallmt)}</div><div style="font-size:12px;color:#64748b">Total 总采购额</div></div>
-          ${boqTotal>0?`<div class="pa-kpi ${totallmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totallmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">Budget used 已用预算</div></div>`:''}
-          <div class="pa-kpi ${deductlmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductlmt)}</div><div style="font-size:12px;color:#64748b">🚫 Should deduct 应扣回</div></div>
+          <div class="pa-kpi ok"><div class="pa-kpi-n">฿${this.fmt(totalAmt)}</div><div style="font-size:12px;color:#64748b">Total 总采购额</div></div>
+          ${boqTotal>0?`<div class="pa-kpi ${totalAmt>boqTotal*1.1?'danger':'ok'}"><div class="pa-kpi-n">${Math.round(totalAmt/boqTotal*100)}%</div><div style="font-size:12px;color:#64748b">Budget used 已用预算</div></div>`:''}
+          <div class="pa-kpi ${deductAmt>0?'warn':'ok'}"><div class="pa-kpi-n">฿${this.fmt(deductAmt)}</div><div style="font-size:12px;color:#64748b">🚫 Should deduct 应扣回</div></div>
           <div class="pa-kpi ${dupRows.length?'danger':'ok'}"><div class="pa-kpi-n">${dupRows.length}</div><div style="font-size:12px;color:#64748b">⚠️ Duplicate receipts 重复单据</div></div>
           <div class="pa-kpi ${highRows.length?'warn':'ok'}"><div class="pa-kpi-n">${highRows.length}</div><div style="font-size:12px;color:#64748b">📈 High price 价格偏高</div></div>
           ${mixedRows.length?`<div class="pa-kpi warn"><div class="pa-kpi-n">${mixedRows.length}</div><div style="font-size:12px;color:#64748b">🔍 Mixed items 混合需核查</div></div>`:''}
@@ -479,16 +479,16 @@ const PurchaseAudit = {
           }).join('')}
           <tr style="background:#f8fafc;font-weight:700">
             <td colspan="4" style="text-align:right">Total 合计</td>
-            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totallmt)}</td>
+            <td style="text-align:right;color:#1e3a8a">฿${this.fmt(totalAmt)}</td>
             <td></td>
           </tr></tbody></table></div></div>`;
 
         report.innerHTML=html;
         // Render deduct section after setting innerHTML
-        this._reRenderDeductSection(deductRows, deductlmt, isAdmin);
+        this._reRenderDeductSection(deductRows, deductAmt, isAdmin);
     },
 
-    _reRenderDeductSection(deductRows, deductlmt, isAdmin) {
+    _reRenderDeductSection(deductRows, deductAmt, isAdmin) {
         const sec = document.getElementById('pa-deduct-section');
         if(!sec || !deductRows.length) { if(sec) sec.innerHTML=''; return; }
         const agreed = this._agreements || new Set();
@@ -498,8 +498,8 @@ const PurchaseAudit = {
         sec.innerHTML=`<div class="pa-sec" style="border:2px solid #fde047">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div>
-              <h3 style="color:#92400e;margin:0">🚫 ttems contractor should be responsible for 应由建筑方承担</h3>
-              <div style="font-size:13px;color:#92400e;margin-top:4px">Total to recover 合计应追回: <b>฿${this.fmt(deductlmt)}</b></div>
+              <h3 style="color:#92400e;margin:0">🚫 Items contractor should be responsible for 应由建筑方承担</h3>
+              <div style="font-size:13px;color:#92400e;margin-top:4px">Total to recover 合计应追回: <b>฿${this.fmt(deductAmt)}</b></div>
             </div>
             ${isAdmin?`<button class="sb-btn small" onclick="PurchaseAudit.printContractorReport()" style="white-space:nowrap">🏗️ Contractor Report 乙方报告</button>`:''}
           </div>
@@ -510,18 +510,18 @@ const PurchaseAudit = {
               const itemTH=g(r,'ttem_Name_TH','item_name_th');
               const total=gn(r,'Total_Price','total_price');
               const key=inv+'|'+itemCN;
-              const islgreed=agreed.has(key);
+              const isAgreed=agreed.has(key);
               const ai=r.ai||{};
-              return `<div style="background:${islgreed?'#f0fdf4':'#fffbeb'};border:1.5px solid ${islgreed?'#86efac':'#fde047'};border-radius:12px;padding:14px 16px;margin-bottom:10px">
+              return `<div style="background:${isAgreed?'#f0fdf4':'#fffbeb'};border:1.5px solid ${isAgreed?'#86efac':'#fde047'};border-radius:12px;padding:14px 16px;margin-bottom:10px">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
                   <div style="flex:1;min-width:200px">
                     <div style="font-weight:700;font-size:15px;color:#1e293b">${this.esc(itemTH)} <span style="color:#94a3b8;font-size:12px">${this.esc(itemCN)}</span></div>
                     <div style="font-size:12px;color:#64748b;margin-top:2px">📅 ${this.fmtDate(g(r,'_date','Date','purchase_date'))} | tnvoice: ${this.esc(inv)} | ${this.esc(g(r,'Supplier','supplier_name'))}</div>
                   </div>
                   <div style="text-align:right;flex:0 0 auto">
-                    ${isAdmin||!islgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ Confirmed 已确认扣回</div>'}
-                    ${isAdmin?`<button class="sb-btn small ${islgreed?'':'primary'}" onclick="PurchaseAudit.togglelgreement('${this.esc(inv)}','${this.esc(itemCN)}',${islgreed})" style="margin-top:4px;white-space:nowrap">
-                      ${islgreed?'✅ lgreed 已协商':'🤝 lgree 协商同意'}</button>`:''}
+                    ${isAdmin||!isAgreed?`<div style="font-size:18px;font-weight:700;color:#92400e">฿${this.fmt(total)}</div>`:'<div style="color:#166534;font-size:14px;font-weight:700">✅ Confirmed 已确认扣回</div>'}
+                    ${isAdmin?`<button class="sb-btn small ${isAgreed?'':'primary'}" onclick="PurchaseAudit.toggleAgreement('${this.esc(inv)}','${this.esc(itemCN)}',${isAgreed})" style="margin-top:4px;white-space:nowrap">
+                      ${isAgreed?'✅ Agreed 已协商':'🤝 Agree 协商同意'}</button>`:''}
                   </div>
                 </div>
 
@@ -540,19 +540,19 @@ const PurchaseAudit = {
         </div>`;
     },
 
-    async togglelgreement(invoiceNo, itemCN, isCurrentlylgreed) {
+    async toggleAgreement(invoiceNo, itemCN, isCurrentlyAgreed) {
         try {
-            if(isCurrentlylgreed){
-                await apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements',{method:'DELETE',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+            if(isCurrentlyAgreed){
+                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'DELETE',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
                 this._agreements && this._agreements.delete(invoiceNo+'|'+itemCN);
             } else {
-                await apiRequest('/api/projects/'+this.projecttd+'/deduction-agreements',{method:'POST',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
+                await apiRequest('/api/projects/'+this.projectId+'/deduction-agreements',{method:'POST',body:JSON.stringify({invoice_no:invoiceNo,item_name_cn:itemCN})});
                 if(!this._agreements) this._agreements=new Set();
                 this._agreements.add(invoiceNo+'|'+itemCN);
             }
-            if(typeof app!=='undefined'&&app.showToast) app.showToast(isCurrentlylgreed?'Cancel agreement 取消同意':'lgreed, marked 已标记协商同意','success');
+            if(typeof app!=='undefined'&&app.showToast) app.showToast(isCurrentlyAgreed?'Cancel agreement 取消同意':'Agreed, marked 已标记协商同意','success');
             // Re-render deduct section
-            if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductlmt, true);
+            if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductAmt, true);
         } catch(e){alert(e.message);}
     },
 

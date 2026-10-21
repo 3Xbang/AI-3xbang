@@ -849,45 +849,56 @@ const ProjectDashboard = {
             } catch (_) {}
         }
 
-        const mc = document.getElementById('modal-container');
-        if (!mc) return;
         mc.innerHTML = `
     <div class="modal-overlay"
          onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''">
-      <div class="modal-content" style="max-width:480px;width:95vw;padding:24px;">
-        <h3 style="margin:0 0 16px;">${isOwner ? '📋 申报维修' : '➕ 新建工单'}</h3>
+      <div class="modal-content" style="max-width:480px;width:95vw;padding:24px;max-height:90vh;overflow-y:auto;">
+        <h3 style="margin:0 0 16px;">${isOwner ? '📋 申报维修 Report Issue' : '➕ 新建工单 New Ticket'}</h3>
         <form id="maint-dash-create-form" onsubmit="ProjectDashboard._submitCreateTicket(event)">
-          <div style="margin-bottom:12px;">
-            <label style="display:block;margin-bottom:4px;font-weight:600;">客户名称 Customer *</label>
+
+          <div class="sb-field">
+            <label>客户名称 Customer *</label>
             <input type="text" id="create-ticket-customer" placeholder="请输入客户姓名或地址"
-                   style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;font-size:1rem;">
+                   class="sb-input" required style="font-size:1rem;">
           </div>
+
           <div class="sb-field">
             <label>标题 Title *</label>
-            <input id="mdc-title" class="sb-input" required maxlength="200" placeholder="请描述问题…">
+            <input id="mdc-title" class="sb-input" required maxlength="200" placeholder="请描述问题… e.g. 卫生间漏水">
           </div>
-          <div class="sb-field">
-            <label>描述 Description</label>
-            <textarea id="mdc-desc" class="sb-input" rows="3" placeholder="详细说明…"></textarea>
-          </div>
+
           <div class="sb-field">
             <label>位置 Location</label>
             <input id="mdc-location" class="sb-input" maxlength="200" placeholder="哪个房间/区域 e.g. 主卧卫生间, 客厅, 泳池">
           </div>
+
           <div class="sb-field">
             <label>类别 Category</label>
             <select id="mdc-category" class="sb-input">
               <option value="">— 请选择 —</option>
-              <option value="防水/漏水">防水/漏水</option>
-              <option value="电气/照明">电气/照明</option>
-              <option value="木工/门窗">木工/门窗</option>
-              <option value="泳池/户外">泳池/户外</option>
-              <option value="空调/通风">空调/通风</option>
-              <option value="瓷砖/地板">瓷砖/地板</option>
-              <option value="外墙/涂料">外墙/涂料</option>
-              <option value="其他">其他</option>
+              <option value="防水/漏水">💧 防水/漏水 Waterproof/Leak</option>
+              <option value="电气/照明">💡 电气/照明 Electrical/Lighting</option>
+              <option value="木工/门窗">🪵 木工/门窗 Carpentry/Doors</option>
+              <option value="泳池/户外">🏊 泳池/户外 Pool/Outdoor</option>
+              <option value="空调/通风">❄️ 空调/通风 AC/Ventilation</option>
+              <option value="瓷砖/地板">🏠 瓷砖/地板 Tiles/Flooring</option>
+              <option value="外墙/涂料">🎨 外墙/涂料 Exterior/Paint</option>
+              <option value="其他">📋 其他 Other</option>
             </select>
           </div>
+
+          <div class="sb-field">
+            <label>描述 Description</label>
+            <textarea id="mdc-desc" class="sb-input" rows="3" placeholder="详细说明问题…"></textarea>
+          </div>
+
+          <div class="sb-field">
+            <label>📸 问题照片 Problem Photos <span style="font-weight:400;color:#718096;font-size:0.85rem;">（可多选 multiple allowed）</span></label>
+            <input type="file" id="mdc-photos" accept="image/*" multiple
+                   style="width:100%;padding:8px;border:1px dashed #e2e8f0;border-radius:6px;background:#f7fafc;cursor:pointer;box-sizing:border-box;">
+            <div id="mdc-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+
           ${!isOwner ? `
           <div class="sb-field">
             <label>指派工人 Assign Worker</label>
@@ -903,6 +914,8 @@ const ProjectDashboard = {
               <option value="urgent">⚡ 紧急 Urgent</option>
             </select>
           </div>` : ''}
+
+          <div id="mdc-error" style="color:#e53e3e;font-size:0.85rem;margin-bottom:8px;display:none;"></div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
             <button type="button" class="sb-btn" style="min-height:44px;"
               onclick="document.getElementById('modal-container').innerHTML=''">取消 Cancel</button>
@@ -913,15 +926,25 @@ const ProjectDashboard = {
         </form>
       </div>
     </div>`;
-    },
+
+        // Photo preview handler
+        document.getElementById('mdc-photos').addEventListener('change', function() {
+            const preview = document.getElementById('mdc-photo-preview');
+            preview.innerHTML = '';
+            Array.from(this.files).forEach(f => {
+                const url = URL.createObjectURL(f);
+                preview.innerHTML += `<img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">`;
+            });
+        });
 
     // 提交新建工单
     async _submitCreateTicket(e) {
         e.preventDefault();
         const customer_name = document.getElementById('create-ticket-customer')?.value.trim();
         const title         = document.getElementById('mdc-title')?.value.trim();
+        const errEl         = document.getElementById('mdc-error');
         if (!customer_name || !title) {
-            app.showToast('请填写标题和客户名称 Title and customer name required', 'error');
+            if (errEl) { errEl.textContent = '请填写标题和客户名称 Title and customer name required'; errEl.style.display = ''; }
             return;
         }
         const workerSel     = document.getElementById('mdc-worker');
@@ -931,17 +954,44 @@ const ProjectDashboard = {
         const description   = document.getElementById('mdc-desc')?.value || null;
         const location      = document.getElementById('mdc-location')?.value.trim() || null;
         const category      = document.getElementById('mdc-category')?.value || null;
+        const photoInput    = document.getElementById('mdc-photos');
+        const photos        = photoInput?.files ? Array.from(photoInput.files) : [];
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
+
         try {
             const res = await apiRequest('/api/maintenance', {
                 method: 'POST',
                 body: JSON.stringify({ title, description, customer_name, priority, assigned_to, assigned_name, location, category })
             });
             if (!res.success) throw new Error(res.message);
+            const ticketId = res.data.id;
+
+            // Upload problem photos if any
+            if (photos.length > 0) {
+                const token = localStorage.getItem('authToken');
+                for (const file of photos) {
+                    const fd = new FormData();
+                    fd.append('photo', file);
+                    fd.append('ticket_id', ticketId);
+                    fd.append('photo_type', 'before');
+                    fd.append('photo_category', 'maintenance');
+                    fd.append('project_id', '');
+                    await fetch('/api/photos/upload', {
+                        method: 'POST',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                        body: fd
+                    });
+                }
+            }
+
             document.getElementById('modal-container').innerHTML = '';
-            app.showToast('工单已创建 Ticket created', 'success');
+            app.showToast(`工单已创建${photos.length > 0 ? `，已上传 ${photos.length} 张照片` : ''} Ticket created`, 'success');
             await this.loadMaintenancePanel();
         } catch (err) {
-            app.showToast('创建失败: ' + err.message, 'error');
+            if (errEl) { errEl.textContent = '创建失败: ' + err.message; errEl.style.display = ''; }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '创建 Create'; }
         }
     }
 };

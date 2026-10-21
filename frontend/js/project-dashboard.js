@@ -849,6 +849,8 @@ const ProjectDashboard = {
             } catch (_) {}
         }
 
+        const mc = document.getElementById('modal-container');
+        if (!mc) return;
         mc.innerHTML = `
     <div class="modal-overlay"
          onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''">

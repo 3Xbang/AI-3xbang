@@ -2472,7 +2472,10 @@ router.put('/maintenance/:id', authenticate, async (req, res) => {
 
     // Manager/supervisor may set quote fields
     if (quote_amount !== undefined) {
-      updates.push(`quote_amount = $${i++}`);  params.push(quote_amount);
+      if (!quote_amount || Number(quote_amount) <= 0) {
+        return res.status(400).json({ success: false, message: '报价金额必须大于0 Quote amount must be > 0' });
+      }
+      updates.push(`quote_amount = $${i++}`);  params.push(Number(quote_amount));
       updates.push(`quote_status = 'quoted'`);
       updates.push(`status = 'pending_quote'`);
     }

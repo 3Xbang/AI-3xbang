@@ -75,13 +75,29 @@ const Maintenance = {
         if ((isManager || isSupervisor) && !isDoneOrCancelled) {
             const curAmt  = t.quote_amount ? Number(t.quote_amount).toLocaleString() : '';
             const curDate = t.scheduled_date ? String(t.scheduled_date).substring(0,10) : '';
-            const curNum  = t.quote_amount ? Number(t.quote_amount) : '';
+            const existingItems = Array.isArray(t.quote_items) ? t.quote_items : [];
+            const curLaborCost  = t.labor_cost ? Number(t.labor_cost) : 0;
+            const iStyle = 'padding:6px;border:1px solid #bee3f8;border-radius:6px;font-size:0.85rem;';
+            let itemRowsHtml = '';
+            existingItems.forEach(item => {
+                itemRowsHtml +=
+                    '<div class="td-item-row" style="display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">' +
+                    '<input class="td-item-name" type="text" placeholder="材料名称 Name" value="' + this.esc(item.name || '') + '" style="' + iStyle + 'flex:2;min-width:100px;">' +
+                    '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" value="' + Number(item.qty || 0) + '" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
+                    '<input class="td-item-unit" type="text" placeholder="ชิ้น" value="' + this.esc(item.unit || '') + '" style="' + iStyle + 'flex:1;min-width:48px;">' +
+                    '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" value="' + Number(item.unit_price || 0) + '" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
+                    '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:36px;">✕</button>' +
+                    '</div>';
+            });
             quoteSectionHtml = '<div style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px;margin-bottom:16px;">' +
                 '<div style="font-weight:600;color:#2b6cb0;margin-bottom:8px;">🏷️ 发送报价 Send Quote</div>' +
                 (t.quote_amount ? '<div style="font-size:0.85rem;color:#4a5568;margin-bottom:8px;">当前报价: <strong>฿' + curAmt + '</strong>' + (t.scheduled_date ? '　📅 ' + curDate : '') + '</div>' : '') +
+                '<div id="td-items-container">' + itemRowsHtml + '</div>' +
+                '<button class="sb-btn" style="width:100%;margin-bottom:8px;min-height:40px;" onclick="Maintenance._addQuoteItem()">+ 添加材料 Add Material</button>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
-                '<input id="td-quote-amount" type="number" min="1" step="0.01" placeholder="报价金额 ฿" value="' + curNum + '" style="flex:1;min-width:120px;padding:8px;border:1px solid #bee3f8;border-radius:6px;font-size:0.95rem;">' +
+                '<input id="td-labor-cost" type="number" min="0" step="0.01" placeholder="工费 Labor ฿" value="' + (curLaborCost || '') + '" style="flex:1;min-width:110px;padding:8px;border:1px solid #bee3f8;border-radius:6px;font-size:0.95rem;" oninput="Maintenance._updateQuoteTotal()">' +
                 '<input id="td-scheduled-date" type="date" value="' + curDate + '" style="flex:1;min-width:130px;padding:8px;border:1px solid #bee3f8;border-radius:6px;font-size:0.95rem;"></div>' +
+                '<div style="text-align:right;font-weight:600;color:#2b6cb0;margin-bottom:8px;">总价 Total: <span id="td-total-display">฿0</span></div>' +
                 '<button class="sb-btn primary" style="min-height:44px;width:100%;" onclick="Maintenance.sendQuote(' + t.id + ')">🏷️ 发送报价 Send Quote</button></div>';
         }
 
@@ -90,9 +106,44 @@ const Maintenance = {
         if (isOwner && qs === 'quoted') {
             const amt   = t.quote_amount ? Number(t.quote_amount).toLocaleString() : '—';
             const sdate = t.scheduled_date ? String(t.scheduled_date).substring(0,10) : '';
+            let itemsBreakdownHtml = '';
+            if (Array.isArray(t.quote_items) && t.quote_items.length > 0) {
+                let tbodyRows = '';
+                t.quote_items.forEach(item => {
+                    tbodyRows += '<tr>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;">' + this.esc(item.name || '') + '</td>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;text-align:center;">' + this.esc(String(item.qty || '')) + (item.unit ? ' ' + this.esc(item.unit) : '') + '</td>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;text-align:right;">฿' + Number((item.qty || 0) * (item.unit_price || 0)).toLocaleString() + '</td>' +
+                        '</tr>';
+                });
+                if (Number(t.labor_cost) > 0) {
+                    tbodyRows += '<tr>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;">工费 Labor</td>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;text-align:center;">—</td>' +
+                        '<td style="padding:4px 6px;border-bottom:1px solid #fde68a;text-align:right;">฿' + Number(t.labor_cost).toLocaleString() + '</td>' +
+                        '</tr>';
+                }
+                itemsBreakdownHtml =
+                    '<div style="overflow-x:auto;margin-bottom:10px;">' +
+                    '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">' +
+                    '<thead><tr>' +
+                    '<th style="padding:4px 6px;border-bottom:2px solid #f6e05e;text-align:left;">รายการ 项目</th>' +
+                    '<th style="padding:4px 6px;border-bottom:2px solid #f6e05e;text-align:center;">จำนวน 数量</th>' +
+                    '<th style="padding:4px 6px;border-bottom:2px solid #f6e05e;text-align:right;">จำนวนเงิน ฿</th>' +
+                    '</tr></thead>' +
+                    '<tbody>' + tbodyRows + '</tbody>' +
+                    '<tfoot><tr>' +
+                    '<td colspan="2" style="padding:4px 6px;text-align:right;font-weight:600;">รวมทั้งหมด 总计</td>' +
+                    '<td style="padding:4px 6px;text-align:right;font-weight:700;color:#c05621;">฿' + Number(t.quote_amount || 0).toLocaleString() + '</td>' +
+                    '</tr></tfoot>' +
+                    '</table></div>';
+                if (sdate) itemsBreakdownHtml += '<div style="font-size:0.85rem;color:#4a5568;margin-bottom:10px;">预定日期 Scheduled: ' + sdate + '</div>';
+            } else {
+                itemsBreakdownHtml = '<div style="font-size:0.9rem;color:#4a5568;margin-bottom:10px;">报价金额: <strong style="color:#c05621;">฿' + amt + '</strong>' + (sdate ? '<br>预定日期 Scheduled: ' + sdate : '') + '</div>';
+            }
             ownerApprovalHtml = '<div style="background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;padding:12px;margin-bottom:16px;">' +
                 '<div style="font-weight:600;color:#b7791f;margin-bottom:8px;">📋 报价待确认 Quote Pending Approval</div>' +
-                '<div style="font-size:0.9rem;color:#4a5568;margin-bottom:10px;">报价金额: <strong style="color:#c05621;">฿' + amt + '</strong>' + (sdate ? '<br>预定日期 Scheduled: ' + sdate : '') + '</div>' +
+                itemsBreakdownHtml +
                 '<div style="display:flex;gap:8px;">' +
                 '<button class="sb-btn primary" style="min-height:44px;flex:1;background:#38a169;border-color:#38a169;" onclick="Maintenance.approveQuote(' + t.id + ')">✅ 确认接受 Approve</button>' +
                 '<button class="sb-btn" style="min-height:44px;flex:1;color:#e53e3e;border-color:#e53e3e;" onclick="Maintenance.rejectQuote(' + t.id + ')">❌ 拒绝 Reject</button></div></div>';
@@ -173,16 +224,56 @@ const Maintenance = {
         ${managerActionsHtml}
       </div>
     </div>`;
+        if (document.getElementById('td-total-display')) Maintenance._updateQuoteTotal();
+    },
+
+    _addQuoteItem() {
+        const container = document.getElementById('td-items-container');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'td-item-row';
+        row.style.cssText = 'display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
+        const iStyle = 'padding:6px;border:1px solid #bee3f8;border-radius:6px;font-size:0.85rem;';
+        row.innerHTML =
+            '<input class="td-item-name" type="text" placeholder="材料名称 Name" style="' + iStyle + 'flex:2;min-width:100px;">' +
+            '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
+            '<input class="td-item-unit" type="text" placeholder="ชิ้น" style="' + iStyle + 'flex:1;min-width:48px;">' +
+            '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
+            '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:36px;">✕</button>';
+        container.appendChild(row);
+    },
+
+    _updateQuoteTotal() {
+        let total = 0;
+        document.querySelectorAll('.td-item-row').forEach(row => {
+            const qty   = parseFloat(row.querySelector('.td-item-qty')?.value)   || 0;
+            const price = parseFloat(row.querySelector('.td-item-price')?.value) || 0;
+            total += qty * price;
+        });
+        total += parseFloat(document.getElementById('td-labor-cost')?.value) || 0;
+        const el = document.getElementById('td-total-display');
+        if (el) el.textContent = '฿' + total.toLocaleString();
     },
 
     async sendQuote(id) {
-        const amtEl  = document.getElementById('td-quote-amount');
-        const dateEl = document.getElementById('td-scheduled-date');
-        const quote_amount = amtEl ? parseFloat(amtEl.value) : 0;
-        if (!quote_amount || quote_amount <= 0) { app.showToast('请输入有效报价金额 Enter a valid quote amount', 'error'); return; }
-        const scheduled_date = dateEl?.value || null;
+        const rows = document.querySelectorAll('.td-item-row');
+        const quote_items = [];
+        rows.forEach(row => {
+            const name = (row.querySelector('.td-item-name')?.value || '').trim();
+            if (!name) return;
+            quote_items.push({
+                name,
+                qty:        parseFloat(row.querySelector('.td-item-qty')?.value)   || 0,
+                unit:       (row.querySelector('.td-item-unit')?.value || '').trim(),
+                unit_price: parseFloat(row.querySelector('.td-item-price')?.value) || 0
+            });
+        });
+        const labor_cost   = parseFloat(document.getElementById('td-labor-cost')?.value) || 0;
+        const quote_amount = quote_items.reduce((s, i) => s + i.qty * i.unit_price, 0) + labor_cost;
+        if (quote_amount <= 0) { app.showToast('请输入有效报价金额 Enter a valid quote amount', 'error'); return; }
+        const scheduled_date = document.getElementById('td-scheduled-date')?.value || null;
         try {
-            const res = await apiRequest(`/api/maintenance/${id}/quote`, {method:'POST', body:JSON.stringify({quote_amount, scheduled_date})});
+            const res = await apiRequest(`/api/maintenance/${id}/quote`, {method:'POST', body:JSON.stringify({quote_amount, quote_items, labor_cost, scheduled_date})});
             if (!res.success) throw new Error(res.message);
             document.getElementById('modal-container').innerHTML = '';
             app.showToast('报价已发送 Quote sent', 'success');

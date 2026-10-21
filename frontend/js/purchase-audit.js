@@ -1,4 +1,4 @@
-﻿// purchase-audit.js -- lt Purchase ludit System v5
+﻿// purchase-audit.js -- AIPurchase ludit System v5
 const PurchaseAudit = {
     purchases: [], boq: [], projectId: null, analyzing: false,
 
@@ -14,12 +14,12 @@ const PurchaseAudit = {
         box.innerHTML = `
         <div style="padding:16px;max-width:1200px;margin:0 auto">
           <div class="td-head" style="margin-bottom:14px">
-            <div><h2 class="td-title">📋 Purchase lnalysis <small class="td-th">采购核实分析</small></h2>
-            <div class="td-sub">${isAdmin?'Set up contract → Upload receipts → lt lnalysis':'lt analysis results based on contract / lt合同合规分析结果'}</div></div>
+            <div><h2 class="td-title">📋 Purchase Analysis <small class="td-th">采购核实分析</small></h2>
+            <div class="td-sub">${isAdmin?'Set up contract → Upload receipts → AIAnalysis':'AIanalysis results based on contract / lt合同合规分析结果'}</div></div>
           </div>
           ${isAdmin?`<div style="display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
             <button class="pab-tab active" id="pab-t1" onclick="PurchaseAudit._tab('setup')">⚙️ Settings 设置规则</button>
-            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 lnalysis Results 分析结果</button>
+            <button class="pab-tab" id="pab-t2" onclick="PurchaseAudit._tab('analyze')">📋 Analysis Results 分析结果</button>
           </div>`:''}
           <style>
             .pab-tab{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-size:14px;background:transparent;color:#475569}
@@ -67,7 +67,7 @@ const PurchaseAudit = {
               📄 Step 1: Upload Contract <small style="color:#64748b;font-weight:400">步骤1: 上传合同（PDF或DOCX）</small>
             </div>
             <div style="font-size:13px;color:#64748b;margin-bottom:14px">
-              lt will read the contract and extract responsibility rules, saved for ongoing use
+              AIwill read the contract and extract responsibility rules, saved for ongoing use
             </div>
             <label style="display:flex;align-items:center;gap:12px;background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;padding:18px;cursor:pointer;transition:.2s"
               onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#cbd5e1'">
@@ -82,7 +82,7 @@ const PurchaseAudit = {
           </div>
 
           <div id="pa-rules-extract-panel" style="display:none" class="pa-sec">
-            <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:8px">✅ lt has read the contract / lt已分析合同</div>
+            <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:8px">✅ AIhas read the contract / lt已分析合同</div>
             <div id="pa-extracted-display"></div>
             <div style="margin-top:12px">
               <div style="font-size:13px;color:#475569;font-weight:600;margin-bottom:6px">Review and edit rules / 确认规则（可修改）：</div>
@@ -139,7 +139,7 @@ const PurchaseAudit = {
         const nm=document.getElementById('pa-contract-name');
         if(nm) nm.textContent='📋 '+file.name;
         const status=document.getElementById('pa-contract-status');
-        if(status) status.innerHTML='<div style="padding:10px 0;color:#2563eb;font-size:13px">⏳ lt is reading contract... / lt正在分析合同...</div>';
+        if(status) status.innerHTML='<div style="padding:10px 0;color:#2563eb;font-size:13px">⏳ AIis reading contract... / lt正在分析合同...</div>';
         try {
             if(typeof app!=='undefined') app.showLoading();
             const fd=new FormData();
@@ -157,7 +157,7 @@ const PurchaseAudit = {
             if(disp) {
                 disp.innerHTML=`
                   <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;margin-bottom:10px">
-                    <b style="color:#166534">✅ lt has read the contract</b>${d.project_name?` <span style="color:#475569">— ${this.esc(d.project_name)}</span>`:''}
+                    <b style="color:#166534">✅ AIhas read the contract</b>${d.project_name?` <span style="color:#475569">— ${this.esc(d.project_name)}</span>`:''}
                   </div>
                   ${d.owner_responsibilities&&d.owner_responsibilities.length?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#1e3a8a">✅ Owner Responsible 甲方：</b><br>${d.owner_responsibilities.map(x=>`<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}
                   ${(d.contractor_responsibilities&&d.contractor_responsibilities.length)||(d.auxiliary_materials&&d.auxiliary_materials.length)?`<div style="margin-bottom:8px"><b style="font-size:13px;color:#dc2626">🚫 Contractor Responsible 乙方自负：</b><br>${[...(d.contractor_responsibilities||[]),...(d.auxiliary_materials||[])].map(x=>`<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:12px;margin:2px;display:inline-block">${this.esc(x)}</span>`).join('')}</div>`:''}`;}
@@ -212,8 +212,8 @@ const PurchaseAudit = {
           <div id="pa-rules-warning"></div>
           <div id="pa-data-summary"></div>
           <div id="pa-analyze-bar" style="display:none;margin-bottom:14px">
-            <button id="pa-analyze-btn" onclick="PurchaseAudit.runlnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
-              🤖 Start lnalysis / 开始lt分析（根据合同规则）
+            <button id="pa-analyze-btn" onclick="PurchaseAudit.runAnalysis()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;width:100%">
+              🤖 Start Analysis / 开始lt分析（根据合同规则）
             </button>
           </div>
           <div id="pa-report"></div>`;
@@ -236,7 +236,7 @@ const PurchaseAudit = {
                 </div>`;
             } else {
                 warn.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#166534">
-                    ✅ Contract rules configured / 合同规则已配置 — lnalysis will reference contract only
+                    ✅ Contract rules configured / 合同规则已配置 — Analysis will reference contract only
                 </div>`;
             }
         } catch(_) {}
@@ -292,7 +292,7 @@ const PurchaseAudit = {
         bar && bar.scrolltntoView({behavior:'smooth',block:'center'});
     },
 
-    async runlnalysis() {
+    async runAnalysis() {
         if(this.analyzing) return;
         this.analyzing=true;
         const btn=document.getElementById('pa-analyze-btn');
@@ -351,15 +351,15 @@ const PurchaseAudit = {
                     if(retryCount<maxRetry){
                         retryCount++;
                         const wait=retryCount*15;
-                        log(`lt busy, waiting ${wait} s... / 繁忙，${wait}秒后重试 (${retryCount}/${maxRetry})`);
+                        log(`AIbusy, waiting ${wait} s... / 繁忙，${wait}秒后重试 (${retryCount}/${maxRetry})`);
                         setBar(5);
                         for(let i=wait;i>0;i--){await new Promise(r=>setTimeout(r,1000));log(`Wait ${i}s...`);}
                         await retry();
                     } else {
                         if(report) report.innerHTML=`<div class="pa-sec" style="background:#fff5f5;border:1.5px solid #fca5a5">
-                            <b style="color:#dc2626">lt Server Busy / lt服务器繁忙</b><br>
+                            <b style="color:#dc2626">AIServer Busy / lt服务器繁忙</b><br>
                             <div style="font-size:13px;color:#475569;margin:8px 0">Please try again / 请重试</div>
-                            <button onclick="PurchaseAudit.runlnalysis()" class="sb-btn primary">🔄 Retry 重试</button>
+                            <button onclick="PurchaseAudit.runAnalysis()" class="sb-btn primary">🔄 Retry 重试</button>
                         </div>`;
                     }
                 } else {
@@ -455,7 +455,7 @@ const PurchaseAudit = {
         html+=`<div class="pa-sec"><h3>🧾 All Records 全部明细</h3>
           <div style="overflow-x:auto"><table class="pa-table"><thead><tr>
             <th>Date</th><th>tnvoice</th><th>Supplier</th><th>ttems</th>
-            <th style="text-align:right">฿</th><th>lt Result</th>
+            <th style="text-align:right">฿</th><th>AIResult</th>
           </tr></thead><tbody>
           ${records.map(r=>{
               const f=r.ai&&r.ai.flags||[];
@@ -593,7 +593,7 @@ const PurchaseAudit = {
         }).join('')}
         <div class="footer">
           <hr>
-          This report is generated by lt based on contract terms for reference, not as an accusation.<br>
+          This report is generated by AIbased on contract terms for reference, not as an accusation.<br>
           本报告由lt系统根据合同条款生成，供双方参考确认，非指责文件。
         </div>
         </body></html>`);

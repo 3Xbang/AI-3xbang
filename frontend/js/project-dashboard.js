@@ -856,23 +856,31 @@ const ProjectDashboard = {
 
         const mc = document.getElementById('modal-container');
         if (!mc) return;
+        const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : JSON.parse(localStorage.getItem('user') || '{}');
         mc.innerHTML = `
     <div class="modal-overlay"
          onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''">
       <div class="modal-content" style="max-width:480px;width:95vw;padding:24px;max-height:90vh;overflow-y:auto;">
-        <h3 style="margin:0 0 16px;">${isOwner ? '📋 申报维修 Report Issue' : '➕ 新建工单 New Ticket'}</h3>
+        <h3 style="margin:0 0 4px;">${isOwner ? '📋 申报维修 Report Issue' : '➕ 新建工单 New Ticket'}</h3>
+        ${isOwner ? `<p style="margin:0 0 16px;font-size:0.9rem;color:#718096;">你好 Hello, <b>${esc(currentUser.full_name || currentUser.username || '')}</b> 🏠</p>` : ''}
         <form id="maint-dash-create-form" onsubmit="ProjectDashboard._submitCreateTicket(event)">
 
-          <div class="sb-field">
-            <label>客户名称 Customer *</label>
-            ${ownersList.length > 0 ? `
-            <select id="create-ticket-customer-select" class="sb-input" required style="font-size:1rem;">
-              ${ownersList.map(o => `<option value="${o.id}">${esc(o.full_name || o.username)}</option>`).join('')}
-            </select>
-            <input type="hidden" id="create-ticket-customer" value="">` : `
-            <input type="text" id="create-ticket-customer" placeholder="请输入客户姓名或地址"
-                   class="sb-input" required style="font-size:1rem;">`}
-          </div>
+          ${isOwner
+            ? `<!-- Owner: auto-fill customer from their own account -->
+               <input type="hidden" id="create-ticket-customer" value="${esc(currentUser.full_name || currentUser.username || '')}">
+               <input type="hidden" id="create-ticket-customer-self-id" value="${currentUser.id || ''}">`
+            : `<div class="sb-field">
+                 <label>客户 Customer *</label>
+                 ${ownersList.length > 0 ? `
+                 <select id="create-ticket-customer-select" class="sb-input" required style="font-size:1rem;">
+                   <option value="">— 选择业主 Select Owner —</option>
+                   ${ownersList.map(o => `<option value="${o.id}">${esc(o.full_name || o.username)}</option>`).join('')}
+                 </select>
+                 <input type="hidden" id="create-ticket-customer" value="">` : `
+                 <input type="text" id="create-ticket-customer" placeholder="请输入客户姓名或地址"
+                        class="sb-input" required style="font-size:1rem;">`}
+               </div>`
+          }
 
           <div class="sb-field">
             <label>标题 Title *</label>
@@ -982,7 +990,10 @@ const ProjectDashboard = {
         const photoInput    = document.getElementById('mdc-photos');
         const photos        = photoInput?.files ? Array.from(photoInput.files) : [];
         const customerSelectVal = document.getElementById('create-ticket-customer-select')?.value;
-        const customer_user_id  = customerSelectVal ? (parseInt(customerSelectVal, 10) || null) : null;
+        const selfOwnerId       = document.getElementById('create-ticket-customer-self-id')?.value;
+        const customer_user_id  = selfOwnerId
+            ? (parseInt(selfOwnerId, 10) || null)
+            : (customerSelectVal ? (parseInt(customerSelectVal, 10) || null) : null);
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }

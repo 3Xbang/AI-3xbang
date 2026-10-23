@@ -27,7 +27,10 @@ async function checkMaintenanceTicketAccess(pool, userId, userRole, ticketId) {
   const allowed =
     ['manager', 'supervisor'].includes(userRole) ||
     (userRole === 'worker' && ticket.assigned_to === userId) ||
-    (userRole === 'owner' && ticket.submitted_by_owner && String(ticket.created_by) === String(userId));
+    (userRole === 'owner' && (
+      (ticket.submitted_by_owner && String(ticket.created_by) === String(userId)) ||
+      (ticket.customer_user_id != null && String(ticket.customer_user_id) === String(userId))
+    ));
   return { ticket, allowed };
 }
 

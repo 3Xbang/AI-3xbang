@@ -1,8 +1,11 @@
-﻿// photo-manager.js v116 — Horizontal-scroll strip layout (mobile-first)
+﻿// photo-manager.js v117 — Horizontal-scroll strip layout (mobile-first) + carousel for 3+ photos
 const photoManager = {
     currentProjectId: null,
     currentDate: null,
     dailyItems: [],
+    _carouselState: {},
+    _pendingCarouselIds: [],
+    _carouselIdSeq: 0,
 
     init(projectId) {
         this.currentProjectId = projectId;
@@ -36,6 +39,9 @@ const photoManager = {
     render(photos, dates) {
         const grid = document.getElementById('photos-grid');
         if (!grid) return;
+        // Reset carousel state for fresh render
+        this._carouselState = {};
+        this._pendingCarouselIds = [];
         const canUpload = !PermissionManager.isOwner();
         const byCategory = {morning:[], evening:[]};
         this.dailyItems.forEach((item,i) => { byCategory['work_'+i] = []; });
@@ -74,6 +80,7 @@ const photoManager = {
           ${byCategory.general.length || canUpload ? this._section('general', '📷 Other Photos / รูปอื่นๆ', byCategory.general, canUpload, null, '#f8fafc', '#64748b') : ''}
         </div>`;
         grid.innerHTML = html;
+        this._bindCarouselSwipe();
     },
 
     _cardDimensions() {
@@ -85,6 +92,67 @@ const photoManager = {
 
     _section(category, title, photos, canUpload, workItem, bgColor, color) {
         const { cardW, cardH } = this._cardDimensions();
+
+        // ── CAROUSEL for 3+ photos ────────────────────────────────────────────
+        if (photos.length >= 3) {
+            const sectionId = 'carousel-' + (++this._carouselIdSeq);
+            this._carouselState[sectionId] = { currentIndex: 0, photos: photos };
+            this._pendingCarouselIds.push(sectionId);
+
+            const p0 = photos[0];
+            const n  = photos.length;
+            const dt0 = p0.upload_time ? new Date(p0.upload_time) : null;
+            const time0 = dt0 ? dt0.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+            const escapedUrl0  = this.esc(p0.photo_url);
+            const escapedTime0 = this.esc(time0);
+            const canEdit0 = PermissionManager.isManager() ||
+                (p0.uploaded_by === (JSON.parse(localStorage.getItem('user')||'{}').username));
+
+            const dots = photos.map((_,i) =>
+                `<span class="pc-dot" onclick="photoManager.carouselGoTo('${sectionId}',${i})"
+                  style="display:inline-block;width:8px;height:8px;border-radius:50%;cursor:pointer;background:${i===0?'#3b82f6':'#cbd5e0'};margin:0 3px;transition:background .2s;"></span>`
+            ).join('');
+
+            const uploadBtn = canUpload ? `<div role="button" tabindex="0"
+                onclick="photoManager.showUploadForCategory('${category}',${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();photoManager.showUploadForCategory('${category}',${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})}"
+                style="margin:4px 16px 12px;border:2px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;padding:10px;gap:8px;">
+                <span style="font-size:24px;line-height:1">+</span><span>Upload</span>
+              </div>` : '';
+
+            return `<div style="background:${bgColor};border:1.5px solid ${color}30;border-radius:12px;margin-bottom:0;border-bottom:2px dashed #d1d5db;overflow:hidden">
+              <div style="font-size:1.1rem;font-weight:700;padding:16px 16px 6px;color:#2d3748">${title}</div>
+              <div style="padding:8px 16px 4px">
+                <div class="photo-carousel" style="position:relative;width:100%;overflow:hidden;border-radius:10px;background:#1a1a1a;height:${cardH}px">
+                  <div class="pc-slide" id="pc-slide-${sectionId}" style="position:relative;width:100%;height:100%">
+                    <img src="${escapedUrl0}" alt="site photo"
+                      data-photo-url="${escapedUrl0}" data-photo-time="${escapedTime0}"
+                      onclick="photoManager._showLightbox(this.dataset.photoUrl,this.dataset.photoTime)"
+                      style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block;"
+                      loading="lazy">
+                    <div class="pc-timestamp" id="pc-ts-${sectionId}"
+                      style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.55));color:#fff;font-size:11px;padding:4px 8px;pointer-events:none;">${escapedTime0}</div>
+                    <button class="photo-overlay-btn pc-edit" id="pc-edit-${sectionId}"
+                      onclick="event.stopPropagation();photoManager.editReason(${p0.id},'${this.esc(p0.reason||'')}')"
+                      style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;display:${canEdit0?'flex':'none'};align-items:center;justify-content:center;">✏️</button>
+                    <button class="photo-overlay-btn pc-del" id="pc-del-${sectionId}"
+                      onclick="event.stopPropagation();photoManager.deletePhoto(${p0.id})"
+                      style="position:absolute;top:6px;right:6px;background:rgba(220,38,38,0.75);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:${canEdit0?'flex':'none'};align-items:center;justify-content:center;">✕</button>
+                  </div>
+                  <button id="pc-prev-${sectionId}" onclick="photoManager.carouselPrev('${sectionId}')"
+                    style="display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10;align-items:center;justify-content:center;line-height:1;">&#8249;</button>
+                  <button id="pc-next-${sectionId}" onclick="photoManager.carouselNext('${sectionId}')"
+                    style="display:flex;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10;align-items:center;justify-content:center;line-height:1;">&#8250;</button>
+                  <div id="pc-counter-${sectionId}"
+                    style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:12px;padding:2px 8px;border-radius:12px;pointer-events:none;z-index:11;">1 / ${n}</div>
+                </div>
+              </div>
+              <div class="pc-dots" id="pc-dots-${sectionId}" style="text-align:center;padding:6px 0 4px;">${dots}</div>
+              ${uploadBtn}
+            </div>`;
+        }
+
+        // ── STRIP for 1-2 photos (unchanged) ─────────────────────────────────
         const photoHtml = photos.map(p => this._photoCard(p, cardW, cardH)).join('');
         const uploadBtn = canUpload ? `<div role="button" tabindex="0"
             onclick="photoManager.showUploadForCategory('${category}', ${workItem?JSON.stringify(workItem).replace(/"/g,'&quot;'):'null'})"
@@ -127,6 +195,111 @@ const photoManager = {
           ` : ''}
         </div>`;
     },
+
+    // ── Carousel public methods ────────────────────────────────────────────────
+
+    carouselPrev(sectionId) {
+        const state = this._carouselState[sectionId];
+        if (!state || state.currentIndex <= 0) return;
+        this._carouselGoTo(sectionId, state.currentIndex - 1);
+    },
+
+    carouselNext(sectionId) {
+        const state = this._carouselState[sectionId];
+        if (!state || state.currentIndex >= state.photos.length - 1) return;
+        this._carouselGoTo(sectionId, state.currentIndex + 1);
+    },
+
+    carouselGoTo(sectionId, index) {
+        const state = this._carouselState[sectionId];
+        if (!state) return;
+        const clamped = Math.max(0, Math.min(index, state.photos.length - 1));
+        this._carouselGoTo(sectionId, clamped);
+    },
+
+    _carouselGoTo(sectionId, index) {
+        const state = this._carouselState[sectionId];
+        if (!state) return;
+        const n = state.photos.length;
+        if (index < 0 || index >= n) return;
+        state.currentIndex = index;
+
+        const p = state.photos[index];
+        const dt = p.upload_time ? new Date(p.upload_time) : null;
+        const time = dt ? dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+
+        // Update slide image via DOM (no HTML escaping needed for DOM properties)
+        const slide = document.getElementById('pc-slide-' + sectionId);
+        if (slide) {
+            const img = slide.querySelector('img');
+            if (img) {
+                img.src = p.photo_url;
+                img.dataset.photoUrl = p.photo_url;
+                img.dataset.photoTime = time;
+                // onclick inline handler already reads dataset, so no update needed
+            }
+        }
+
+        // Update timestamp
+        const ts = document.getElementById('pc-ts-' + sectionId);
+        if (ts) ts.textContent = time;
+
+        // Update edit/delete buttons
+        const canEdit = PermissionManager.isManager() ||
+            (p.uploaded_by === (JSON.parse(localStorage.getItem('user')||'{}').username));
+        const editBtn = document.getElementById('pc-edit-' + sectionId);
+        const delBtn  = document.getElementById('pc-del-'  + sectionId);
+        if (editBtn) {
+            editBtn.style.display = canEdit ? 'flex' : 'none';
+            if (canEdit) {
+                editBtn.onclick = (e) => { e.stopPropagation(); this.editReason(p.id, p.reason || ''); };
+            }
+        }
+        if (delBtn) {
+            delBtn.style.display = canEdit ? 'flex' : 'none';
+            if (canEdit) {
+                delBtn.onclick = (e) => { e.stopPropagation(); this.deletePhoto(p.id); };
+            }
+        }
+
+        // Update counter
+        const counter = document.getElementById('pc-counter-' + sectionId);
+        if (counter) counter.textContent = (index + 1) + ' / ' + n;
+
+        // Toggle prev / next visibility
+        const prevBtn = document.getElementById('pc-prev-' + sectionId);
+        const nextBtn = document.getElementById('pc-next-' + sectionId);
+        if (prevBtn) prevBtn.style.display = index === 0 ? 'none' : 'flex';
+        if (nextBtn) nextBtn.style.display = index === n - 1 ? 'none' : 'flex';
+
+        // Repaint dots
+        const dotsContainer = document.getElementById('pc-dots-' + sectionId);
+        if (dotsContainer) {
+            dotsContainer.querySelectorAll('.pc-dot').forEach((dot, i) => {
+                dot.style.background = i === index ? '#3b82f6' : '#cbd5e0';
+            });
+        }
+    },
+
+    // Attach touch-swipe listeners to all carousels rendered in the current cycle
+    _bindCarouselSwipe() {
+        (this._pendingCarouselIds || []).forEach(sectionId => {
+            const slide = document.getElementById('pc-slide-' + sectionId);
+            if (!slide) return;
+            let startX = 0;
+            slide.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+            slide.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - startX;
+                if (dx < -40) photoManager.carouselNext(sectionId);
+                else if (dx > 40) photoManager.carouselPrev(sectionId);
+            }, { passive: true });
+        });
+        this._pendingCarouselIds = [];
+    },
+
+    // ── Existing methods (unchanged) ─────────────────────────────────────────
 
     changeDate(d) { this.currentDate = d; this.load(); },
 

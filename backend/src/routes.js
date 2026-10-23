@@ -1543,6 +1543,22 @@ router.get('/users/workers', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/users/owners — for maintenance customer dropdowns (manager + supervisor)
+router.get('/users/owners', authenticate, async (req, res) => {
+  if (!['manager', 'supervisor'].includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: '无权访问' });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT id, username, full_name FROM users WHERE role = 'owner' ORDER BY full_name`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('GET /users/owners error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // �����û����������ߣ�
 router.post('/users', authenticate, requirePermission('manage_users'), async (req, res) => {
   const client = await pool.connect();
@@ -2597,19 +2613,29 @@ router.post('/maintenance', authenticate, async (req, res) => {
     return res.status(403).json({ success: false, message: '无权创建工单' });
   }
   try {
-    const { title, description, customer_name, priority, assigned_to, assigned_name, location, category } = req.body;
-    if (!title || !customer_name) {
+    const { title, description, customer_name: customer_name_input, customer_user_id, priority, assigned_to, assigned_name, location, category } = req.body;
+    if (!title || (!customer_name_input && !customer_user_id)) {
       return res.status(400).json({ success: false, message: '标题和客户名称必填' });
+    }
+    let customer_name = customer_name_input || '';
+    if (customer_user_id) {
+      const ownerResult = await pool.query(
+        `SELECT full_name FROM users WHERE id = $1 AND role = 'owner'`,
+        [customer_user_id]
+      );
+      if (ownerResult.rows.length > 0) {
+        customer_name = ownerResult.rows[0].full_name;
+      }
     }
     const isOwner = req.user.role === 'owner';
     const result = await pool.query(
       `INSERT INTO maintenance_tickets
-       (title, description, customer_name, priority, assigned_to, assigned_name, created_by, created_by_name, status, submitted_by_owner, location, category)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11) RETURNING *`,
+       (title, description, customer_name, priority, assigned_to, assigned_name, created_by, created_by_name, status, submitted_by_owner, location, category, customer_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12) RETURNING *`,
       [title, description || '', customer_name, priority || 'normal',
        assigned_to || null, assigned_name || null,
        req.user.id, req.user.full_name || req.user.username, isOwner,
-       location || null, category || null]
+       location || null, category || null, customer_user_id || null]
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -2631,7 +2657,8 @@ router.get('/maintenance', authenticate, async (req, res) => {
       whereClause = `mt.assigned_to = $${i++}`;
       params.push(userId);
     } else if (role === 'owner') {
-      whereClause = `mt.submitted_by_owner = TRUE AND mt.created_by = $${i++}`;
+      whereClause = `(mt.customer_user_id = $${i} OR (mt.submitted_by_owner = TRUE AND mt.created_by = $${i}))`;
+      i++;
       params.push(userId);
     }
     const result = await pool.query(

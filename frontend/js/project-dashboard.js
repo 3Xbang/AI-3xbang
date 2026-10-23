@@ -840,12 +840,17 @@ const ProjectDashboard = {
         const isOwner = PermissionManager.isOwner();
         const esc = typeof Maintenance !== 'undefined' ? Maintenance.esc.bind(Maintenance) : (s => String(s||''));
         let workerOptions = '';
+        let ownersList = [];
         if (!isOwner) {
             try {
                 const uRes = await apiRequest('/api/users/workers');
                 workerOptions = (uRes.data || []).map(w =>
                     `<option value="${w.id}" data-name="${esc(w.full_name || w.username)}">${esc(w.full_name || w.username)}</option>`
                 ).join('');
+            } catch (_) {}
+            try {
+                const oRes = await apiRequest('/api/users/owners');
+                ownersList = oRes.data || [];
             } catch (_) {}
         }
 
@@ -860,8 +865,13 @@ const ProjectDashboard = {
 
           <div class="sb-field">
             <label>客户名称 Customer *</label>
+            ${ownersList.length > 0 ? `
+            <select id="create-ticket-customer-select" class="sb-input" required style="font-size:1rem;">
+              ${ownersList.map(o => `<option value="${o.id}">${esc(o.full_name || o.username)}</option>`).join('')}
+            </select>
+            <input type="hidden" id="create-ticket-customer" value="">` : `
             <input type="text" id="create-ticket-customer" placeholder="请输入客户姓名或地址"
-                   class="sb-input" required style="font-size:1rem;">
+                   class="sb-input" required style="font-size:1rem;">`}
           </div>
 
           <div class="sb-field">
@@ -938,6 +948,18 @@ const ProjectDashboard = {
                 preview.innerHTML += `<img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">`;
             });
         });
+
+        // Owner select sync handler
+        const ownerSelect = document.getElementById('create-ticket-customer-select');
+        const customerHidden = document.getElementById('create-ticket-customer');
+        if (ownerSelect && customerHidden) {
+            // Initialise hidden input with first owner's name on modal open
+            customerHidden.value = ownerSelect.options[ownerSelect.selectedIndex]?.text || '';
+            ownerSelect.addEventListener('change', function() {
+                customerHidden.value = this.options[this.selectedIndex]?.text || '';
+                this.dataset.selectedId = this.value;
+            });
+        }
     },
 
     // 提交新建工单
@@ -959,6 +981,8 @@ const ProjectDashboard = {
         const category      = document.getElementById('mdc-category')?.value || null;
         const photoInput    = document.getElementById('mdc-photos');
         const photos        = photoInput?.files ? Array.from(photoInput.files) : [];
+        const customerSelectVal = document.getElementById('create-ticket-customer-select')?.value;
+        const customer_user_id  = customerSelectVal ? (parseInt(customerSelectVal, 10) || null) : null;
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
@@ -966,7 +990,7 @@ const ProjectDashboard = {
         try {
             const res = await apiRequest('/api/maintenance', {
                 method: 'POST',
-                body: JSON.stringify({ title, description, customer_name, priority, assigned_to, assigned_name, location, category })
+                body: JSON.stringify({ title, description, customer_name, customer_user_id, priority, assigned_to, assigned_name, location, category })
             });
             if (!res.success) throw new Error(res.message);
             const ticketId = res.data.id;

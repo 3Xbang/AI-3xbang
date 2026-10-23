@@ -169,6 +169,8 @@ const Maintenance = {
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
                 '<button class="sb-btn" style="min-height:44px;flex:1;" onclick="Maintenance.uploadPhoto(' + t.id + ',\'before\')">📷 施工前照片</button>' +
                 '<button class="sb-btn" style="min-height:44px;flex:1;" onclick="Maintenance.uploadPhoto(' + t.id + ',\'after\')">📷 完工照片</button></div>' +
+                (afterPhotos.length > 0 ? '<div style="margin-bottom:8px;"><div style="font-size:0.82rem;color:#276749;font-weight:600;margin-bottom:4px;">✅ 已上传完工照片 (' + afterPhotos.length + '张)</div>' + photoGrid(afterPhotos) + '</div>' : '') +
+                (beforePhotos.length > 0 ? '<div style="margin-bottom:8px;"><div style="font-size:0.82rem;color:#4a5568;font-weight:600;margin-bottom:4px;">📷 已上传施工前照片 (' + beforePhotos.length + '张)</div>' + photoGrid(beforePhotos) + '</div>' : '') +
                 '<button class="sb-btn primary" style="min-height:44px;width:100%;' + (!canComplete?'opacity:0.5;cursor:not-allowed;':'') + '" ' + (!canComplete?'disabled':'') + ' onclick="Maintenance.updateStatus(' + t.id + ',\'completed\')">✅ 完成工单' + (!hasAfterPhoto?' (需先上传完工照片)':'') + '</button></div>';
         }
 

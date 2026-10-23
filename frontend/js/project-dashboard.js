@@ -859,7 +859,7 @@ const ProjectDashboard = {
         const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : JSON.parse(localStorage.getItem('user') || '{}');
         mc.innerHTML = `
     <div class="modal-overlay"
-         onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''">
+         style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;">
       <div class="modal-content" style="max-width:480px;width:95vw;padding:24px;max-height:90vh;overflow-y:auto;">
         <h3 style="margin:0 0 4px;">${isOwner ? '📋 申报维修 Report Issue' : '➕ 新建工单 New Ticket'}</h3>
         ${isOwner ? `<p style="margin:0 0 16px;font-size:0.9rem;color:#718096;">你好 Hello, <b>${esc(currentUser.full_name || currentUser.username || '')}</b> 🏠</p>` : ''}

@@ -177,6 +177,8 @@
 
   /* Issue 5: Padding so floating button doesn't cover content */
   .dr2-wrap, #daily-report-container, #site-board-container { padding-bottom: 80px !important; }
+  /* Issue 5b: Photos tab — floating button also persists there */
+  .photo-grid, #photos-grid { padding-bottom: 80px !important; }
   /* Issue 5b: Move floating button to bottom-right on mobile only */
   #to-board-btn { right: 20px !important; left: auto !important; }
 
@@ -188,7 +190,7 @@
     padding: 12px 20px !important;
   }
   button[class*="btn"] {
-    min-height: 44px;
+    min-height: 48px;
     font-size: 15px;
   }
 

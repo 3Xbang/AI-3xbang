@@ -784,7 +784,7 @@ const ProjectDashboard = {
                     ownerTimeline = '<div style="display:flex;align-items:flex-start;padding:4px 12px 8px;background:#f7fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;margin-top:-2px;margin-bottom:6px;">' +
                         tlLabels.map(function(lbl, i, arr) {
                             const done = i <= active;
-                            const dot  = '<div style="display:flex;flex-direction:column;align-items:center;"><div style="width:14px;height:14px;border-radius:50%;background:' + (done?'#38a169':'#e2e8f0') + ';border:2px solid ' + (done?'#276749':'#cbd5e0') + ';"></div><div style="font-size:0.55rem;color:' + (done?'#276749':'#a0aec0') + ';white-space:nowrap;margin-top:2px;">' + lbl + '</div></div>';
+                            const dot  = '<div style="display:flex;flex-direction:column;align-items:center;"><div style="width:14px;height:14px;border-radius:50%;background:' + (done?'#38a169':'#e2e8f0') + ';border:2px solid ' + (done?'#276749':'#cbd5e0') + ';"></div><div style="font-size:0.7rem;color:' + (done?'#276749':'#a0aec0') + ';white-space:nowrap;margin-top:2px;">' + lbl + '</div></div>';
                             const conn = i < arr.length-1 ? '<div style="flex:1;height:2px;background:' + (i<active?'#38a169':'#e2e8f0') + ';margin-top:7px;margin-left:1px;margin-right:1px;flex-shrink:1;"></div>' : '';
                             return dot + conn;
                         }).join('') + '</div>';
@@ -800,7 +800,7 @@ const ProjectDashboard = {
             <span style="font-weight:600;font-size:1rem;flex:1;">${esc(t.title)}</span>
             ${catBadge}
           </div>
-          <div style="font-size:0.82rem;color:#718096;display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:0.875rem;color:#4a5568;display:flex;gap:8px;flex-wrap:wrap;">
             <span>📁 ${esc(t.customer_name || t.project_name || '—')}</span>
             ${t.location ? `<span>📍 ${esc(t.location)}</span>` : ''}
             <span>👷 ${esc(t.assigned_name || '未指派')}</span>
@@ -913,8 +913,8 @@ const ProjectDashboard = {
           </div>
 
           <div class="sb-field">
-            <label>📸 问题照片 Problem Photos <span style="font-weight:400;color:#718096;font-size:0.85rem;">（可多选 multiple allowed）</span></label>
-            <input type="file" id="mdc-photos" accept="image/*" multiple
+            <label>📸 问题照片 Problem Photos <span style="font-weight:400;color:#718096;font-size:0.85rem;">（每次可拍一张 one at a time）</span></label>
+            <input type="file" id="mdc-photos" accept="image/*" capture="environment"
                    style="width:100%;padding:8px;border:1px dashed #e2e8f0;border-radius:6px;background:#f7fafc;cursor:pointer;box-sizing:border-box;">
             <div id="mdc-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
           </div>

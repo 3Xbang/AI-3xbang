@@ -21,14 +21,14 @@ const Maintenance = {
             'cancelled':     {bg:'#e2e8f0',color:'#4a5568',label:'已取消 ยกเลิก'}
         };
         const s = map[status] || map['pending'];
-        return `<span style="background:${s.bg};color:${s.color};padding:2px 10px;border-radius:12px;font-size:0.78rem;font-weight:600;white-space:nowrap;">${s.label}</span>`;
+        return `<span style="background:${s.bg};color:${s.color};padding:2px 10px;border-radius:12px;font-size:0.82rem;font-weight:600;white-space:nowrap;">${s.label}</span>`;
     },
 
     _categoryBadgeHtml(category) {
         if (!category) return '';
         const colors = {'防水/漏水':'#3182ce','电气/照明':'#d69e2e','木工/门窗':'#744210','泳池/户外':'#2c7a7b','空调/通风':'#2b6cb0','瓷砖/地板':'#c05621','外墙/涂料':'#276749','其他':'#718096'};
         const bg = colors[category] || '#718096';
-        return `<span style="background:${bg};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600;white-space:nowrap;">${this.esc(category)}</span>`;
+        return `<span style="background:${bg};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.82rem;font-weight:600;white-space:nowrap;">${this.esc(category)}</span>`;
     },
 
     showTicketDetail(id) {
@@ -59,11 +59,11 @@ const Maintenance = {
         if (['in-progress','completed'].includes(t.status)) activeStep = 3;
         if (t.status === 'completed') activeStep = 4;
         const tlSteps = ['已提交','已报价','已确认','施工中','已完工'];
-        const timelineHtml = '<div style="display:flex;align-items:flex-start;margin:12px 0 16px;background:#f7fafc;border-radius:8px;padding:8px 6px;">' +
+        const timelineHtml = '<div style="display:flex;align-items:flex-start;margin:12px 0 16px;background:#f7fafc;border-radius:8px;padding:8px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
             tlSteps.map(function(lbl, i, arr) {
                 const done = i <= activeStep;
                 const circ = '<div style="width:20px;height:20px;border-radius:50%;background:' + (done?'#38a169':'#fff') + ';border:2px solid ' + (done?'#38a169':'#cbd5e0') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">' + (done?'✓':'') + '</div>';
-                const step = '<div style="display:flex;flex-direction:column;align-items:center;">' + circ + '<div style="font-size:0.6rem;color:' + (done?'#2f855a':'#a0aec0') + ';text-align:center;margin-top:3px;white-space:nowrap;">' + lbl + '</div></div>';
+                const step = '<div style="display:flex;flex-direction:column;align-items:center;">' + circ + '<div style="font-size:0.75rem;color:' + (done?'#2f855a':'#a0aec0') + ';text-align:center;margin-top:3px;white-space:nowrap;">' + lbl + '</div></div>';
                 const conn = i < arr.length-1 ? '<div style="flex:1;height:2px;background:' + (i<activeStep?'#38a169':'#e2e8f0') + ';margin:10px 2px 0;flex-shrink:1;"></div>' : '';
                 return step + conn;
             }).join('') + '</div>';
@@ -81,12 +81,12 @@ const Maintenance = {
             let itemRowsHtml = '';
             existingItems.forEach(item => {
                 itemRowsHtml +=
-                    '<div class="td-item-row" style="display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">' +
-                    '<input class="td-item-name" type="text" placeholder="材料名称 Name" value="' + this.esc(item.name || '') + '" style="' + iStyle + 'flex:2;min-width:100px;">' +
-                    '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" value="' + Number(item.qty || 0) + '" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
-                    '<input class="td-item-unit" type="text" placeholder="ชิ้น" value="' + this.esc(item.unit || '') + '" style="' + iStyle + 'flex:1;min-width:48px;">' +
-                    '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" value="' + Number(item.unit_price || 0) + '" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
-                    '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;">✕</button>' +
+                    '<div class="td-item-row" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;align-items:center;">' +
+                    '<input class="td-item-name" type="text" placeholder="材料名称 Name" value="' + this.esc(item.name || '') + '" style="' + iStyle + 'flex:1 1 120px;min-width:100px;">' +
+                    '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" value="' + Number(item.qty || 0) + '" style="' + iStyle + 'flex:0 0 52px;" oninput="Maintenance._updateQuoteTotal()">' +
+                    '<input class="td-item-unit" type="text" placeholder="ชิ้น" value="' + this.esc(item.unit || '') + '" style="' + iStyle + 'flex:0 0 64px;">' +
+                    '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" value="' + Number(item.unit_price || 0) + '" style="' + iStyle + 'flex:0 0 80px;" oninput="Maintenance._updateQuoteTotal()">' +
+                    '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;flex:0 0 32px;">✕</button>' +
                     '</div>';
             });
             quoteSectionHtml = '<div style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px;margin-bottom:16px;">' +
@@ -198,7 +198,7 @@ const Maintenance = {
         const mc = document.getElementById('modal-container');
         if (!mc) return;
         mc.innerHTML = `
-    <div class="modal-overlay" onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''">
+    <div class="modal-overlay">
       <div class="modal-content" style="max-width:520px;width:95vw;padding:24px;max-height:90vh;overflow-y:auto;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
           <h3 style="margin:0;flex:1;font-size:1.05rem;">${this._badgeHtml(t.status)} ${this.esc(t.title)}</h3>
@@ -237,11 +237,11 @@ const Maintenance = {
         row.style.cssText = 'display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
         const iStyle = 'padding:6px;border:1px solid #bee3f8;border-radius:6px;font-size:0.85rem;';
         row.innerHTML =
-            '<input class="td-item-name" type="text" placeholder="材料名称 Name" style="' + iStyle + 'flex:2;min-width:100px;">' +
-            '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" style="' + iStyle + 'flex:1;min-width:48px;" oninput="Maintenance._updateQuoteTotal()">' +
-            '<input class="td-item-unit" type="text" placeholder="ชิ้น" style="' + iStyle + 'flex:1;min-width:48px;">' +
-            '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" style="' + iStyle + 'flex:1;min-width:64px;" oninput="Maintenance._updateQuoteTotal()">' +
-            '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;">✕</button>';
+            '<input class="td-item-name" type="text" placeholder="材料名称 Name" style="' + iStyle + 'flex:1 1 120px;min-width:100px;">' +
+            '<input class="td-item-qty" type="number" min="0" step="1" placeholder="Qty" style="' + iStyle + 'flex:0 0 52px;" oninput="Maintenance._updateQuoteTotal()">' +
+            '<input class="td-item-unit" type="text" placeholder="ชิ้น" style="' + iStyle + 'flex:0 0 64px;">' +
+            '<input class="td-item-price" type="number" min="0" step="0.01" placeholder="฿ Unit" style="' + iStyle + 'flex:0 0 80px;" oninput="Maintenance._updateQuoteTotal()">' +
+            '<button onclick="this.parentElement.remove();Maintenance._updateQuoteTotal()" style="padding:6px 8px;border:1px solid #e53e3e;color:#e53e3e;background:transparent;border-radius:6px;cursor:pointer;min-height:44px;flex:0 0 32px;">✕</button>';
         container.appendChild(row);
     },
 
@@ -327,7 +327,7 @@ const Maintenance = {
 
     async uploadPhoto(ticketId, photoType) {
         const inp = document.createElement('input');
-        inp.type = 'file'; inp.accept = 'image/jpeg,image/png';
+        inp.type = 'file'; inp.accept = 'image/jpeg,image/png'; inp.capture = 'environment';
         inp.onchange = async () => {
             if (!inp.files[0]) return;
             const fd = new FormData();
@@ -366,7 +366,7 @@ const Maintenance = {
             const ticket = this.tickets.find(t => t.id === id);
             const msgText = `🛠️ 维修工单\n${ticket ? ticket.title : ''}\n${share_url}`;
             const mc = document.getElementById('modal-container');
-            mc.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''"><div class="modal-content" style="max-width:420px;width:95vw;padding:24px;"><h3 style="margin:0 0 12px;">📤 分享工单 Share Ticket</h3><textarea id="share-msg-box" class="sb-input" rows="4" style="margin-bottom:12px;">${this.esc(msgText)}</textarea><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><button class="sb-btn" style="background:#06c755;color:#fff;border-color:#06c755;min-height:44px;" onclick="window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('${this.esc(share_url)}')+'&text='+encodeURIComponent(document.getElementById('share-msg-box').value),'_blank')">💬 LINE 分享</button><button class="sb-btn" style="background:#07c160;color:#fff;border-color:#07c160;min-height:44px;" onclick="navigator.clipboard.writeText(document.getElementById('share-msg-box').value).then(()=>app.showToast('已复制 Copied!','success')).catch(()=>{document.getElementById('share-msg-box').select();document.execCommand('copy');})">💚 微信复制 WeChat Copy</button><button class="sb-btn" style="min-height:44px;" onclick="document.getElementById('modal-container').innerHTML=''">✕ 关闭</button></div></div></div>`;
+            mc.innerHTML = `<div class="modal-overlay"><div class="modal-content" style="max-width:420px;width:95vw;padding:24px;"><h3 style="margin:0 0 12px;">📤 分享工单 Share Ticket</h3><textarea id="share-msg-box" class="sb-input" rows="4" style="margin-bottom:12px;">${this.esc(msgText)}</textarea><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><button class="sb-btn" style="background:#06c755;color:#fff;border-color:#06c755;min-height:44px;" onclick="window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent('${this.esc(share_url)}')+'&text='+encodeURIComponent(document.getElementById('share-msg-box').value),'_blank')">💬 LINE 分享</button><button class="sb-btn" style="background:#07c160;color:#fff;border-color:#07c160;min-height:44px;" onclick="navigator.clipboard.writeText(document.getElementById('share-msg-box').value).then(()=>app.showToast('已复制 Copied!','success')).catch(()=>{document.getElementById('share-msg-box').select();document.execCommand('copy');})">💚 微信复制 WeChat Copy</button><button class="sb-btn" style="min-height:44px;" onclick="document.getElementById('modal-container').innerHTML=''">✕ 关闭</button></div></div></div>`;
         } catch(err) { app.showToast('分享失败: ' + err.message, 'error'); }
     },
 
@@ -379,7 +379,7 @@ const Maintenance = {
             });
         } catch(_) {}
         const mc = document.getElementById('modal-container');
-        mc.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)document.getElementById('modal-container').innerHTML=''"><div class="modal-content" style="max-width:360px;width:95vw;padding:24px;"><h3 style="margin:0 0 12px;">🔄 重新指派 Reassign</h3><select id="reassign-worker" class="sb-input" style="margin-bottom:12px;"><option value="">— 选择工人 —</option>${opts}</select><div style="display:flex;gap:8px;justify-content:flex-end;"><button class="sb-btn" style="min-height:44px;" onclick="document.getElementById('modal-container').innerHTML=''">取消</button><button class="sb-btn primary" style="min-height:44px;" onclick="(function(){const sel=document.getElementById('reassign-worker');const v=sel.value;const n=sel.options[sel.selectedIndex]?.dataset.name||'';if(!v){app.showToast('请选择工人','error');return;}apiRequest('/api/maintenance/${ticketId}',{method:'PUT',body:JSON.stringify({assigned_to:v,assigned_name:n,status:'in-progress'})}).then(r=>{if(!r.success)throw new Error(r.message);document.getElementById('modal-container').innerHTML='';app.showToast('已重新指派','success');return ProjectDashboard.loadMaintenancePanel();}).then(()=>{}).catch(e=>app.showToast('失败: '+e.message,'error'));})()">确认指派</button></div></div></div>`;
+        mc.innerHTML = `<div class="modal-overlay"><div class="modal-content" style="max-width:360px;width:95vw;padding:24px;"><h3 style="margin:0 0 12px;">🔄 重新指派 Reassign</h3><select id="reassign-worker" class="sb-input" style="margin-bottom:12px;"><option value="">— 选择工人 —</option>${opts}</select><div style="display:flex;gap:8px;justify-content:flex-end;"><button class="sb-btn" style="min-height:44px;" onclick="document.getElementById('modal-container').innerHTML=''">取消</button><button class="sb-btn primary" style="min-height:44px;" onclick="(function(){const sel=document.getElementById('reassign-worker');const v=sel.value;const n=sel.options[sel.selectedIndex]?.dataset.name||'';if(!v){app.showToast('请选择工人','error');return;}apiRequest('/api/maintenance/${ticketId}',{method:'PUT',body:JSON.stringify({assigned_to:v,assigned_name:n,status:'in-progress'})}).then(r=>{if(!r.success)throw new Error(r.message);document.getElementById('modal-container').innerHTML='';app.showToast('已重新指派','success');return ProjectDashboard.loadMaintenancePanel();}).then(()=>{}).catch(e=>app.showToast('失败: '+e.message,'error'));})()">确认指派</button></div></div></div>`;
     },
 
     async _deleteTicket(id) {

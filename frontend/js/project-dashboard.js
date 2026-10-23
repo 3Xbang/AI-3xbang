@@ -1009,18 +1009,26 @@ const ProjectDashboard = {
             // Upload problem photos if any
             if (photos.length > 0) {
                 const token = localStorage.getItem('authToken');
+                let uploadFailed = 0;
                 for (const file of photos) {
                     const fd = new FormData();
                     fd.append('photo', file);
                     fd.append('ticket_id', ticketId);
                     fd.append('photo_type', 'before');
                     fd.append('photo_category', 'maintenance');
-                    fd.append('project_id', '');
-                    await fetch('/api/photos/upload', {
-                        method: 'POST',
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-                        body: fd
-                    });
+                    // Do NOT append project_id for maintenance-only tickets
+                    try {
+                        const pr = await fetch('/api/photos/upload', {
+                            method: 'POST',
+                            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                            body: fd
+                        });
+                        const pj = await pr.json();
+                        if (!pj.success) uploadFailed++;
+                    } catch (_) { uploadFailed++; }
+                }
+                if (uploadFailed > 0) {
+                    app.showToast(`⚠️ ${uploadFailed}张照片上传失败，工单已创建`, 'warning');
                 }
             }
 

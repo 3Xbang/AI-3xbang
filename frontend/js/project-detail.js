@@ -370,7 +370,8 @@ const ProjectDetail = {
             box.innerHTML = sections.length ? sections.join('') : '<div class="td-empty">目前没有需要关注的事 ✅</div>';
 
             const dailySec = document.getElementById('overview-daily-section');
-            if (dailySec) {
+            // Only show daily reports to internal staff, not to owner
+            if (dailySec && !PermissionManager.isOwner()) {
                 try {
                     dailySec.innerHTML = ProjectDetail._renderDailySection(todayRptRes, histRptRes, pid);
                 } catch (e) { /* graceful: leave empty on error */ }

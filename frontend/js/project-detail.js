@@ -308,6 +308,8 @@ const ProjectDetail = {
                     <div id="overview-alerts"><div class="td-empty">读取中…</div></div>
                 </div>
 
+                <div id="overview-daily-section"></div>
+
                 <div class="detail-section">
                     <h3>项目信息 Project Info</h3>
                     <div class="info-table">
@@ -327,11 +329,13 @@ const ProjectDetail = {
         const pid = this.projectId;
         const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         try {
-            const [procRes, teamRes, ovRes, notiRes] = await Promise.all([
+            const [procRes, teamRes, ovRes, notiRes, todayRptRes, histRptRes] = await Promise.all([
                 api.processes.getList(pid),
                 apiRequest(`/api/projects/${pid}/team`).catch(() => null),
                 apiRequest(`/api/projects/${pid}/overrides`).catch(() => null),
-                apiRequest(`/api/notifications?unread=1&project_id=${pid}`).catch(() => null)
+                apiRequest(`/api/notifications?unread=1&project_id=${pid}`).catch(() => null),
+                apiRequest(`/api/projects/${pid}/daily-report`).catch(() => null),
+                apiRequest(`/api/projects/${pid}/daily-reports`).catch(() => null)
             ]);
             const procs = procRes.success ? procRes.data : [];
             setText('overview-processes', procs.length);
@@ -364,8 +368,136 @@ const ProjectDetail = {
             if (unread) sections.push(`<h4>未读通知</h4><p>有 ${unread} 条未读通知，点右上角 🔔 查看。</p>`);
 
             box.innerHTML = sections.length ? sections.join('') : '<div class="td-empty">目前没有需要关注的事 ✅</div>';
+
+            const dailySec = document.getElementById('overview-daily-section');
+            if (dailySec) {
+                try {
+                    dailySec.innerHTML = ProjectDetail._renderDailySection(todayRptRes, histRptRes, pid);
+                } catch (e) { /* graceful: leave empty on error */ }
+            }
         } catch (error) {
             console.error('Load overview data error:', error);
+        }
+    },
+
+    // ---------- 每日施工汇报辅助函数 ----------
+    _renderDailySection(todayRptRes, histRptRes, pid) {
+        try {
+            // Bangkok time (UTC+7)
+            const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+
+            // Sum all today-values across worker/machinery object keys
+            const sumToday = obj => Object.values(obj || {}).reduce((s, v) => s + (parseInt(v && v.today) || 0), 0);
+
+            // Today's data
+            const todayData = (todayRptRes && todayRptRes.success && todayRptRes.data) ? todayRptRes.data : null;
+
+            // Build today status card
+            let todayCard = '';
+            if (todayData && todayData.foreman_signed) {
+                const wc = sumToday(todayData.workers);
+                const mc = sumToday(todayData.machinery);
+                const ua = todayData.updated_at ? String(todayData.updated_at) : '';
+                const timeStr = ua.length >= 19 ? ua.slice(0, 10) + ' ' + ua.slice(11, 16) : ua.slice(0, 10);
+                todayCard = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;color:#166534">
+                    <div style="font-weight:700;font-size:15px;margin-bottom:8px">✅ 今日日报已提交 Daily Report Submitted</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                        <div style="background:#dcfce7;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:22px;font-weight:700">${wc}</div>
+                            <div style="font-size:12px">👷 工人 Workers</div>
+                        </div>
+                        <div style="background:#dcfce7;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:22px;font-weight:700">${mc}</div>
+                            <div style="font-size:12px">🚜 机械 Machinery</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;border-top:1px solid #86efac;padding-top:6px">🕐 提交时间 Submitted: <b>${timeStr}</b></div>
+                </div>`;
+            } else if (todayData && !todayData.foreman_signed) {
+                const wc = sumToday(todayData.workers);
+                const mc = sumToday(todayData.machinery);
+                todayCard = `<div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;color:#92400e">
+                    <div style="font-weight:700;font-size:15px;margin-bottom:8px">⏳ 今日日报已填写，待确认 Filled, pending confirmation</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div style="background:#fef9c3;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:22px;font-weight:700">${wc}</div>
+                            <div style="font-size:12px">👷 工人 Workers</div>
+                        </div>
+                        <div style="background:#fef9c3;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:22px;font-weight:700">${mc}</div>
+                            <div style="font-size:12px">🚜 机械 Machinery</div>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                todayCard = `<div style="background:#fefce8;border:1.5px solid #fde047;border-radius:10px;padding:12px 16px;color:#854d0e">
+                    <div style="font-weight:700;font-size:15px">⚠️ 今日未提交日报 No report submitted today</div>
+                </div>`;
+            }
+
+            // 7-day history table
+            const histList = (histRptRes && histRptRes.success && Array.isArray(histRptRes.data))
+                ? histRptRes.data.slice(0, 30) : [];
+            const byDate = {};
+            histList.forEach(r => { byDate[r.report_date] = r; });
+
+            // Generate last 7 days (newest first)
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(Date.now() + 7 * 3600000 - i * 86400000);
+                days.push(d.toISOString().slice(0, 10));
+            }
+
+            const tableRows = days.map(date => {
+                const entry = byDate[date];
+                let workers = '—', machinery = '—', status = '';
+                if (entry) {
+                    if (date === today && todayData) {
+                        workers = sumToday(todayData.workers) + '人';
+                        machinery = sumToday(todayData.machinery) + '台';
+                    }
+                    status = entry.foreman_signed
+                        ? '<span style="color:#16a34a">✅ 已签 Signed</span>'
+                        : '<span style="color:#d97706">⏳ 未签 Unsigned</span>';
+                } else {
+                    status = '<span style="color:#dc2626">⚠️ 缺报 Missing</span>';
+                }
+                const isToday = date === today;
+                return `<tr style="${isToday ? 'background:#f0fdf4;font-weight:600' : ''}">
+                    <td style="padding:8px;border-bottom:1px solid #e2e8f0">${date}${isToday ? ' <small style="color:#16a34a">今日</small>' : ''}</td>
+                    <td style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">${workers}</td>
+                    <td style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">${machinery}</td>
+                    <td style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">${status}</td>
+                </tr>`;
+            }).join('');
+
+            // Stats row
+            const submittedDays = days.filter(d => byDate[d]).length;
+            const todayWorkerCount = todayData ? sumToday(todayData.workers) + '人' : '—';
+
+            return `<div class="detail-section">
+                <h3>📋 施工日报 Daily Reports</h3>
+                <div id="ov-today-card">${todayCard}</div>
+                <div style="overflow-x:auto;margin-top:12px">
+                    <table style="width:100%;border-collapse:collapse;font-size:14px">
+                        <thead>
+                            <tr style="background:#f1f5f9">
+                                <th style="padding:8px;text-align:left;border-bottom:1px solid #e2e8f0">日期 Date</th>
+                                <th style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">👷 人数</th>
+                                <th style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">🚜 机械</th>
+                                <th style="padding:8px;text-align:center;border-bottom:1px solid #e2e8f0">状态 Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;font-size:14px">
+                    <div>📊 报告提交率 Report rate: <b>${submittedDays}/7</b></div>
+                    <div>👷 今日人数 Today's workers: <b>${todayWorkerCount}</b></div>
+                </div>
+            </div>`;
+        } catch (e) {
+            return '';
         }
     },
 

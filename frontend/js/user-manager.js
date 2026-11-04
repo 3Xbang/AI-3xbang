@@ -1,4 +1,6 @@
 ﻿// 用户管理模块 — 使用 apiRequest()，样式与系统统一
+// NOTE: Keep in sync with PERMISSIONS in frontend/js/permissions.js.
+// Manager row is excluded here — managers always get full access and have no permissions editor.
 const UM_ROLE_DEFAULTS = {
     owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
     supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false },
@@ -163,7 +165,7 @@ const userManager = {
         <div class="sb-field"><label>新密码（不填则不改）</label><input id="um-password" type="password" autocomplete="new-password"></div>
         <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" value="${this.esc(u.full_name || '')}"></div>
         <div class="sb-field"><label>Role 角色 *</label>
-            <select id="um-role">
+            <select id="um-role"${u.role !== 'manager' ? ` onchange="(function(sel){var newRole=sel.value;var rd=UM_ROLE_DEFAULTS[newRole]||{};document.querySelectorAll('.um-perm-cb').forEach(function(cb){cb.checked=!!(rd[cb.dataset.key]);});document.getElementById('um-use-defaults').value='true';})(this)"` : ''}>
                 ${u.role === 'manager' ? `<option value="manager" selected>⚙️ System Admin 系统管理员</option>` : ''}
                 <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>👑 Project Owner 业主</option>
                 <option value="supervisor" ${u.role === 'supervisor' ? 'selected' : ''}>🏗️ Site Supervisor 工地主管</option>

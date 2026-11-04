@@ -1,5 +1,7 @@
 ﻿// permissions.js — 5角色权限系统
 // manager(系统管理员), owner(业主), supervisor(工地主管), foreman(工头), purchaser(采购员)
+// NOTE: The non-manager rows of PERMISSIONS are also mirrored in UM_ROLE_DEFAULTS (frontend/js/user-manager.js).
+// Keep both tables in sync when role defaults change.
 
 const PERMISSIONS = {
     manager:    { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:true  },
@@ -36,19 +38,19 @@ const PermissionManager = {
 
     // ── 权限判断 ──
 
-    // 只有系统管理员可以管系统
-    canManageUsers()          { return this.isManager(); },
-    canManageProjects()       { return this.isManager(); },        // 创建/删除项目、生成计划
-    canManageProjectMembers() { return this.isManager(); },
+    // 只有系统管理员可以管系统（默认），但自定义权限可以覆盖
+    canManageUsers()          { return this.hasPermission('manage_users'); },
+    canManageProjects()       { return this.hasPermission('manage_projects'); }, // 创建/删除项目、生成计划
+    canManageProjectMembers() { return this.isManager(); }, // always manager-only, not in the 7 custom keys
 
     // 可以看项目完整内容（manager + owner + supervisor + purchaser）
     canViewProjectData() {
         return ['manager','owner','supervisor','purchaser'].includes(this.role());
     },
 
-    // 可以分配工作（manager + supervisor）
+    // 可以分配工作（manager + supervisor，或自定义覆盖）
     canAssignTasks() {
-        return this.isManager() || this.isSupervisor();
+        return this.hasPermission('assign_task');
     },
 
     // 可以加入正在做 - 启动分配的任务 (manager + supervisor + foreman)
@@ -56,9 +58,9 @@ const PermissionManager = {
         return ['manager', 'supervisor', 'foreman'].includes(this.role());
     },
 
-    // 可以采购材料（manager + supervisor + purchaser）
+    // 可以采购材料（manager + supervisor + purchaser，或自定义覆盖）
     canPurchaseMaterials() {
-        return ['manager','supervisor','purchaser'].includes(this.role());
+        return this.hasPermission('purchase_material');
     },
 
     // 可以接收入库（manager + supervisor + foreman + purchaser）
@@ -76,14 +78,14 @@ const PermissionManager = {
         return ['manager','supervisor','foreman'].includes(this.role());
     },
 
-    // 可以看甘特图/进度计划
+    // 可以看甘特图/进度计划（manager+owner+supervisor+purchaser，或自定义覆盖）
     canViewGantt() {
-        return ['manager','owner','supervisor','purchaser'].includes(this.role());
+        return this.hasPermission('view_gantt');
     },
 
-    // 可以看今日现场
+    // 可以看今日现场（manager+owner+supervisor+foreman+patrol+worker，或自定义覆盖）
     canViewSite() {
-        return ['manager','owner','supervisor','foreman','patrol','worker'].includes(this.role());
+        return this.hasPermission('view_site');
     },
 
     // 可以看材料设备
@@ -91,9 +93,9 @@ const PermissionManager = {
         return ['manager','supervisor','foreman','purchaser'].includes(this.role());
     },
 
-    // 可以看总览/报告
+    // 可以看总览/报告（manager+owner+supervisor，或自定义覆盖）
     canViewOverview() {
-        return ['manager','owner','supervisor'].includes(this.role());
+        return this.hasPermission('view_overview');
     },
 
     // 旧兼容

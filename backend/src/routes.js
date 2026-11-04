@@ -100,7 +100,7 @@ router.post('/auth/login', async (req, res) => {
       success: true,
       data: {
         token,
-        user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role }
+        user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role, custom_permissions: user.custom_permissions }
       }
     });
   } catch (error) {
@@ -1517,6 +1517,7 @@ router.get('/users', authenticate, requirePermission('manage_users'), async (req
         u.full_name, 
         u.role, 
         u.created_at,
+        u.custom_permissions,
         COUNT(DISTINCT pm.project_id) as project_count
       FROM users u
       LEFT JOIN project_members pm ON u.id = pm.user_id
@@ -1613,6 +1614,7 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
     await client.query('BEGIN');
     
     const { full_name, role, password } = req.body;
+    const customPermissions = req.body.custom_permissions; // may be object, null, or undefined
     
     // �����޸��Լ��Ľ�ɫ
     if (req.params.id == req.user.id && role && role !== req.user.role) {
@@ -1638,6 +1640,15 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
       const password_hash = await bcrypt.hash(password, 10);
       updates.push(`password_hash = $${paramIndex++}`);
       params.push(password_hash);
+    }
+
+    // custom_permissions: null → set to NULL; plain object → JSON string; undefined → skip
+    if (customPermissions === null) {
+      updates.push(`custom_permissions = $${paramIndex++}`);
+      params.push(null);
+    } else if (customPermissions !== undefined && typeof customPermissions === 'object') {
+      updates.push(`custom_permissions = $${paramIndex++}`);
+      params.push(JSON.stringify(customPermissions));
     }
     
     if (updates.length === 0) {

@@ -1,6 +1,16 @@
 ﻿// permissions.js — 5角色权限系统
 // manager(系统管理员), owner(业主), supervisor(工地主管), foreman(工头), purchaser(采购员)
 
+const PERMISSIONS = {
+    manager:    { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:true  },
+    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
+    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false },
+    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false },
+    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false },
+    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
+    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false }
+};
+
 const PermissionManager = {
 
     getCurrentUserRole() {
@@ -128,7 +138,16 @@ const PermissionManager = {
     },
     addPermissionCheckToButton(btn, ok) {
         if (btn && !ok) btn.style.display = 'none';
-    }
+    },
+
+    hasPermission(permission) {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.custom_permissions && user.custom_permissions[permission] !== undefined) {
+            return !!user.custom_permissions[permission];
+        }
+        const role = user.role || 'viewer';
+        return !!(PERMISSIONS[role] && PERMISSIONS[role][permission]);
+    },
 };
 
 window.PermissionManager = PermissionManager;

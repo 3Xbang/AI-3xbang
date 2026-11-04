@@ -1,4 +1,21 @@
 ﻿// 用户管理模块 — 使用 apiRequest()，样式与系统统一
+const UM_ROLE_DEFAULTS = {
+    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
+    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false },
+    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false },
+    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false },
+    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
+    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false }
+};
+const UM_PERM_KEYS = [
+    { key: 'view_site',         label: '今日现场 Today\'s Site' },
+    { key: 'view_gantt',        label: '进度计划 Gantt Chart' },
+    { key: 'view_overview',     label: '总览提醒 Overview' },
+    { key: 'purchase_material', label: '采购总览 Procurement' },
+    { key: 'manage_projects',   label: '项目管理 Manage Projects' },
+    { key: 'assign_task',       label: '分配任务 Assign Tasks' },
+    { key: 'manage_users',      label: '用户管理 Manage Users' }
+];
 const userManager = {
     users: [],
     projects: [],
@@ -112,28 +129,81 @@ const userManager = {
 
     // ── 编辑用户 ──
     showEdit(id) {
-        const u = this.users.find(x=>x.id===id); if(!u) return;
+        const u = this.users.find(x => x.id === id); if (!u) return;
+        const cp = u.custom_permissions || null;
+        const rd = UM_ROLE_DEFAULTS[u.role] || {};
+        const rdJson = JSON.stringify(rd).replace(/'/g, "\\'");
+
+        const permSection = u.role === 'manager' ? '' : `
+        <div class="sb-field" style="margin-top:16px">
+            <label style="font-weight:600">🔐 自定义权限 Custom Permissions</label>
+            <div style="font-size:12px;color:#64748b;margin-bottom:8px">覆盖角色默认值 Overrides role defaults</div>
+            <input type="hidden" id="um-use-defaults" value="false">
+            <div id="um-perm-list">
+                ${UM_PERM_KEYS.map(pk => {
+                    const val = (cp && cp[pk.key] !== undefined) ? cp[pk.key] : (rd[pk.key] || false);
+                    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+                        <input type="checkbox" class="um-perm-cb" data-key="${pk.key}" ${val ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer"
+                            onchange="document.getElementById('um-use-defaults').value='false'">
+                        <span>${pk.label}</span>
+                    </label>`;
+                }).join('')}
+            </div>
+            <button type="button" class="sb-btn small" style="margin-top:8px"
+                onclick="(function(){
+                    const rd=${rdJson};
+                    document.querySelectorAll('.um-perm-cb').forEach(cb=>{cb.checked=!!(rd[cb.dataset.key]);});
+                    document.getElementById('um-use-defaults').value='true';
+                })()">↩️ 使用角色默认 Use Role Defaults</button>
+        </div>`;
+
         this._dialog(`
-            <h3>✏️ 编辑用户</h3>
-            <div class="sb-field"><label>用户名</label><input value="${this.esc(u.username)}" disabled style="background:#f1f5f9;color:#94a3b8"></div>
-            <div class="sb-field"><label>新密码（不填则不改）</label><input id="um-password" type="password" autocomplete="new-password"></div>
-            <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" value="${this.esc(u.full_name||'')}"></div>
-            <div class="sb-field"><label>Role 角色 *</label>
-                <select id="um-role">
-                    ${u.role==='manager' ? `<option value="manager" selected>⚙️ System Admin 系统管理员</option>` : ''}
-                    <option value="owner" ${u.role==='owner'?'selected':''}>👑 Project Owner 业主</option>
-                    <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🏗️ Site Supervisor 工地主管</option>
-                    <option value="foreman" ${u.role==='foreman'?'selected':''}>🪚 Foreman 工头</option>
-                    <option value="purchaser" ${u.role==='purchaser'?'selected':''}>🛒 Purchaser 采购员</option>
-                    <option value="patrol" ${u.role==='patrol'?'selected':''}>🔦 Security 巡逻员</option>
-                    <option value="worker" ${u.role==='worker'?'selected':''}>🔧 Worker / 工人</option>
-                </select>
-            </div>`,
+        <h3>✏️ 编辑用户</h3>
+        <div class="sb-field"><label>用户名</label><input value="${this.esc(u.username)}" disabled style="background:#f1f5f9;color:#94a3b8"></div>
+        <div class="sb-field"><label>新密码（不填则不改）</label><input id="um-password" type="password" autocomplete="new-password"></div>
+        <div class="sb-field"><label>全名 *</label><input id="um-fullname" type="text" value="${this.esc(u.full_name || '')}"></div>
+        <div class="sb-field"><label>Role 角色 *</label>
+            <select id="um-role">
+                ${u.role === 'manager' ? `<option value="manager" selected>⚙️ System Admin 系统管理员</option>` : ''}
+                <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>👑 Project Owner 业主</option>
+                <option value="supervisor" ${u.role === 'supervisor' ? 'selected' : ''}>🏗️ Site Supervisor 工地主管</option>
+                <option value="foreman" ${u.role === 'foreman' ? 'selected' : ''}>🪚 Foreman 工头</option>
+                <option value="purchaser" ${u.role === 'purchaser' ? 'selected' : ''}>🛒 Purchaser 采购员</option>
+                <option value="patrol" ${u.role === 'patrol' ? 'selected' : ''}>🔦 Security 巡逻员</option>
+                <option value="worker" ${u.role === 'worker' ? 'selected' : ''}>🔧 Worker / 工人</option>
+            </select>
+        </div>
+        ${permSection}`,
             '保存', async () => {
-                const body = { full_name: document.getElementById('um-fullname').value.trim(), role: document.getElementById('um-role').value };
+                const body = {
+                    full_name: document.getElementById('um-fullname').value.trim(),
+                    role: document.getElementById('um-role').value
+                };
                 const pw = document.getElementById('um-password').value;
                 if (pw) body.password = pw;
-                await apiRequest(`/api/users/${id}`, { method:'PUT', body: JSON.stringify(body) });
+
+                if (u.role !== 'manager') {
+                    if (document.getElementById('um-use-defaults').value === 'true') {
+                        body.custom_permissions = null;
+                    } else {
+                        const perms = {};
+                        document.querySelectorAll('.um-perm-cb').forEach(cb => {
+                            perms[cb.dataset.key] = cb.checked;
+                        });
+                        body.custom_permissions = perms;
+                    }
+                }
+
+                await apiRequest(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+
+                // Update localStorage if the edited user is the currently logged-in user
+                try {
+                    const me = JSON.parse(localStorage.getItem('user') || '{}');
+                    if (me.id === id) {
+                        me.custom_permissions = body.custom_permissions !== undefined ? body.custom_permissions : me.custom_permissions;
+                        localStorage.setItem('user', JSON.stringify(me));
+                    }
+                } catch (_) {}
             });
     },
 

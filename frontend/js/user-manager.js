@@ -2,12 +2,12 @@
 // NOTE: Keep in sync with PERMISSIONS in frontend/js/permissions.js.
 // Manager row is excluded here — managers always get full access and have no permissions editor.
 const UM_ROLE_DEFAULTS = {
-    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
-    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false },
-    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false },
-    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false },
-    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
-    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false }
+    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false, view_photos:true,  view_drawings:true  },
+    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false, view_photos:true,  view_drawings:true  },
+    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  }
 };
 const UM_PERM_KEYS = [
     { key: 'view_site',         label: '今日现场 Today\'s Site' },
@@ -16,7 +16,9 @@ const UM_PERM_KEYS = [
     { key: 'purchase_material', label: '采购总览 Procurement' },
     { key: 'manage_projects',   label: '项目管理 Manage Projects' },
     { key: 'assign_task',       label: '分配任务 Assign Tasks' },
-    { key: 'manage_users',      label: '用户管理 Manage Users' }
+    { key: 'manage_users',      label: '用户管理 Manage Users' },
+    { key: 'view_photos',       label: '现场照片 Site Photos' },
+    { key: 'view_drawings',     label: '设计图 Drawings' }
 ];
 const userManager = {
     users: [],

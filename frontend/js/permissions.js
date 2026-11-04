@@ -4,13 +4,13 @@
 // Keep both tables in sync when role defaults change.
 
 const PERMISSIONS = {
-    manager:    { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:true  },
-    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
-    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false },
-    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false },
-    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false },
-    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false },
-    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false }
+    manager:    { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:true,  view_photos:true,  view_drawings:true  },
+    owner:      { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    supervisor: { view_site:true,  view_gantt:true,  view_overview:true,  manage_projects:true,  purchase_material:true,  assign_task:true,  manage_users:false, view_photos:true,  view_drawings:true  },
+    foreman:    { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:true,  manage_users:false, view_photos:true,  view_drawings:true  },
+    purchaser:  { view_site:false, view_gantt:true,  view_overview:false, manage_projects:false, purchase_material:true,  assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    patrol:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  },
+    worker:     { view_site:true,  view_gantt:false, view_overview:false, manage_projects:false, purchase_material:false, assign_task:false, manage_users:false, view_photos:true,  view_drawings:true  }
 };
 
 const PermissionManager = {
@@ -97,6 +97,9 @@ const PermissionManager = {
     canViewOverview() {
         return this.hasPermission('view_overview');
     },
+
+    canViewPhotos()   { return this.hasPermission('view_photos');   },
+    canViewDrawings() { return this.hasPermission('view_drawings'); },
 
     // 旧兼容
     canViewAllProjects()        { return this.isManager(); },

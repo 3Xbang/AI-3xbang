@@ -1615,7 +1615,15 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
     
     const { full_name, role, password } = req.body;
     const customPermissions = req.body.custom_permissions; // may be object, null, or undefined
-    
+
+    // Look up the target user's current role to guard manager accounts
+    const targetCheck = await client.query('SELECT role FROM users WHERE id = $1', [req.params.id]);
+    if (targetCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    const targetRole = targetCheck.rows[0].role;
+
     // �����޸��Լ��Ľ�ɫ
     if (req.params.id == req.user.id && role && role !== req.user.role) {
       await client.query('ROLLBACK');
@@ -1643,12 +1651,15 @@ router.put('/users/:id', authenticate, requirePermission('manage_users'), async 
     }
 
     // custom_permissions: null → set to NULL; plain object → JSON string; undefined → skip
-    if (customPermissions === null) {
-      updates.push(`custom_permissions = $${paramIndex++}`);
-      params.push(null);
-    } else if (customPermissions !== undefined && typeof customPermissions === 'object') {
-      updates.push(`custom_permissions = $${paramIndex++}`);
-      params.push(JSON.stringify(customPermissions));
+    // Never apply custom_permissions to a manager account — managers always have full access
+    if (targetRole !== 'manager') {
+      if (customPermissions === null) {
+        updates.push(`custom_permissions = $${paramIndex++}`);
+        params.push(null);
+      } else if (customPermissions !== undefined && typeof customPermissions === 'object') {
+        updates.push(`custom_permissions = $${paramIndex++}`);
+        params.push(JSON.stringify(customPermissions));
+      }
     }
     
     if (updates.length === 0) {

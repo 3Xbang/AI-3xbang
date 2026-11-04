@@ -140,7 +140,7 @@ const userManager = {
         <div class="sb-field" style="margin-top:16px">
             <label style="font-weight:600">🔐 自定义权限 Custom Permissions</label>
             <div style="font-size:12px;color:#64748b;margin-bottom:8px">覆盖角色默认值 Overrides role defaults</div>
-            <input type="hidden" id="um-use-defaults" value="false">
+            <input type="hidden" id="um-use-defaults" value="${cp ? 'false' : 'true'}">
             <div id="um-perm-list">
                 ${UM_PERM_KEYS.map(pk => {
                     const val = (cp && cp[pk.key] !== undefined) ? cp[pk.key] : (rd[pk.key] || false);

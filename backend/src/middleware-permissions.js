@@ -50,10 +50,15 @@ async function checkProjectAccess(client, userId, userRole, projectId) {
 }
 
 // 检查用户是否有权限
-function hasPermission(userRole, permission) {
+// Consults custom_permissions from the JWT first (if present); falls back to role matrix.
+function hasPermission(userRole, permission, customPermissions) {
+    // Custom override takes precedence when the key is explicitly set
+    if (customPermissions && typeof customPermissions === 'object' &&
+        customPermissions[permission] !== undefined) {
+        return !!customPermissions[permission];
+    }
     const rolePermissions = PERMISSIONS[userRole];
     if (!rolePermissions) return false;
-    
     return rolePermissions.includes(permission);
 }
 
@@ -61,14 +66,15 @@ function hasPermission(userRole, permission) {
 function requirePermission(permission) {
     return (req, res, next) => {
         const userRole = req.user.role;
-        
-        if (!hasPermission(userRole, permission)) {
+        const customPermissions = req.user.custom_permissions || null;
+
+        if (!hasPermission(userRole, permission, customPermissions)) {
             return res.status(403).json({
                 success: false,
                 message: '权限不足 | ไม่มีสิทธิ์'
             });
         }
-        
+
         next();
     };
 }

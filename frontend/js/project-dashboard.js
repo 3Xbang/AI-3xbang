@@ -202,7 +202,7 @@ const ProjectDashboard = {
             });
             const j = await r.json();
             if (typeof app !== 'undefined') app.hideLoading();
-            if (j.success) { await this.load(); }
+            if (j.success) { await this.init(); }
             else alert(j.message || '上传失败');
         } catch (e) {
             if (typeof app !== 'undefined') app.hideLoading();

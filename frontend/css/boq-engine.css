@@ -1,0 +1,312 @@
+/* ============================================================
+   boq-engine.css — 工程算量估算模块样式
+   集成于 Mira Villa 施工管理系统
+   使用 Mira Villa CSS 变量保持风格一致
+   ============================================================ */
+
+/* ── BOQ 视图容器 ─────────────────────────────────────────── */
+#boq-view {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-color);
+  padding: 0 0 40px;
+}
+.boq-wrap { max-width: 1600px; margin: 0 auto; padding: 0 16px; }
+
+/* ── BOQ 页头 ─────────────────────────────────────────────── */
+.boq-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: #fff; padding: 16px 20px; margin-bottom: 0;
+}
+.boq-header-inner {
+  max-width: 1600px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.boq-header h2 { font-size: 17px; font-weight: 700; }
+.boq-header p  { font-size: 11px; opacity: .75; margin-top: 2px; }
+.boq-header-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.boq-badge {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 20px;
+}
+.boq-project-tag {
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
+  color: #fff; font-size: 11px; font-weight:600; padding: 4px 12px; border-radius: 20px;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.boq-card {
+  background: #fff; border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  margin-top: 16px; overflow: hidden;
+}
+.boq-card-head {
+  padding: 14px 18px; border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.boq-card-head h3 { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.boq-card-head small { font-size: 11px; color: var(--text-secondary); }
+
+/* ── 全局设置 ─────────────────────────────────────────────── */
+.boq-settings-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 14px; padding: 16px 18px;
+}
+.boq-setting label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px;
+}
+.boq-tip-icon {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--primary-color); color: #fff;
+  font-size: 9px; font-weight: 800; display: inline-flex;
+  align-items: center; justify-content: center; cursor: help; flex-shrink: 0;
+}
+.boq-inp, .boq-sel {
+  width: 100%; height: 34px; border: 1.5px solid var(--border-color);
+  border-radius: 6px; padding: 0 10px; font-size: 13px; background: #fff;
+  color: var(--text-primary); transition: border-color .15s;
+}
+.boq-inp:focus, .boq-sel:focus { outline: none; border-color: var(--primary-color); }
+.boq-price-row { display: flex; align-items: center; gap: 5px; }
+.boq-price-row .boq-inp { flex: 1; }
+.boq-price-sep { color: var(--text-secondary); font-size: 13px; }
+
+/* ── 构件表格工具栏 ───────────────────────────────────────── */
+.boq-add-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 18px 14px;
+  flex-wrap: wrap;
+}
+.boq-btn-primary {
+  height: 34px; padding: 0 16px; border-radius: 6px; border: none;
+  background: var(--primary-color); color: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s; white-space: nowrap;
+}
+.boq-btn-primary:hover { opacity: .85; }
+
+/* ── 表格 ─────────────────────────────────────────────────── */
+.boq-tbl-wrap { overflow-x: auto; padding: 0 4px 4px; }
+.boq-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.boq-tbl thead th {
+  background: #f8fafc; color: var(--text-secondary); font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  padding: 8px 8px; border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+.boq-tbl tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+.boq-tbl tbody tr:hover { background: #f8faff; }
+.boq-tbl tbody tr.boq-row-err { background: #fff5f5; }
+.boq-tbl td { padding: 7px 7px; vertical-align: middle; }
+.boq-tc { text-align: center; }
+.boq-tr { text-align: right; }
+
+/* table inputs */
+.boq-ti {
+  height: 30px; border: 1.5px solid var(--border-color); border-radius: 5px;
+  padding: 0 7px; font-size: 12px; color: var(--text-primary); width: 100%;
+  transition: border-color .15s;
+}
+.boq-ti:focus { outline: none; border-color: var(--primary-color); }
+.boq-ti-name { min-width: 100px; }
+.boq-ti-dim  { width: 68px; text-align: right; }
+.boq-ti-qty  { width: 52px; text-align: center; }
+.boq-tsel {
+  height: 30px; border: 1.5px solid var(--border-color); border-radius: 5px;
+  padding: 0 4px; font-size: 12px; color: var(--text-primary); min-width: 138px;
+}
+.boq-tsel:focus { outline: none; border-color: var(--primary-color); }
+.boq-derived { font-weight: 600; color: #334155; }
+
+/* steel ratio */
+.boq-ratio {
+  display: inline-block; font-weight: 700; font-size: 12px;
+  padding: 2px 7px; border-radius: 4px; cursor: help;
+}
+.boq-ratio-ok  { background: #dcfce7; color: #15803d; }
+.boq-ratio-err { background: #fef2f2; color: var(--danger-color); }
+.boq-hint { font-size: 9px; color: var(--text-secondary); margin-top: 2px; }
+.boq-detail-badge { font-size: 9px; color: var(--primary-color); font-weight: 700; margin-top: 2px; }
+
+/* material tags */
+.boq-mat-cell { min-width: 220px; max-width: 320px; }
+.boq-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; padding: 2px 7px; border-radius: 20px; margin: 2px;
+  white-space: nowrap; cursor: help;
+}
+.boq-tag b { font-weight: 700; }
+.boq-tag-crit {
+  background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; font-weight: 600;
+}
+.boq-tag-crit::before { content: '🔴'; font-size: 8px; }
+.boq-tag-norm {
+  background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+}
+.boq-tag-norm::before { content: '🔵'; font-size: 8px; }
+.boq-norm-note { font-size: 9px; color: var(--warning-color); margin-top: 3px; }
+
+/* op cell */
+.boq-op-cell { min-width: 86px; }
+.boq-cost-sm  { font-size: 10px; color: var(--text-secondary); line-height: 1.4; }
+.boq-btn-sm {
+  display: block; width: 100%; margin-bottom: 3px; background: none;
+  border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px;
+  cursor: pointer; font-size: 11px; font-weight: 600; transition: all .15s;
+}
+.boq-btn-sm-blue  { color: var(--primary-color); border-color: #bfdbfe; }
+.boq-btn-sm-blue:hover  { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+.boq-btn-sm-green { color: var(--success-color); border-color: #86efac; }
+.boq-btn-sm-green:hover { background: var(--success-color); color: #fff; }
+.boq-btn-sm-red   { color: var(--danger-color); border-color: #fca5a5; }
+.boq-btn-sm-red:hover   { background: var(--danger-color); color: #fff; }
+
+/* empty state */
+.boq-empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+.boq-empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+/* ── 汇总卡片 ─────────────────────────────────────────────── */
+.boq-sum-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px; padding: 16px 18px;
+}
+.boq-sc {
+  border-radius: 8px; padding: 14px; text-align: center;
+  background: #f8fafc; border: 1.5px solid var(--border-color);
+}
+.boq-sc.boq-sc-hl {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff; border-color: transparent; grid-column: span 2;
+}
+.boq-sc-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .4px; opacity: .65; }
+.boq-sc-value { font-size: 26px; font-weight: 800; margin: 5px 0 2px; }
+.boq-sc.boq-sc-hl .boq-sc-value { font-size: 20px; }
+.boq-sc-unit  { font-size: 11px; opacity: .6; }
+
+/* breakdown bars */
+.boq-breakdown { padding: 0 18px 16px; }
+.boq-breakdown h4 { font-size: 12px; font-weight: 700; color: var(--text-secondary);
+                    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+.boq-bd-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.boq-bd-lbl  { width: 66px; font-size: 11px; font-weight: 600; }
+.boq-bd-bar  { flex: 1; background: #f1f5f9; border-radius: 20px; height: 12px; overflow: hidden; }
+.boq-bd-fill { height: 100%; border-radius: 20px; transition: width .5s; }
+.boq-bar-c { background: linear-gradient(90deg, #3b82f6, #93c5fd); }
+.boq-bar-s { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+.boq-bar-f { background: linear-gradient(90deg, #10b981, #6ee7b7); }
+.boq-bd-val { width: 190px; font-size: 10px; color: var(--text-secondary); }
+.boq-bd-pct { font-weight: 700; color: var(--text-primary); }
+.boq-bd-empty { color: var(--text-secondary); font-size: 12px; padding: 12px 0; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+#boq-toasts {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 7px; z-index: 8500;
+  pointer-events: none;
+}
+.boq-toast {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 14px; border-radius: 8px; max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.14); pointer-events: all;
+  opacity: 0; transform: translateX(30px); transition: all .3s;
+}
+.boq-toast.boq-tin  { opacity: 1; transform: translateX(0); }
+.boq-toast.boq-tout { opacity: 0; transform: translateX(30px); }
+.boq-toast-w { background: #fffbeb; border-left: 4px solid var(--warning-color); color: #92400e; }
+.boq-toast-e { background: #fef2f2; border-left: 4px solid var(--danger-color);  color: #991b1b; }
+.boq-toast-i { background: #eff6ff; border-left: 4px solid var(--primary-color); color: #1e40af; }
+.boq-t-msg   { flex: 1; font-size: 11px; line-height: 1.5; }
+.boq-t-close { background: none; border: none; cursor: pointer; font-size: 15px;
+               color: inherit; opacity: .6; padding: 0; }
+.boq-t-close:hover { opacity: 1; }
+
+/* ── Tooltip ───────────────────────────────────────────────── */
+#boq-tooltip {
+  position: fixed; z-index: 8000; max-width: 320px;
+  background: #1e293b; color: #f1f5f9; border-radius: 8px;
+  padding: 10px 14px; font-size: 11px; line-height: 1.6;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  pointer-events: none; opacity: 0; transition: opacity .2s;
+}
+#boq-tooltip.boq-tip-on { opacity: 1; pointer-events: auto; }
+.boq-tip-head { font-weight: 700; font-size: 12px; margin-bottom: 5px; }
+.boq-tip-body { margin-bottom: 6px; opacity: .9; }
+.boq-tip-refs { font-size: 9px; opacity: .6; border-top: 1px solid rgba(255,255,255,.15); padding-top: 5px; }
+
+/* ── Modal（图片 + 钢筋）─────────────────────────────────── */
+.boq-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9100;
+  background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 16px;
+}
+.boq-overlay.boq-open { display: flex; }
+.boq-mbox {
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  width: 100%; max-width: 960px; max-height: 92vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.boq-mhead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border-color);
+  background: #f8fafc; flex-shrink: 0;
+}
+.boq-mtitle { font-size: 14px; font-weight: 700; }
+.boq-msub   { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+.boq-mclose {
+  background: none; border: 1px solid var(--border-color); border-radius: 6px;
+  width: 28px; height: 28px; font-size: 15px; cursor: pointer;
+  color: var(--text-secondary); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.boq-mclose:hover { background: #fef2f2; color: var(--danger-color); }
+.boq-mtabs {
+  display: flex; gap: 5px; flex-wrap: wrap;
+  padding: 8px 14px; border-bottom: 1px solid var(--border-color);
+  background: #fafafa; flex-shrink: 0;
+}
+.boq-mtab {
+  height: 26px; padding: 0 11px; border-radius: 20px;
+  border: 1.5px solid var(--border-color); background: #fff;
+  font-size: 10px; cursor: pointer; color: var(--text-secondary);
+  white-space: nowrap; transition: all .15s;
+}
+.boq-mtab:hover, .boq-mtab.boq-mtab-a {
+  background: var(--primary-color); color: #fff; border-color: var(--primary-color);
+}
+.boq-mimg-wrap {
+  flex: 1; overflow: auto; display: flex;
+  align-items: flex-start; justify-content: center;
+  background: #f1f5f9; padding: 10px;
+}
+.boq-mimg-wrap img { max-width: 100%; height: auto; border-radius: 6px;
+                     box-shadow: 0 2px 12px rgba(0,0,0,.12); }
+.boq-mfoot {
+  padding: 8px 18px; border-top: 1px solid var(--border-color);
+  display: flex; gap: 14px; flex-wrap: wrap; flex-shrink: 0; background: #f8fafc;
+  font-size: 11px;
+}
+.boq-mfoot-ref  { color: var(--primary-color); font-weight: 600; }
+.boq-mfoot-note { color: var(--text-secondary); }
+
+/* rebar modal table */
+.boq-rebar-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.boq-rebar-tbl th {
+  background: #f8fafc; color: var(--text-secondary); font-size: 10px; font-weight: 700;
+  padding: 7px 8px; border-bottom: 2px solid var(--border-color); white-space: nowrap;
+}
+.boq-rebar-tbl td { padding: 5px 7px; border-bottom: 1px solid #f1f5f9; }
+
+/* ── 规范卡片 ─────────────────────────────────────────────── */
+.boq-norm-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px; padding: 16px 18px; font-size: 11px; line-height: 1.7;
+}
+.boq-norm-item b { color: var(--text-primary); }
+.boq-norm-item span { color: var(--text-secondary); }
+
+@media (max-width: 700px) {
+  .boq-sc.boq-sc-hl { grid-column: span 1; }
+  .boq-header-badges { display: none; }
+}

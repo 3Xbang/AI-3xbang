@@ -1012,18 +1012,40 @@ router.post('/projects/:projectId/set-quantities', authenticate, requireProjectA
     
     const updated = [];
     
-    for (const [processCode, quantity] of Object.entries(quantities)) {
-      const result = await client.query(`
-        UPDATE process_execution pe
-        SET planned_quantity = $1,
-            updated_at = CURRENT_TIMESTAMP
-        FROM process_nodes pn
-        WHERE pe.process_node_id = pn.id
-          AND pn.project_id = $2
-          AND pn.process_code = $3
-        RETURNING pe.id, pe.planned_quantity, pn.process_code
-      `, [quantity, req.params.projectId, processCode]);
-      
+    const NEW_STYLE_KEY = /^[A-I]\d{2}/;
+
+    for (const [key, quantity] of Object.entries(quantities)) {
+      let result;
+
+      if (NEW_STYLE_KEY.test(key)) {
+        // New-style key: "A01@2" or "A01" — split on '@' to get master_code and optional floor_no
+        const [masterCode, floorPart] = key.split('@');
+        const floorNo = floorPart !== undefined ? Number(floorPart) : null;
+        result = await client.query(`
+          UPDATE process_execution pe
+          SET planned_quantity = $1,
+              updated_at = CURRENT_TIMESTAMP
+          FROM process_nodes pn
+          WHERE pe.process_node_id = pn.id
+            AND pn.project_id = $2
+            AND pn.master_code = $3
+            AND pn.floor_no IS NOT DISTINCT FROM $4
+          RETURNING pe.id, pe.planned_quantity, pn.master_code, pn.floor_no
+        `, [quantity, req.params.projectId, masterCode, floorNo]);
+      } else {
+        // Legacy key: plain process_code string
+        result = await client.query(`
+          UPDATE process_execution pe
+          SET planned_quantity = $1,
+              updated_at = CURRENT_TIMESTAMP
+          FROM process_nodes pn
+          WHERE pe.process_node_id = pn.id
+            AND pn.project_id = $2
+            AND pn.process_code = $3
+          RETURNING pe.id, pe.planned_quantity, pn.process_code
+        `, [quantity, req.params.projectId, key]);
+      }
+
       if (result.rows.length > 0) {
         updated.push(result.rows[0]);
       }
@@ -1045,21 +1067,26 @@ router.post('/projects/:projectId/set-quantities', authenticate, requireProjectA
   }
 });
 
-// ��ȡ��Ŀ������
+// 获取项目工程量
 router.get('/projects/:projectId/quantities', authenticate, requireProjectAccess(), async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT
+        pn.id          AS node_id,
         pn.process_code,
+        pn.master_code,
+        pn.floor_no,
         pn.process_name,
+        pn.sequence_number,
+        pe.id          AS exec_id,
         pe.planned_quantity,
-        pn.typical_unit as unit
+        pe.quantity_unit
       FROM process_nodes pn
-      LEFT JOIN process_execution pe ON pn.id = pe.process_node_id
+      LEFT JOIN process_execution pe ON pe.process_node_id = pn.id
       WHERE pn.project_id = $1
-      ORDER BY pn.sequence
+      ORDER BY pn.sequence_number NULLS LAST
     `, [req.params.projectId]);
-    
+
     res.json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

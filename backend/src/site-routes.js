@@ -478,6 +478,102 @@ router.post('/projects/:projectId/boq/apply', authenticate, requireProjectAccess
   res.json({ success: true, data: out });
 }));
 
+// BOQ vs Actuals — budget tracking per section
+router.get('/projects/:projectId/boq-vs-actuals', authenticate, requireProjectAccess(), wrap(async (req, res) => {
+  const projectId = Number(req.params.projectId);
+  if (!projectId) throw new S.HttpError(400, '无效的项目 ID');
+
+  const proj = (await pool.query('SELECT id FROM projects WHERE id = $1', [projectId])).rows[0];
+  if (!proj) throw new S.HttpError(404, '项目不存在');
+
+  // Section definitions (A-I)
+  const SECTIONS = {
+    A: { zh: '前期准备',   th: 'Preliminary Works' },
+    B: { zh: '地基基础',   th: 'Foundation Works' },
+    C: { zh: '主体结构',   th: 'Structural Work' },
+    D: { zh: '屋面工程',   th: 'Roofing' },
+    E: { zh: '机电工程',   th: 'MEP Works' },
+    F: { zh: '内装修',     th: 'Interior Finishing' },
+    G: { zh: '外立面',     th: 'External Facade' },
+    H: { zh: '室外工程',   th: 'External Works' },
+    I: { zh: '竣工验收',   th: 'Completion & Handover' }
+  };
+
+  // Map purchase category prefix → section letter
+  const CAT_SECTION = {
+    A: 'A', B: 'B', C: 'C', D: 'D', E: 'E',
+    F: 'F', G: 'G', H: 'H', I: 'I'
+  };
+
+  // Query 1: BOQ planned_quantity summed by section (master_code first letter)
+  const boqRows = (await pool.query(`
+    SELECT
+      left(pn.master_code, 1)   AS sec,
+      SUM(pe.planned_quantity)  AS boq_amount
+    FROM process_nodes pn
+    JOIN process_execution pe ON pe.process_node_id = pn.id
+    WHERE pn.project_id = $1
+      AND pn.master_code IS NOT NULL
+      AND pe.planned_quantity IS NOT NULL
+    GROUP BY left(pn.master_code, 1)
+  `, [projectId])).rows;
+
+  // Query 2: actual purchase amounts by category
+  const actualRows = (await pool.query(`
+    SELECT
+      pi.category,
+      COALESCE(SUM(pi.total_amount), 0) AS actual_amount
+    FROM purchase_items pi
+    JOIN purchase_orders po ON po.id = pi.purchase_order_id
+    WHERE po.project_id = $1
+      AND po.status NOT IN ('cancelled', 'draft')
+    GROUP BY pi.category
+  `, [projectId])).rows;
+
+  // Aggregate actuals per section
+  const actualBySec = {};
+  for (const row of actualRows) {
+    const cat = (row.category || '').trim().toUpperCase();
+    const sec = CAT_SECTION[cat] || null;
+    if (!sec) continue;
+    actualBySec[sec] = (actualBySec[sec] || 0) + Number(row.actual_amount);
+  }
+
+  const boqBySec = {};
+  for (const row of boqRows) {
+    boqBySec[row.sec] = Number(row.boq_amount);
+  }
+
+  let total_boq = 0;
+  let total_actual = 0;
+  const sections = [];
+
+  for (const [sec, meta] of Object.entries(SECTIONS)) {
+    const boq = boqBySec.hasOwnProperty(sec) ? boqBySec[sec] : null;
+    const actual = actualBySec[sec] || 0;
+
+    // Skip sections that have no BOQ and no actuals
+    if (boq === null && actual === 0) continue;
+
+    if (boq !== null) total_boq += boq;
+    total_actual += actual;
+
+    sections.push({
+      sec,
+      zh: meta.zh,
+      th: meta.th,
+      boq_amount: boq,   // null when no BOQ entered — never coerced to 0
+      actual_amount: actual,
+      variance: boq !== null ? boq - actual : null
+    });
+  }
+
+  res.json({
+    success: true,
+    data: { sections, total_boq, total_actual }
+  });
+}));
+
 // ============ 工序定额设置（仅管理者）============
 const { QUOTA } = require('./process-quota');
 const { LIB } = require('./process-master');

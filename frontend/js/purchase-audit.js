@@ -200,6 +200,7 @@ const PurchaseAudit = {
         if(!box) return;
         const isAdmin = PermissionManager.isManager();
         box.innerHTML=`
+          <div id="pa-budget-tracking"><div id="pa-bt-body"></div></div>
           <div class="pa-sec" style="background:#eff6ff;border:1.5px solid #93c5fd">
             <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:4px">
               ℹ️ Receipt data comes from the "Materials 收据材料" tab
@@ -219,6 +220,7 @@ const PurchaseAudit = {
           <div id="pa-report"></div>`;
         this._loadFromDB();
         this._checkRulesWarning();
+        this._renderBudgetTracking();
     },
 
     async _checkRulesWarning() {
@@ -554,6 +556,67 @@ const PurchaseAudit = {
             // Re-render deduct section
             if(this._lastDeductRows) this._reRenderDeductSection(this._lastDeductRows, this._lastDeductAmt, true);
         } catch(e){alert(e.message);}
+    },
+
+    async _renderBudgetTracking() {
+        const body = document.getElementById('pa-bt-body');
+        if (!body) return;
+        body.innerHTML = '<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">⏳ 加载预算追踪... Loading budget tracking...</div>';
+        try {
+            const r = await apiRequest('/api/projects/' + this.projectId + '/boq-vs-actuals');
+            const rows = (r && r.data) || [];
+            if (!rows.length) {
+                body.innerHTML = '';
+                return;
+            }
+            const fmtNum = (n, d = 0) => n == null ? '-' : Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+            const tableRows = rows.map(row => {
+                const boq = Number(row.boq_amount || 0);
+                const actual = Number(row.actual_amount || 0);
+                const variance = actual - boq;
+                const pct = boq > 0 ? (actual / boq * 100) : 0;
+                let statusBadge, rowBg;
+                if (boq === 0) {
+                    statusBadge = '<span style="background:#e2e8f0;color:#475569;padding:2px 8px;border-radius:8px;font-size:11px">—</span>';
+                    rowBg = '';
+                } else if (pct < 90) {
+                    statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:8px;font-size:11px">✅ 正常</span>';
+                    rowBg = '';
+                } else if (pct <= 100) {
+                    statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:8px;font-size:11px">⚠️ 接近上限</span>';
+                    rowBg = 'background:#fffbeb';
+                } else {
+                    statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:11px">🚫 超支</span>';
+                    rowBg = 'background:#fff5f5';
+                }
+                return `<tr style="${rowBg}">
+                    <td style="padding:8px 12px">${this.esc(row.section_name || row.section || '-')}</td>
+                    <td style="padding:8px 12px;text-align:right">฿${fmtNum(boq)}</td>
+                    <td style="padding:8px 12px;text-align:right">฿${fmtNum(actual)}</td>
+                    <td style="padding:8px 12px;text-align:right;color:${variance > 0 ? '#dc2626' : '#059669'}">฿${fmtNum(variance)}</td>
+                    <td style="padding:8px 12px;text-align:center">${statusBadge}</td>
+                </tr>`;
+            }).join('');
+            body.innerHTML = `<div class="pa-sec" style="margin-bottom:14px">
+                <div style="font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:10px">📊 Budget Tracking 预算追踪</div>
+                <div style="overflow-x:auto">
+                    <table class="pa-table">
+                        <thead>
+                            <tr>
+                                <th>Section 分项</th>
+                                <th style="text-align:right">BOQ 预算</th>
+                                <th style="text-align:right">Actual 实际</th>
+                                <th style="text-align:right">Variance 差异</th>
+                                <th style="text-align:center">Status 状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        } catch (e) {
+            body.innerHTML = '';
+        }
     },
 
     printContractorReport() {

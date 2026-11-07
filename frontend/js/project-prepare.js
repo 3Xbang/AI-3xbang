@@ -14,7 +14,8 @@ const ProjectPrepare = {
         boq: {
             zh: '工程量清单 BOQ', th: 'Quantity (BOQ)', optional: true,
             why: '有报价单就上传（Excel .xlsx 或 PDF），系统自动识别楼层、套数、卫生间等，帮你填好申请表。没有就跳过，手动填。',
-            btn: '上传 BOQ（自动识别）', run: pid => ProjectPrepare.openBoqExtract(pid)
+            btn: '上传 BOQ（自动识别）', run: pid => ProjectPrepare.openBoqExtract(pid),
+            btn2: '📐 手动设置工程量 Set Quantities', run2: pid => app.showQuantitiesForm(pid)
         },
         profile: {
             zh: '项目申请表', th: 'Project Form',
@@ -82,6 +83,7 @@ const ProjectPrepare = {
                 </div>
                 <div class="pp-act">
                     <button class="sb-btn ${s.done ? '' : 'primary'}" data-run="${s.key}" ${blockedBy ? 'disabled' : ''}>${def.btn}</button>
+                    ${def.btn2 ? `<button class="sb-btn" data-run2="${s.key}" style="margin-top:6px;min-height:44px">${def.btn2}</button>` : ''}
                     ${blockedBy ? `<div class="pp-hint">请先完成「${this.STEPS[blockedBy].zh}」</div>` : ''}
                 </div>
             </div>`;
@@ -100,6 +102,7 @@ const ProjectPrepare = {
             ${banner}${cards}</div>`;
 
         box.querySelectorAll('[data-run]').forEach(b => b.onclick = () => this.STEPS[b.dataset.run].run(this.projectId));
+        box.querySelectorAll('[data-run2]').forEach(b => b.onclick = () => this.STEPS[b.dataset.run2].run2(this.projectId));
         box.querySelectorAll('[data-go]').forEach(b => b.onclick = () => ProjectDetail.showSubView(b.dataset.go));
         const rf = box.querySelector('[data-refresh]'); if (rf) rf.onclick = () => this.load();
     },

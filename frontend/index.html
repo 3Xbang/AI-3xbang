@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/site-board.css?v=33">
     <link rel="stylesheet" href="css/ui-v2.css?v=22">
     <link rel="stylesheet" href="css/mobile.css?v=6">
+    <link rel="stylesheet" href="css/boq-engine.css?v=1">
     <!-- CDN: ECharts + PapaParse for purchase audit -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -60,6 +61,7 @@
             <div class="header-right">
                 <span id="user-name"></span>
                 <button id="btn-user-mgmt" onclick="app.showView('users')" class="btn-link" style="display:none">👥 用户管理</button>
+                <button onclick="app.showView('boq')" class="btn-link">📐 算量估算</button>
                 <button onclick="app.logout()" class="btn-link">退出 Logout</button>
             </div>
         </header>
@@ -74,6 +76,208 @@
             <!-- 项目详情视图 -->
             <div id="project-detail-view" class="view">
                 <div id="project-detail-container"></div>
+            </div>
+
+            <!-- 算量估算视图 -->
+            <div id="boq-view" class="view">
+              <!-- BOQ 页头 -->
+              <div class="boq-header">
+                <div class="boq-header-inner">
+                  <div>
+                    <h2>⚙️ 工程算量 &amp; 造价估算引擎</h2>
+                    <p>构件参数化 · 中立客观 · 规范驱动 · 防漏项 | Engineering BOQ &amp; Cost Engine</p>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span id="boq-proj-tag" class="boq-project-tag">📁 未关联项目</span>
+                    <button onclick="app.showView('dashboard')" class="btn-link" style="color:#fff;opacity:.8">← 返回项目</button>
+                    <div class="boq-header-badges">
+                      <span class="boq-badge">GB 50010</span><span class="boq-badge">GB 50011</span>
+                      <span class="boq-badge">GB 50108</span><span class="boq-badge">GB 50854</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="boq-wrap">
+
+              <!-- 全局设置 -->
+              <div class="boq-card">
+                <div class="boq-card-head">
+                  <div><h3>⚙️ 项目全局设定</h3><small>修改后实时联动更新所有构件计算结果</small></div>
+                </div>
+                <div class="boq-settings-grid">
+                  <div class="boq-setting">
+                    <label>抗震等级 <span class="boq-tip-icon" data-boq-tip="seismic">?</span></label>
+                    <select id="seismicLevel" class="boq-sel">
+                      <option value="1">一级 (×1.15)</option><option value="2">二级 (×1.05)</option>
+                      <option value="3" selected>三级 (×1.00)</option><option value="4">四级 (×0.95)</option>
+                    </select>
+                  </div>
+                  <div class="boq-setting">
+                    <label>混凝土标号 <span class="boq-tip-icon" data-boq-tip="concreteGrade">?</span></label>
+                    <select id="concreteGrade" class="boq-sel">
+                      <option value="C25">C25</option><option value="C30" selected>C30（推荐）</option>
+                      <option value="C35">C35</option><option value="C40">C40</option>
+                    </select>
+                  </div>
+                  <div class="boq-setting">
+                    <label>砼损耗率 <span class="boq-tip-icon" data-boq-tip="lossRate">?</span></label>
+                    <div class="boq-price-row"><input id="concreteLossRate" class="boq-inp" type="number" value="2" min="1" step="0.5"><span class="boq-price-sep">%</span></div>
+                  </div>
+                  <div class="boq-setting">
+                    <label>钢筋损耗率 <span class="boq-tip-icon" data-boq-tip="lossRate">?</span></label>
+                    <div class="boq-price-row"><input id="steelLossRate" class="boq-inp" type="number" value="2" min="1.5" step="0.5"><span class="boq-price-sep">%</span></div>
+                  </div>
+                  <div class="boq-setting">
+                    <label>货币</label>
+                    <select id="currency" class="boq-sel">
+                      <option value="฿" selected>泰铢 ฿</option><option value="¥">人民币 ¥</option><option value="$">美元 $</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="boq-settings-grid" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:0">
+                  <div class="boq-setting">
+                    <label>砼单价区间(/m³) <span class="boq-tip-icon" data-boq-tip="localPrice">?</span></label>
+                    <div class="boq-price-row"><input id="concretePriceMin" class="boq-inp" type="number" value="2800"><span class="boq-price-sep">~</span><input id="concretePriceMax" class="boq-inp" type="number" value="3500"></div>
+                  </div>
+                  <div class="boq-setting">
+                    <label>钢筋单价区间(/ton) <span class="boq-tip-icon" data-boq-tip="localPrice">?</span></label>
+                    <div class="boq-price-row"><input id="steelPriceMin" class="boq-inp" type="number" value="22000"><span class="boq-price-sep">~</span><input id="steelPriceMax" class="boq-inp" type="number" value="28000"></div>
+                  </div>
+                  <div class="boq-setting">
+                    <label>模板单价区间(/m²) <span class="boq-tip-icon" data-boq-tip="localPrice">?</span></label>
+                    <div class="boq-price-row"><input id="formworkPriceMin" class="boq-inp" type="number" value="180"><span class="boq-price-sep">~</span><input id="formworkPriceMax" class="boq-inp" type="number" value="280"></div>
+                  </div>
+                  <div class="boq-setting" style="justify-content:flex-end;display:flex;flex-direction:column">
+                    <label>&nbsp;</label>
+                    <button onclick="BOQ.showGeneral()" class="boq-btn-primary" style="background:#7c3aed">📚 16G101通用规范图</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 构件表格 -->
+              <div class="boq-card">
+                <div class="boq-card-head">
+                  <div><h3>📋 构件工程量清单 (BOQ)</h3><small>依据 GB 50854-2013 · 🔴红色标签=易漏项关键材料</small></div>
+                </div>
+                <div class="boq-add-bar">
+                  <select id="boq-add-sel" class="boq-sel" style="max-width:210px">
+                    <option value="retainingWall">挡土墙/地下室外墙</option>
+                    <option value="column" selected>框架柱/独立柱</option>
+                    <option value="beam">框架梁/连梁</option>
+                    <option value="slab">楼板/屋面板</option>
+                    <option value="foundation">独立基础/筏板</option>
+                  </select>
+                  <button id="boq-add-btn" class="boq-btn-primary">＋ 添加构件</button>
+                  <small style="color:#94a3b8">输入尺寸后所有派生值实时自动计算，无需点击"计算"</small>
+                </div>
+                <div class="boq-tbl-wrap">
+                  <table class="boq-tbl">
+                    <thead><tr>
+                      <th style="min-width:100px">构件名称</th>
+                      <th style="min-width:145px">构件类型</th>
+                      <th class="boq-tc" style="min-width:68px">长L(m)</th>
+                      <th class="boq-tc" style="min-width:68px">宽W(m)</th>
+                      <th class="boq-tc" style="min-width:68px">高H(m)</th>
+                      <th class="boq-tc" style="min-width:52px">数量</th>
+                      <th class="boq-tc" style="min-width:85px">含钢量<br><small>kg/m³</small></th>
+                      <th class="boq-tr" style="min-width:75px">砼体积<br><small>m³</small></th>
+                      <th class="boq-tr" style="min-width:75px">模板面积<br><small>m²</small></th>
+                      <th class="boq-tr" style="min-width:75px">钢筋重量<br><small>ton</small></th>
+                      <th style="min-width:220px">关联定数材料</th>
+                      <th class="boq-tc" style="min-width:85px">造价/操作</th>
+                    </tr></thead>
+                    <tbody id="boq-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 汇总 -->
+              <div class="boq-card">
+                <div class="boq-card-head"><h3>📊 项目汇总看板</h3><small>实时汇总 · 市场参考区间 · 不含税费运费</small></div>
+                <div class="boq-sum-cards">
+                  <div class="boq-sc"><div class="boq-sc-label">🏗️ 总混凝土用量</div><div class="boq-sc-value" id="boq-sum-cv">0.00</div><div class="boq-sc-unit">m³</div></div>
+                  <div class="boq-sc"><div class="boq-sc-label">🪵 总模板面积</div><div class="boq-sc-value" id="boq-sum-fw">0.00</div><div class="boq-sc-unit">m²</div></div>
+                  <div class="boq-sc"><div class="boq-sc-label">🔩 总钢筋用量</div><div class="boq-sc-value" id="boq-sum-st">0.000</div><div class="boq-sc-unit">ton</div></div>
+                  <div class="boq-sc boq-sc-hl"><div class="boq-sc-label">💰 预估总资金区间</div><div class="boq-sc-value" id="boq-sum-cost">—</div><div class="boq-sc-unit">仅供参考</div></div>
+                </div>
+                <div class="boq-breakdown"><h4>费用构成分析</h4><div id="boq-breakdown"></div></div>
+              </div>
+
+              <!-- 规范依据 -->
+              <div class="boq-card">
+                <div class="boq-card-head"><h3>📚 规范依据</h3></div>
+                <div class="boq-norm-grid">
+                  <div class="boq-norm-item"><b>GB 50010-2010</b> 《混凝土结构设计规范》<br><span>含钢量底线 / 最小配筋率 / 保护层厚度</span></div>
+                  <div class="boq-norm-item"><b>GB 50011-2010</b> 《建筑抗震设计规范》<br><span>抗震等级系数 / 箍筋加密区</span></div>
+                  <div class="boq-norm-item"><b>GB 50108-2008</b> 《地下工程防水技术规范》<br><span>止水钢板 / 止水螺栓 / 防水卷材强制要求</span></div>
+                  <div class="boq-norm-item"><b>GB 50854-2013</b> 《房屋建筑与装饰工程工程量计算规范》<br><span>砼体积 / 模板接触面积计算方法</span></div>
+                  <div class="boq-norm-item"><b>GB 50500-2013</b> 《建设工程工程量清单计价规范》<br><span>材料损耗率定额</span></div>
+                  <div class="boq-norm-item"><b>16G101</b> 混凝土结构平法图集<br><span>配筋构造详图（已集成原版页面）</span></div>
+                </div>
+              </div>
+
+              </div><!-- /boq-wrap -->
+
+              <!-- 图片 Modal -->
+              <div id="boq-img-modal" class="boq-overlay" onclick="if(event.target===this)BOQ.hideImg()">
+                <div class="boq-mbox">
+                  <div class="boq-mhead"><div><div class="boq-mtitle" id="boq-img-title">配筋详图</div><div class="boq-msub">来源：16G101-1《平面整体表示方法制图规则和构造详图》</div></div><button class="boq-mclose" onclick="BOQ.hideImg()">✕</button></div>
+                  <div class="boq-mtabs" id="boq-img-tabs"></div>
+                  <div class="boq-mimg-wrap"><img id="boq-img-el" src="" alt="配筋详图"></div>
+                  <div class="boq-mfoot" id="boq-img-foot"></div>
+                </div>
+              </div>
+
+              <!-- 钢筋 Modal -->
+              <div id="boq-rebar-modal" class="boq-overlay" onclick="if(event.target===this)BOQ.hideRebar()">
+                <div class="boq-mbox" style="max-width:820px">
+                  <div class="boq-mhead">
+                    <div><div class="boq-mtitle" id="boq-rebar-title">🔩 钢筋明细计算</div><div class="boq-msub" id="boq-rebar-sub"></div></div>
+                    <button class="boq-mclose" onclick="BOQ.hideRebar()">✕</button>
+                  </div>
+                  <div style="display:flex;gap:8px;padding:8px 14px;background:#fafafa;border-bottom:1px solid var(--border-color);flex-wrap:wrap;align-items:center">
+                    <button class="boq-btn-primary" onclick="BOQ.rbarLoad()">📋 加载建议配筋</button>
+                    <button class="boq-btn-primary" style="background:#16a34a" onclick="BOQ.rbarAdd()">＋ 添加钢筋</button>
+                    <button class="boq-btn-primary" style="background:#6b7280" onclick="BOQ.rbarClear()">🗑 清空</button>
+                    <span style="font-size:11px;color:#64748b;margin-left:auto" id="boq-rebar-tmpl-desc"></span>
+                  </div>
+                  <div style="overflow-x:auto;padding:0 4px">
+                    <table class="boq-rebar-tbl">
+                      <thead><tr>
+                        <th style="min-width:110px;text-align:left">钢筋名称/部位</th>
+                        <th style="text-align:center">规格Φ</th>
+                        <th style="text-align:center">线密度<br><small>kg/m</small></th>
+                        <th style="text-align:center">根数</th>
+                        <th style="text-align:center">单根长(m)<br><small>含锚固</small></th>
+                        <th style="text-align:right">重量(kg)</th>
+                        <th style="min-width:120px">备注</th>
+                        <th></th>
+                      </tr></thead>
+                      <tbody id="boq-rebar-tbody"></tbody>
+                      <tfoot>
+                        <tr style="background:#f0fdf4;border-top:2px solid #86efac">
+                          <td colspan="5" style="padding:9px;font-weight:700;color:#15803d">合计（单件）</td>
+                          <td style="padding:9px;text-align:right;font-size:15px;font-weight:800;color:#15803d" id="boq-rebar-total">0 kg</td>
+                          <td colspan="2" style="padding:9px"><span style="font-size:11px;color:#64748b" id="boq-rebar-info"></span></td>
+                        </tr>
+                        <tr style="background:#eff6ff;border-top:1px solid #bfdbfe">
+                          <td colspan="5" style="padding:7px 9px;font-weight:700;color:#1d4ed8" id="boq-rebar-all-lbl">全部合计</td>
+                          <td style="padding:7px 9px;text-align:right;font-size:13px;font-weight:800;color:#1d4ed8" id="boq-rebar-all">0 ton</td>
+                          <td colspan="2" style="padding:7px 9px;font-size:10px;color:#94a3b8">W=0.00617×d²×L</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border-color);background:#f8fafc">
+                    <button class="boq-btn-primary" style="background:#6b7280" onclick="BOQ.hideRebar()">取消</button>
+                    <button class="boq-btn-primary" onclick="BOQ.rbarApply()">✅ 应用此计算结果</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tooltip & Toast -->
+              <div id="boq-tooltip"></div>
+              <div id="boq-toasts"></div>
             </div>
 
             <!-- 用户管理视图（仅管理员） -->
@@ -111,7 +315,7 @@
     <script src="js/app.js?v=107"></script>
     <script src="js/subtask-templates.js?v=102"></script>
     <script src="js/process-enhancements.js?v=110"></script>
-    <script src="js/quantities.js?v=102"></script>
+    <script src="js/quantities.js?v=103"></script>
     <script src="js/project-enhancements.js?v=102"></script>
     <script src="js/daily-tasks.js?v=103"></script>
     <script src="js/photo-manager.js?v=117"></script>
@@ -119,13 +323,24 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
+    <script src="js/boq-engine.js?v=1"></script>
+    <script>
+      // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
+      document.addEventListener('DOMContentLoaded', () => {
+        const _origShow = app.showView.bind(app);
+        app.showView = function(view) {
+          _origShow(view);
+          if (view === 'boq' && window.BOQ) BOQ.onShow();
+        };
+      });
+    </script>
     <script src="js/gantt.js?v=5"></script>
     <script src="js/daily-assign.js?v=8"></script>
     <script src="js/daily-report.js?v=4"></script>
     <script src="js/site-board.js?v=40"></script>
-    <script src="js/purchase-audit.js?v=13"></script>
+    <script src="js/purchase-audit.js?v=14"></script>
     <script src="js/purchase-db.js?v=4"></script>
-    <script src="js/project-prepare.js?v=6"></script>
+    <script src="js/project-prepare.js?v=7"></script>
     <script src="js/share-viewer.js?v=7"></script>
     <script src="js/design-drawings.js?v=19"></script>
     <script src="js/maintenance.js?v=4"></script>

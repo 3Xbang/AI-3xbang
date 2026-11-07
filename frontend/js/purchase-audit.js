@@ -564,7 +564,7 @@ const PurchaseAudit = {
         body.innerHTML = '<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">⏳ 加载预算追踪... Loading budget tracking...</div>';
         try {
             const r = await apiRequest('/api/projects/' + this.projectId + '/boq-vs-actuals');
-            const rows = (r && r.data) || [];
+            const rows = (r && r.data && r.data.sections) || [];
             if (!rows.length) {
                 body.innerHTML = '';
                 return;
@@ -589,8 +589,9 @@ const PurchaseAudit = {
                     statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:11px">🚫 超支</span>';
                     rowBg = 'background:#fff5f5';
                 }
+                const sectionLabel = row.sec ? this.esc(row.sec + '. ' + (row.zh || '') + ' ' + (row.th || '')) : '-';
                 return `<tr style="${rowBg}">
-                    <td style="padding:8px 12px">${this.esc(row.section_name || row.section || '-')}</td>
+                    <td style="padding:8px 12px">${sectionLabel}</td>
                     <td style="padding:8px 12px;text-align:right">฿${fmtNum(boq)}</td>
                     <td style="padding:8px 12px;text-align:right">฿${fmtNum(actual)}</td>
                     <td style="padding:8px 12px;text-align:right;color:${variance > 0 ? '#dc2626' : '#059669'}">฿${fmtNum(variance)}</td>

@@ -565,7 +565,7 @@ function _renderTable(calc){
   }
   tbody.innerHTML=calc.map(c=>{
     const db=COMP_DB[c.type]||{}, sf=SEISMIC_FACTORS[STATE.global.seismicLevel]||SEISMIC_FACTORS['3'];
-    const bl=SAFETY_BASELINES.steelRatio[c.type], ratioErr=bl&&(c.effRatio||0)<bl.min;
+    const bl=SAFETY_BASELINES.steelRatio[c.type], ratioErr=bl&&(c.effRatio||0)<((STEEL_SAFETY_BY_FLOOR[window._boqFloors||2]||STEEL_SAFETY_BY_FLOOR[2])[c.type]||bl.min);
     const cur=STATE.global.currency;
     const cMin=_fmt(c.cost?.total?.min), cMax=_fmt(c.cost?.total?.max);
     const tags=(c.mats||[]).map(m=>`<span class="boq-tag ${m.critical?'boq-tag-crit':'boq-tag-norm'}" title="${_esc(m.tooltip)}">${m.name} <b>${m.qty}</b>${m.unit}</span>`).join('');

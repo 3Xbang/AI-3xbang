@@ -99,6 +99,21 @@
               </div>
               <div class="boq-wrap">
 
+              <!-- 楼层选择器 Floor Selector -->
+              <div style="padding:10px 0 0;">
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 0 10px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;">
+                  <span style="font-size:0.9rem;font-weight:600;color:#374151;">🏠 楼层数 Storeys:</span>
+                  <div id="boq-floor-selector" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button onclick="boqSetFloors(1)" id="boq-fl-1" class="boq-fl-btn">1层</button>
+                    <button onclick="boqSetFloors(2)" id="boq-fl-2" class="boq-fl-btn boq-fl-active">2层</button>
+                    <button onclick="boqSetFloors(3)" id="boq-fl-3" class="boq-fl-btn">3层</button>
+                    <button onclick="boqSetFloors(4)" id="boq-fl-4" class="boq-fl-btn">4层</button>
+                    <button onclick="boqSetFloors(5)" id="boq-fl-5" class="boq-fl-btn">5层</button>
+                  </div>
+                  <span id="boq-floor-hint" style="font-size:0.78rem;color:#6b7280;">ACI 318 / EIT Thailand</span>
+                </div>
+              </div>
+
               <!-- 全局设置 -->
               <div class="boq-card">
                 <div class="boq-card-head">
@@ -323,7 +338,7 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
-    <script src="js/boq-engine.js?v=3"></script>
+    <script src="js/boq-engine.js?v=4"></script>
     <script>
       // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
       document.addEventListener('DOMContentLoaded', () => {

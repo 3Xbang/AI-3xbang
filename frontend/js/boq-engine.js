@@ -36,6 +36,26 @@ const STEEL_SAFETY_MIN = {
   slab:            100,  // kg/m³ — ρ≥0.18% temperature/shrinkage (ACI 318 §24.4.3)
   foundation:      120,  // kg/m³ — conservative footing minimum
 };
+const STEEL_SAFETY_BY_FLOOR = {
+  1: { retainingWall:120, basementWall:120, shearWall:110, column:120, beam:100, slab:80,  foundation:100 },
+  2: { retainingWall:130, basementWall:130, shearWall:120, column:130, beam:110, slab:90,  foundation:110 },
+  3: { retainingWall:140, basementWall:140, shearWall:130, column:140, beam:120, slab:95,  foundation:115 },
+  4: { retainingWall:150, basementWall:150, shearWall:135, column:150, beam:125, slab:100, foundation:118 },
+  5: { retainingWall:160, basementWall:160, shearWall:140, column:160, beam:130, slab:100, foundation:120 },
+};
+window._boqFloors = parseInt(localStorage.getItem('boqFloors') || '2', 10);
+
+function boqSetFloors(n) {
+  window._boqFloors = n;
+  localStorage.setItem('boqFloors', n);
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.getElementById('boq-fl-' + i);
+    if (btn) btn.classList.toggle('boq-fl-active', i === n);
+  }
+  _recalcRender();
+}
+window.boqSetFloors = boqSetFloors;
+
 const SAFETY_BASELINES = {
   steelRatio: {
     retainingWall:{ min:STEEL_SAFETY_MIN.retainingWall, warn:`挡土墙含钢量<${STEEL_SAFETY_MIN.retainingWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
@@ -380,8 +400,13 @@ function calcCostRange(cVol,fwArea,stWt,s){
 
 function validateComp(typeKey,ratio,gs){
   const w=[];
-  const bl=SAFETY_BASELINES.steelRatio[typeKey];
-  if(bl&&_n(ratio)<bl.min) w.push({field:'steelRatio',message:bl.warn,level:'error'});
+  const floors = window._boqFloors || 2;
+  const minimums = STEEL_SAFETY_BY_FLOOR[floors] || STEEL_SAFETY_BY_FLOOR[2];
+  const minKgM3 = minimums[typeKey] || 100;
+  if (_n(ratio) < minKgM3) {
+    const compName = COMP_DB[typeKey]?.shortName || typeKey;
+    w.push({field:'steelRatio', message:`${compName}含钢量<${minKgM3} kg/m³，低于${floors}层住宅最低标准 (ACI318/EIT) / Below ${floors}-storey min`, level:'error'});
+  }
   if(_n(gs.steelLossRate)<SAFETY_BASELINES.lossRate.steel.min)    w.push({field:'steelLoss',message:SAFETY_BASELINES.lossRate.steel.warn,level:'warning'});
   if(_n(gs.concreteLossRate)<SAFETY_BASELINES.lossRate.concrete.min) w.push({field:'concLoss',message:SAFETY_BASELINES.lossRate.concrete.warn,level:'warning'});
   const gv=CONCRETE_GRADE_VALS[gs.concreteGrade]||0;
@@ -663,7 +688,9 @@ function _renderRebarTable(){
   const qty=_n(c?.qty,1), totalTon=+((total*qty)/1000).toFixed(4);
   const vol=c?.cVol||calcConcreteVol(_n(c?.L),_n(c?.W),_n(c?.H),qty);
   const effR=vol>0?(total/(vol/qty)).toFixed(1):'—';
-  const bl=SAFETY_BASELINES.steelRatio[c?.type]?.min||0;
+  const _fl = window._boqFloors || 2;
+  const _flMin = STEEL_SAFETY_BY_FLOOR[_fl] || STEEL_SAFETY_BY_FLOOR[2];
+  const bl = (_flMin[c?.type]) || 0;
   const rColor=effR!=='—'&&parseFloat(effR)<bl?'#dc2626':'#16a34a';
   _setText('boq-rebar-total',`${total.toFixed(2)} kg`);
   document.getElementById('boq-rebar-info').innerHTML=`折合含钢量: <b style="color:${rColor}">${effR} kg/m³</b>${bl?` (底线${bl})`:''}`;
@@ -845,6 +872,12 @@ const BOQ = {
       ['retainingWall','column','slab','foundation'].forEach(t=>boqAddComp(t));
     } else {
       _recalcRender();
+    }
+    // Init floor selector active button from localStorage
+    const _fl = window._boqFloors;
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.getElementById('boq-fl-' + i);
+      if (btn) btn.classList.toggle('boq-fl-active', i === _fl);
     }
   },
   // 添加/删除构件

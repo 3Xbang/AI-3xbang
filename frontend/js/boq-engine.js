@@ -90,13 +90,15 @@ window.boqSetFloors = boqSetFloors;
 
 const SAFETY_BASELINES = {
   steelRatio: {
-    retainingWall:{ min:STEEL_SAFETY_MIN.retainingWall, warn:`挡土墙含钢量<${STEEL_SAFETY_MIN.retainingWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    basementWall: { min:STEEL_SAFETY_MIN.basementWall,  warn:`地下室墙含钢量<${STEEL_SAFETY_MIN.basementWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    shearWall:    { min:STEEL_SAFETY_MIN.shearWall,     warn:`剪力墙含钢量<${STEEL_SAFETY_MIN.shearWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    column:       { min:STEEL_SAFETY_MIN.column,        warn:`框架柱含钢量<${STEEL_SAFETY_MIN.column} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    beam:         { min:STEEL_SAFETY_MIN.beam,          warn:`框架梁含钢量<${STEEL_SAFETY_MIN.beam} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    slab:         { min:STEEL_SAFETY_MIN.slab,          warn:`楼板含钢量<${STEEL_SAFETY_MIN.slab} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
-    foundation:   { min:STEEL_SAFETY_MIN.foundation,    warn:`基础含钢量<${STEEL_SAFETY_MIN.foundation} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    // Note: primary safety check now uses STEEL_RATIO_MIN_PCT (ρ%)
+    // These entries kept for legacy display references only
+    retainingWall:{ min:160, warn:'挡土墙含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    basementWall: { min:160, warn:'地下室外墙含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    shearWall:    { min:140, warn:'剪力墙含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    column:       { min:160, warn:'框架柱含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    beam:         { min:130, warn:'框架梁含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    slab:         { min:100, warn:'楼板含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
+    foundation:   { min:120, warn:'基础含钢量偏低，请检查配筋率 / Check reinforcement ratio ρ%' },
   },
   lossRate: {
     steel:   { min:1.5, warn:'钢筋损耗率<1.5%，低于定额标准（GB 50500）' },

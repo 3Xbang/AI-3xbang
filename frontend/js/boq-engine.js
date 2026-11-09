@@ -606,6 +606,25 @@ function calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm,
   return { Ag, As, Pn_N, phiPn_N, kg, kN, phi };
 }
 
+function calcCompLoad(comp) {
+  // Quick load estimate per component for row display
+  // Source: MATERIAL_DENSITY (physics) + LIVE_LOADS (กฎกระทรวง)
+  const H_m = _n(comp.H);
+  let DL = 0;
+  if (comp.type === 'slab' || comp.type === 'foundation') {
+    DL = Math.round(2400 * H_m);  // RC slab self-weight (kg/m³ × m)
+    DL += 120;  // typical finish: tiles + screed (kg/m²)
+  } else if (comp.type === 'retainingWall' || comp.type === 'basementWall' || comp.type === 'shearWall') {
+    DL = Math.round(2400 * _n(comp.W));  // wall cross-section (per m² wall area)
+  } else if (comp.type === 'column' || comp.type === 'beam') {
+    return null;  // load comes from slabs
+  }
+  if (DL <= 0) return null;
+  const LL = 200;  // kg/m² residential default — กฎกระทรวง §4
+  const design = Math.round(1.2 * DL + 1.6 * LL);  // ACI 318-19 §5.3.1
+  return { DL, LL, design, standard: 'กฎกระทรวง/ACI318' };
+}
+
 // ══════════════════════════════════════════════════════════════
 // 6. 状态管理 (State)
 // ══════════════════════════════════════════════════════════════
@@ -740,6 +759,17 @@ function _renderTable(calc){
     const cMin=_fmt(c.cost?.total?.min), cMax=_fmt(c.cost?.total?.max);
     const tags=(c.mats||[]).map(m=>`<span class="boq-tag ${m.critical?'boq-tag-crit':'boq-tag-norm'}" title="${_esc(m.tooltip)}">${m.name} <b>${m.qty}</b>${m.unit}</span>`).join('');
     const typeOpts=COMP_TYPE_LIST.map(t=>`<option value="${t.key}"${t.key===c.type?' selected':''}>${t.name}</option>`).join('');
+    const loadBadge = (() => {
+      const ld = calcCompLoad(c);
+      if (ld) {
+        return `<div class="boq-load-badges" title="荷载核算 / กฎกระทรวง+ACI318">` +
+          `<span class="boq-lb boq-lb-dl">DL ${ld.DL}</span>` +
+          `<span class="boq-lb boq-lb-ll">LL ${ld.LL}</span>` +
+          `<span class="boq-lb boq-lb-pu">设 ${ld.design}</span>` +
+          `<span class="boq-lb boq-lb-unit">kg/m²</span></div>`;
+      }
+      return `<div class="boq-load-badges"><span class="boq-lb boq-lb-info">荷载由楼板传来</span></div>`;
+    })();
     return `<tr class="${c.hasErr?'boq-row-err':''}" id="boq-row-${c.id}">
       <td><input class="boq-ti boq-ti-name" value="${_esc(c.name)}" data-id="${c.id}" data-f="name" placeholder="构件名称"></td>
       <td><select class="boq-tsel" data-id="${c.id}" data-f="type">${typeOpts}</select></td>
@@ -751,6 +781,7 @@ function _renderTable(calc){
         <span class="boq-ratio ${ratioErr?'boq-ratio-err':'boq-ratio-ok'}" title="${db.baseRatio}×${sf.factor}=${c.effRatio} kg/m³">${c.effRatio||'—'}</span>
         ${c.usedDetail?'<div class="boq-detail-badge">📐按明细算</div>':`<div class="boq-hint">${db.baseRatio||'—'}×${sf.factor}</div>`}
         ${c.rebar && c.rebar.calculatedKg > 0?'<div class="boq-detail-badge">📐配筋算</div>':''}
+        ${loadBadge}
       </td>
       <td class="boq-tr boq-derived">${(c.cVol||0).toFixed(2)}</td>
       <td class="boq-tr boq-derived">${(c.fwArea||0).toFixed(2)}</td>

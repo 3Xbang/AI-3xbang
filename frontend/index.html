@@ -237,12 +237,14 @@
                   <div class="boq-tbl-wrap">
                     <table class="boq-tbl boq-load-tbl">
                       <thead><tr>
-                        <th>区域 Area</th>
+                        <th>区域名称</th>
+                        <th>使用类型 Use Type</th>
                         <th class="boq-tr">面积 m²</th>
-                        <th class="boq-tr">恒荷载 DL<br><small>kg/m²</small></th>
-                        <th class="boq-tr">活荷载 LL<br><small>kg/m²</small></th>
-                        <th class="boq-tr">设计荷载<br><small>1.2D+1.6L kg/m²</small></th>
-                        <th class="boq-tr">总重 Total<br><small>kg</small></th>
+                        <th class="boq-tr">DL kg/m²</th>
+                        <th class="boq-tr">LL kg/m² (标准)</th>
+                        <th class="boq-tr">设计荷载 kg/m²</th>
+                        <th class="boq-tr">总重 kg</th>
+                        <th>建议等级</th>
                       </tr></thead>
                       <tbody id="boq-load-tbody"></tbody>
                       <tfoot id="boq-load-tfoot"></tfoot>
@@ -373,7 +375,7 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
-    <script src="js/boq-engine.js?v=7"></script>
+    <script src="js/boq-engine.js?v=8"></script>
     <script>
       // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
       document.addEventListener('DOMContentLoaded', () => {

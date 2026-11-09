@@ -272,24 +272,35 @@ const COMP_TYPE_LIST = Object.values(COMP_DB).map(c=>({key:c.key,name:c.name}));
 // LOAD CALCULATION CONSTANTS
 // ──────────────────────────────────────────────────────────────
 
-// Live Loads — กฎกระทรวงกำหนดมาตรฐานในการบริหารจัดการอาคาร / EIT Thailand
+// Live loads — กฎกระทรวงกำหนดมาตรฐาน พ.ศ.2557 / EIT Thailand / BS 6399-1:1996
+// Note: 1 kN/m² ≈ 101.97 kg/m², Thai code traditionally uses kgf/m²
 const LIVE_LOADS = {
-  residential:    200,  // kg/m² — ห้องพักอาศัย living/bedroom
-  corridor:       300,  // kg/m² — ทางเดิน/บันได corridor/stairs
-  balcony:        300,  // kg/m² — ระเบียง/เฉลียง balcony/terrace
-  roof_no_access:  75,  // kg/m² — หลังคาไม่ขึ้น inaccessible roof
-  roof_access:    150,  // kg/m² — หลังคาขึ้นได้ accessible roof/terrace
-  pool_area:      300,  // kg/m² — บริเวณสระว่ายน้ำ (plus water weight separately)
+  // ── Residential (ที่พักอาศัย) ──────────────────────────────────────
+  bedroom:         { label:'ห้องนอน/ห้องนั่งเล่น Bedroom/Living',  q: 200, note:'กฎกระทรวง §4 ที่พักอาศัย' },
+  kitchen:         { label:'ครัว Kitchen',                           q: 200, note:'กฎกระทรวง §4 ที่พักอาศัย' },
+  corridor:        { label:'ทางเดินภายใน Corridor (internal)',       q: 300, note:'กฎกระทรวง §4 ทางเดิน' },
+  stairs:          { label:'บันได Staircase',                        q: 300, note:'กฎกระทรวง §4 บันได' },
+  balcony:         { label:'ระเบียง/เฉลียง Balcony/Terrace',        q: 300, note:'กฎกระทรวง §4 ระเบียง' },
+  // ── Roof (หลังคา) ──────────────────────────────────────────────────
+  roof_no_access:  { label:'หลังคาไม่ขึ้น Inaccessible Roof',        q:  75, note:'กฎกระทรวง §4 หลังคา' },
+  roof_access:     { label:'หลังคาขึ้นได้ Accessible Roof',           q: 150, note:'กฎกระทรวง §4 หลังคาขึ้นได้' },
+  roof_garden:     { label:'สวนหย่อมบนดาดฟ้า Roof Garden',           q: 300, note:'EIT guideline — garden load = balcony min' },
+  // ── Special (พิเศษ) ─────────────────────────────────────────────────
+  parking_private: { label:'ที่จอดรถส่วนบุคคล Private Parking',     q: 400, note:'กฎกระทรวง / BS 6399-1 §6.4 — private vehicle' },
+  parking_public:  { label:'ที่จอดรถสาธารณะ Public Parking',         q: 500, note:'กฎกระทรวง / BS 6399-1 §6.4 — public garage' },
+  pool_deck:       { label:'ขอบสระว่ายน้ำ Pool Deck',                q: 300, note:'EIT — pool surround, excl. water weight' },
+  // pool water weight is SEPARATE: 1000 kg/m³ × depth_m (computed dynamically)
 };
 
-const LIVE_LOAD_LABELS = {
-  residential:    '住宅起居室 Residential (LL=200 kg/m²)',
-  corridor:       '走廊/楼梯 Corridor/Stairs (LL=300 kg/m²)',
-  balcony:        '阳台/露台 Balcony/Terrace (LL=300 kg/m²)',
-  roof_no_access: '不上人屋面 Inaccessible Roof (LL=75 kg/m²)',
-  roof_access:    '上人屋面 Accessible Roof (LL=150 kg/m²)',
-  pool_area:      '泳池区域 Pool Area (LL=300 kg/m²)',
-};
+const LIVE_LOAD_LABELS = Object.fromEntries(
+  Object.entries(LIVE_LOADS).map(([k, v]) => [k, `${v.label} (LL=${v.q} kg/m²)`])
+);
+
+const _LL_ALIAS = { residential: 'bedroom', pool_area: 'pool_deck' };
+function _llEntry(useType) {
+  const key = _LL_ALIAS[useType] || useType;
+  return LIVE_LOADS[key] || LIVE_LOADS.bedroom;
+}
 
 // Dead Loads — physical material densities (ISO/physics constants)
 const MATERIAL_DENSITY = {
@@ -559,18 +570,25 @@ function calcComp(comp,gs){
 
 // Pure function: given a loadArea definition, returns per-m² and total load breakdown
 function calcLoadArea(area) {
-  const slabSelfWeight = (_n(area.slabThickMm) / 1000) * MATERIAL_DENSITY.rc_concrete;  // kg/m²
+  const slabSelfWeight = (_n(area.slabThickMm) / 1000) * MATERIAL_DENSITY.rc_concrete; // kg/m²
   let finishDL = 0;
   if (area.finishes.tilesScreed) finishDL += MATERIAL_DENSITY.tiles_screed;
   if (area.finishes.plasterBoth) finishDL += MATERIAL_DENSITY.plaster_both;
   if (area.finishes.waterproof)  finishDL += MATERIAL_DENSITY.waterproof;
   const totalDL = slabSelfWeight + finishDL;
-  const liveLoad = LIVE_LOADS[area.useType] || LIVE_LOADS.residential;
-  const factoredLoad = LOAD_COMBO.Uf.D * totalDL + LOAD_COMBO.Uf.L * liveLoad;  // 1.2D + 1.6L
-  const areaM2 = _n(area.slabL) * _n(area.slabW);
-  const totalFactoredKg = factoredLoad * areaM2;
-  const totalFactoredKN = totalFactoredKg * 9.81 / 1000;
-  return { slabSelfWeight, finishDL, totalDL, liveLoad, factoredLoad, areaM2, totalFactoredKg, totalFactoredKN };
+  const entry    = _llEntry(area.useType);
+  const liveLoad = entry.q;   // kg/m² — code value
+  const llNote   = entry.note;
+  // Pool deck: add water weight separately
+  const isPool    = ((_LL_ALIAS[area.useType] || area.useType) === 'pool_deck');
+  const poolDepth = isPool ? (_n(area.poolDepthM) || 1.5) : 0;
+  const waterLoad = isPool ? (1000 * poolDepth) : 0; // 1000 kg/m³ — physics constant, water density
+  const totalLL   = liveLoad + waterLoad;
+  const factoredLoad     = LOAD_COMBO.Uf.D * totalDL + LOAD_COMBO.Uf.L * totalLL; // 1.2D + 1.6L
+  const areaM2           = _n(area.slabL) * _n(area.slabW);
+  const totalFactoredKg  = factoredLoad * areaM2;
+  const totalFactoredKN  = totalFactoredKg * 9.81 / 1000;
+  return { slabSelfWeight, finishDL, totalDL, liveLoad, llNote, waterLoad, totalLL, isPool, poolDepth, factoredLoad, areaM2, totalFactoredKg, totalFactoredKN };
 }
 
 // ACI 318-19 §22.4.2.1 — tied column design strength
@@ -777,27 +795,65 @@ function _renderSummary(calc){
 // 9b. 荷载计算渲染 (Load Calculation Render)
 // ══════════════════════════════════════════════════════════════
 
-function _buildLoadResultHTML(area, res) {
-  const label = LIVE_LOAD_LABELS[area.useType] || area.useType;
-  let s = '';
-  s += `<strong>${_esc(area.name)}: ${_n(area.slabL)}m \xD7 ${_n(area.slabW)}m = ${res.areaM2.toFixed(2)} m\xB2</strong>\n`;
-  s += `\u6052\u8377\u8F7D Dead Load:\n`;
-  s += `  \u697C\u677F\u81EA\u91CD: ${_n(area.slabThickMm)}mm \xD7 2400 kg/m\xB3 = ${res.slabSelfWeight.toFixed(1)} kg/m\xB2  [ISO 6707-1]\n`;
-  if (area.finishes.tilesScreed) s += `  \u74F7\u7816+\u627E\u5E73: 120 kg/m\xB2  [material density]\n`;
-  if (area.finishes.plasterBoth) s += `  \u53CC\u9762\u6284\u7070:   54 kg/m\xB2  [material density]\n`;
-  if (area.finishes.waterproof)  s += `  \u9632\u6C34\u5C42:      20 kg/m\xB2  [material density]\n`;
-  s += `  \u5C0F\u8BA1 DL: <strong>${res.totalDL.toFixed(1)} kg/m\xB2</strong>\n`;
-  s += `\u6D3B\u8377\u8F7D Live Load:\n`;
-  s += `  ${_esc(label)}: ${res.liveLoad} kg/m\xB2  [\u0E01\u0E0E\u0E01\u0E23\u0E30\u0E17\u0E23\u0E27\u0E07 / EIT Thailand]\n`;
-  s += `\u8BBE\u8BA1\u8377\u8F7D (1.2D + 1.6L)  [ACI 318-19 \xA75.3.1]:\n`;
-  s += `  = 1.2\xD7${res.totalDL.toFixed(1)} + 1.6\xD7${res.liveLoad}\n`;
-  s += `  = ${(LOAD_COMBO.Uf.D * res.totalDL).toFixed(1)} + ${(LOAD_COMBO.Uf.L * res.liveLoad).toFixed(1)} = <strong>${res.factoredLoad.toFixed(1)} kg/m\xB2</strong>\n`;
-  s += `\u603B\u8BBE\u8BA1\u8377\u8F7D: ${res.factoredLoad.toFixed(1)} kg/m\xB2 \xD7 ${res.areaM2.toFixed(2)} m\xB2 = <strong>${res.totalFactoredKg.toFixed(0)} kg = ${res.totalFactoredKN.toFixed(1)} kN</strong>`;
+// Recommend rebar preset level based on design load (for slabs)
+// Based on typical slab capacity ranges for Thai residential construction
+// These are indicative guidance values, not structural design calculations
+function recommendPresetForLoad(designLoadKgM2) {
+  if (designLoadKgM2 <= 600) return { level: 'min',  label: '🟢 最低安全线 可满足此荷载' };
+  if (designLoadKgM2 <= 900) return { level: 'std',  label: '🟡 标准推荐 建议此等级' };
+  return                             { level: 'high', label: '🔴 高级保守 此荷载建议高配' };
+}
 
-  // Column capacity check
+function _buildLoadResultHTML(area, res) {
+  const entry  = _llEntry(area.useType);
+  const rec    = recommendPresetForLoad(res.factoredLoad);
+  let s = '';
+
+  // Header
+  s += `<div style="font-weight:700;margin-bottom:6px">${_esc(area.name)}&nbsp;&nbsp;`;
+  s += `${_n(area.slabL).toFixed(1)}m × ${_n(area.slabW).toFixed(1)}m = <strong>${res.areaM2.toFixed(2)} m²</strong>`;
+  s += `&nbsp;|&nbsp;楼板厚度: ${_n(area.slabThickMm)}mm</div>`;
+  s += `<hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0 8px">`;
+
+  // Dead Load table
+  s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
+  s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">恒荷载 Dead Load (DL)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
+  s += `<tr><td style="padding:2px 6px">楼板自重 Slab: ${_n(area.slabThickMm)}mm × 2400 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.slabSelfWeight.toFixed(0)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ISO 6707-1, RC密度=2400</td></tr>`;
+  if (area.finishes.tilesScreed) s += `<tr><td style="padding:2px 6px">瓷砖+找平 Tiles+screed 50mm</td><td style="text-align:right;padding:2px 6px">120</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 material density</td></tr>`;
+  if (area.finishes.plasterBoth) s += `<tr><td style="padding:2px 6px">双面抹灰 Plaster both faces 2×15mm</td><td style="text-align:right;padding:2px 6px">54</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 2×27 kg/m²</td></tr>`;
+  if (area.finishes.waterproof)  s += `<tr><td style="padding:2px 6px">防水层 Waterproof membrane</td><td style="text-align:right;padding:2px 6px">20</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 material density</td></tr>`;
+  s += `<tr style="background:#f0fdf4;font-weight:700"><td style="padding:3px 6px">DL 合计 Total</td><td style="text-align:right;padding:3px 6px">${res.totalDL.toFixed(0)}</td><td></td></tr>`;
+  s += `</tbody></table>`;
+
+  // Live Load table
+  s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
+  s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">活荷载 Live Load (LL)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
+  s += `<tr><td style="padding:2px 6px">${_esc(entry.label)}</td><td style="text-align:right;padding:2px 6px">${res.liveLoad}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">${_esc(res.llNote)}</td></tr>`;
+  if (res.isPool) {
+    s += `<tr><td style="padding:2px 6px">泳池水压 Pool water: ${res.poolDepth.toFixed(1)}m × 1000 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.waterLoad.toFixed(0)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">水密度=1000 kg/m³, 物理常数</td></tr>`;
+    s += `<tr style="background:#fef9c3;font-weight:700"><td style="padding:3px 6px">总活荷载 Total LL</td><td style="text-align:right;padding:3px 6px">${res.totalLL.toFixed(0)}</td><td></td></tr>`;
+  }
+  s += `</tbody></table>`;
+
+  // Factored load table
+  s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
+  s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">设计荷载 Design Load (Factored)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
+  s += `<tr><td style="padding:2px 6px">Pu = 1.2×DL + 1.6×LL = 1.2×${res.totalDL.toFixed(0)} + 1.6×${res.totalLL.toFixed(0)}</td><td style="text-align:right;padding:2px 6px;font-weight:700">${res.factoredLoad.toFixed(1)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ACI 318-19 §5.3.1</td></tr>`;
+  s += `<tr style="background:#eff6ff;font-weight:700"><td style="padding:3px 6px">总重 Total (this area): ${res.factoredLoad.toFixed(1)} × ${res.areaM2.toFixed(2)} m²</td><td style="text-align:right;padding:3px 6px">${res.totalFactoredKg.toFixed(0)} kg</td><td></td></tr>`;
+  s += `</tbody></table>`;
+
+  // Rebar recommendation
+  s += `<div style="margin:6px 0;padding:6px 10px;background:#f8fafc;border-left:3px solid #64748b;border-radius:0 4px 4px 0;font-size:12px">`;
+  s += `建议配筋等级: <strong>${rec.label}</strong>&nbsp;(设计荷载 ${res.factoredLoad.toFixed(0)} kg/m²)`;
+  s += `<br><span style="color:#6b7280;font-size:11px">注：配筋最终须由结构工程师根据跨度、支承条件等计算确定 / Final reinforcement must be determined by structural engineer.</span>`;
+  s += `</div>`;
+
+  s += `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px">标准依据: กฎกระทรวง / ACI 318-19 §5.3.1 / ISO 6707-1</div>`;
+
+  // Column capacity check (preserve existing logic)
   const columns = STATE.components.filter(c => c.type === 'column');
   if (!columns.length) {
-    s += `\n\n<span class="boq-load-hint">\u8BF7\u5728\u6784\u4EF6\u5217\u8868\u4E2D\u6DFB\u52A0\u67F1\u89C4\u683C\u4EE5\u67E5\u770B\u67F1\u627F\u8F7D\u529B\u9A8C\u8BC1</span>`;
+    s += `<span class="boq-load-hint">请在构件列表中添加柱规格以查看柱承载力验证</span>`;
   } else {
     const N = columns.reduce((sum, c) => sum + (_n(c.qty) || 1), 0);
     const perColKg = res.totalFactoredKg / (N || 1);
@@ -810,23 +866,17 @@ function _buildLoadResultHTML(area, res) {
       const ll = col.rebar.layers.find(l => l.key === 'longitudinal');
       if (ll) { rebarCount = parseInt(ll.count) || 8; rebarDiaMm = parseInt(ll.dia) || 16; }
     }
-    const fyMPa = 390; // SD40T Thailand — TIS 24-2548 (fy=390 MPa, NOT 400 MPa)
+    const fyMPa = 390; // SD40T Thailand — TIS 24-2548
     const cap = calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm, fyMPa);
     const ratio = perColKg > 0 ? cap.kg / perColKg : Infinity;
     const ok = cap.kg >= perColKg;
-    s += `\n\n\u8377\u8F7D\u4F20\u9012 Load Path:\n`;
-    s += `\u82E5\u7531 ${N} \u6839\u67F1\u627F\u53D7\uFF08\u5747\u5300\u5206\u914D\uFF09:\n`;
-    s += `\u6BCF\u67F1\u627F\u53D7: ${perColKg.toFixed(0)} kg per column\n`;
-    s += `\n\u67F1\u627F\u8F7D\u529B\u9A8C\u8BC1\uFF08ACI 318-19 \xA722.4.2.1\uFF0C\u7CFB\u6570\u7EFC\u5408\u53960.8\uFF09:\n`;
-    s += `\u67F1\u622A\u9762 ${colL_mm}\xD7${colW_mm}mm\uFF0C${STATE.global.concreteGrade}\u6DF7\u51DD\u571F (f'c=${fPrimeMPa} MPa)\n`;
-    s += `Pn = 0.8 \xD7 (0.85\xD7${fPrimeMPa}\xD7(Ag-As) + fy\xD7As)\n`;
-    s += `As = ${rebarCount}-\u03C6${rebarDiaMm} = ${cap.As.toFixed(0)} mm\xB2\n`;
-    s += `Pn = ${cap.Pn_N.toFixed(0)} N = ${cap.kg.toFixed(0)} kg\n`;
-    s += `\u9A8C\u8BC1: ${perColKg.toFixed(0)} ${ok ? '<' : '>'} ${cap.kg.toFixed(0)} `;
-    s += ok
-      ? `<span class="boq-load-ok">\u2713 OK</span>`
-      : `<span class="boq-load-warn">\u2717 \u4E0D\u5B89\u5168!</span>`;
-    s += ` \u5B89\u5168\u7CFB\u6570 ${isFinite(ratio) ? ratio.toFixed(2) : '\u221E'}`;
+    s += `<div style="margin-top:6px;padding:8px;background:#f0f9ff;border-radius:6px;font-size:12px">`;
+    s += `<strong>荷载传递 Load Path</strong> — 由 ${N} 根柱承受（均匀分配）: 每柱 ${perColKg.toFixed(0)} kg<br>`;
+    s += `柱承载力验证 (ACI 318-19 §22.4.2.1): ${colL_mm}×${colW_mm}mm, ${STATE.global.concreteGrade}, ${rebarCount}-φ${rebarDiaMm}<br>`;
+    s += `φPn = ${cap.kg.toFixed(0)} kg  |  验证: ${perColKg.toFixed(0)} ${ok ? '<' : '>'} ${cap.kg.toFixed(0)} `;
+    s += ok ? `<span class="boq-load-ok">✓ OK</span>` : `<span class="boq-load-warn">✗ 不安全!</span>`;
+    s += ` 安全系数 ${isFinite(ratio) ? ratio.toFixed(2) : '∞'}`;
+    s += `</div>`;
   }
   return s;
 }
@@ -841,6 +891,13 @@ function _renderLoadAreas() {
     const useOpts = Object.keys(LIVE_LOADS).map(k =>
       `<option value="${k}"${k === area.useType ? ' selected' : ''}>${_esc(LIVE_LOAD_LABELS[k])}</option>`
     ).join('');
+    const isPool = ((_LL_ALIAS[area.useType] || area.useType) === 'pool_deck');
+    const poolInput = isPool ? `<div>
+  <span class="boq-load-label">水深 Pool Depth (m)</span>
+  <input type="number" class="boq-load-inp" value="${_n(area.poolDepthM) || 1.5}" min="0.1" max="3" step="0.1"
+    oninput="BOQ.loadAreaChange(${area.id},'poolDepthM',this.value)">
+  <small style="color:#6b7280;font-size:10px">水压 = ${((_n(area.poolDepthM)||1.5)*1000).toFixed(0)} kg/m² (ρ水=1000 kg/m³, 物理常数)</small>
+</div>` : '';
     return `<div class="boq-load-area-card" id="boq-larea-${area.id}">
       <div class="boq-load-area-header">
         <input value="${_esc(area.name)}" class="boq-ti boq-ti-name" placeholder="\u533A\u57DF\u540D\u79F0 Area name"
@@ -867,6 +924,7 @@ function _renderLoadAreas() {
           <span class="boq-load-label">\u4F7F\u7528\u7C7B\u578B Use Type</span>
           <select class="boq-load-sel" onchange="BOQ.loadAreaChange(${area.id},'useType',this.value)">${useOpts}</select>
         </div>
+        ${poolInput}
         <div>
           <span class="boq-load-label">\u9762\u5C42 Finishes</span>
           <div class="boq-load-checks">
@@ -904,24 +962,27 @@ function _renderLoadSummary() {
   let totalArea = 0, totalKg = 0;
   tbody.innerHTML = STATE.loadAreas.map(area => {
     const res = calcLoadArea(area);
+    const entry = _llEntry(area.useType);
+    const rec = recommendPresetForLoad(res.factoredLoad);
     totalArea += res.areaM2;
-    totalKg += res.totalFactoredKg;
+    totalKg   += res.totalFactoredKg;
     return `<tr>
       <td>${_esc(area.name)}</td>
+      <td style="font-size:11px">${_esc(entry.label)}</td>
       <td class="boq-tr">${res.areaM2.toFixed(2)}</td>
-      <td class="boq-tr">${res.totalDL.toFixed(1)}</td>
-      <td class="boq-tr">${res.liveLoad}</td>
+      <td class="boq-tr">${res.totalDL.toFixed(0)}</td>
+      <td class="boq-tr">${res.totalLL.toFixed(0)}<br><span style="font-size:10px;color:#6b7280">${_esc(entry.note)}</span></td>
       <td class="boq-tr">${res.factoredLoad.toFixed(1)}</td>
       <td class="boq-tr">${res.totalFactoredKg.toFixed(0)}</td>
+      <td style="font-size:11px">${rec.label}</td>
     </tr>`;
   }).join('');
   tfoot.innerHTML = `<tr style="font-weight:700;background:#f0fdf4">
-    <td>\u5408\u8BA1 Total</td>
+    <td>合计 Total</td><td>—</td>
     <td class="boq-tr">${totalArea.toFixed(2)}</td>
-    <td class="boq-tr">\u2014</td>
-    <td class="boq-tr">\u2014</td>
-    <td class="boq-tr">\u2014</td>
+    <td class="boq-tr">—</td><td class="boq-tr">—</td><td class="boq-tr">—</td>
     <td class="boq-tr">${totalKg.toFixed(0)}</td>
+    <td>—</td>
   </tr>`;
 }
 
@@ -1294,7 +1355,7 @@ const BOQ = {
       slabL: 5.0,
       slabW: 4.0,
       slabThickMm: 120,
-      useType: 'residential',
+      useType: 'bedroom',
       finishes: { tilesScreed: true, plasterBoth: true, waterproof: false },
     });
     _renderLoadAll();
@@ -1311,7 +1372,7 @@ const BOQ = {
     if (field.startsWith('finishes.')) {
       const key = field.slice(9);
       area.finishes[key] = (val === true || val === 'true');
-    } else if (['slabL', 'slabW'].includes(field)) {
+    } else if (['slabL', 'slabW', 'poolDepthM'].includes(field)) {
       area[field] = parseFloat(val) || 0;
     } else if (field === 'slabThickMm') {
       area[field] = parseInt(val) || 120;

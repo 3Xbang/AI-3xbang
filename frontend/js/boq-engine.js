@@ -46,6 +46,38 @@ const DEFAULT_SETTINGS = {
   formworkPriceMin:180, formworkPriceMax:280, currency:'฿',
 };
 
+// ── A1. 钢筋单位重量 (kg/m) ──────────────────────────────────
+const REBAR_UNIT_WEIGHT = {
+  6:0.222, 8:0.395, 10:0.617, 12:0.888, 14:1.208,
+  16:1.578, 18:1.998, 20:2.466, 22:2.984, 25:3.853
+};
+
+// ── A2. 配筋层定义 ───────────────────────────────────────────
+const REBAR_LAYER_DEFS = {
+  retainingWall: [
+    {key:'outerV',  label:'外侧竖向筋 Outer Vert.', inputType:'spacing', diaDefault:12, spacingDefault:200},
+    {key:'outerH',  label:'外侧水平筋 Outer Horiz.', inputType:'spacing', diaDefault:10, spacingDefault:200},
+    {key:'innerV',  label:'内侧竖向筋 Inner Vert.',  inputType:'spacing', diaDefault:12, spacingDefault:200},
+    {key:'innerH',  label:'内侧水平筋 Inner Horiz.', inputType:'spacing', diaDefault:10, spacingDefault:200},
+    {key:'tieBars', label:'拉结筋 Tie Bars',          inputType:'tie',     diaDefault:8,  spacingHDefault:600, spacingVDefault:600},
+  ],
+  beam: [
+    {key:'topRebar',    label:'上部纵筋 Top Rebar',      inputType:'count',   diaDefault:16, countDefault:3},
+    {key:'bottomRebar', label:'下部纵筋 Bottom Rebar',   inputType:'count',   diaDefault:16, countDefault:2},
+    {key:'stirrups',    label:'箍筋 Stirrups',           inputType:'spacing', diaDefault:8,  spacingDefault:150},
+    {key:'waistBars',   label:'腰筋(每侧) Waist/Side',   inputType:'count',   diaDefault:12, countDefault:2},
+  ],
+  column: [
+    {key:'longitudinal',label:'纵向钢筋 Longitudinal',   inputType:'count',   diaDefault:16, countDefault:8},
+    {key:'stirrups',    label:'箍筋 Stirrups',           inputType:'spacing', diaDefault:8,  spacingDefault:100},
+  ],
+  slab: [
+    {key:'xBars',       label:'X向受力筋 X-Bars',        inputType:'spacing', diaDefault:10, spacingDefault:200},
+    {key:'yBars',       label:'Y向受力筋 Y-Bars',        inputType:'spacing', diaDefault:10, spacingDefault:200},
+    {key:'distribution',label:'分布筋 Distribution',     inputType:'spacing', diaDefault:8,  spacingDefault:250},
+  ],
+};
+
 // ══════════════════════════════════════════════════════════════
 // 2. 构件数据库 (componentDB)
 // ══════════════════════════════════════════════════════════════
@@ -242,6 +274,84 @@ function calcSteelWeight(cVol,base,sf,loss){
 }
 function calcEffRatio(base,sf){ return +(_n(base)*_n(sf,1)).toFixed(1); }
 
+// ── A3. 按配筋层计算钢筋用量 ─────────────────────────────────
+function calcRebarConfigLayers(comp, layerValues){
+  const L=_n(comp.L), W=_n(comp.W), H=_n(comp.H);
+  const results=[];
+  function _uw(dia){ return REBAR_UNIT_WEIGHT[dia]||(dia*dia/162.27); }
+
+  if(comp.type==='retainingWall'){
+    const {outerV,outerH,innerV,innerH,tieBars}=layerValues;
+    if(outerV){
+      const count=Math.floor(L/(outerV.spacing/1000))+1, length=H+0.3;
+      results.push({label:'外侧竖向筋 Outer Vert.',dia:outerV.dia,count,length,kg:count*length*_uw(outerV.dia)});
+    }
+    if(outerH){
+      const count=Math.floor(H/(outerH.spacing/1000))+1, length=L+0.3;
+      results.push({label:'外侧水平筋 Outer Horiz.',dia:outerH.dia,count,length,kg:count*length*_uw(outerH.dia)});
+    }
+    if(innerV){
+      const count=Math.floor(L/(innerV.spacing/1000))+1, length=H+0.3;
+      results.push({label:'内侧竖向筋 Inner Vert.',dia:innerV.dia,count,length,kg:count*length*_uw(innerV.dia)});
+    }
+    if(innerH){
+      const count=Math.floor(H/(innerH.spacing/1000))+1, length=L+0.3;
+      results.push({label:'内侧水平筋 Inner Horiz.',dia:innerH.dia,count,length,kg:count*length*_uw(innerH.dia)});
+    }
+    if(tieBars){
+      const count=Math.floor(L/(tieBars.spacingH/1000))*Math.floor(H/(tieBars.spacingV/1000));
+      const length=W-0.05;
+      results.push({label:'拉结筋 Tie Bars',dia:tieBars.dia,count,length,kg:count*length*_uw(tieBars.dia)});
+    }
+  } else if(comp.type==='beam'){
+    const {topRebar,bottomRebar,stirrups,waistBars}=layerValues;
+    if(topRebar){
+      const count=topRebar.count, length=L+0.6;
+      results.push({label:'上部纵筋 Top Rebar',dia:topRebar.dia,count,length,kg:count*length*_uw(topRebar.dia)});
+    }
+    if(bottomRebar){
+      const count=bottomRebar.count, length=L+0.6;
+      results.push({label:'下部纵筋 Bottom Rebar',dia:bottomRebar.dia,count,length,kg:count*length*_uw(bottomRebar.dia)});
+    }
+    if(stirrups){
+      const count=Math.floor(L/(stirrups.spacing/1000))+1;
+      const perimeter=2*(W+H)-0.08+0.26;
+      results.push({label:'箍筋 Stirrups',dia:stirrups.dia,count,length:perimeter,kg:count*perimeter*_uw(stirrups.dia)});
+    }
+    if(waistBars){
+      const totalCount=waistBars.count*2, length=L+0.6;
+      results.push({label:'腰筋(每侧) Waist/Side',dia:waistBars.dia,count:totalCount,length,kg:totalCount*length*_uw(waistBars.dia)});
+    }
+  } else if(comp.type==='column'){
+    const {longitudinal,stirrups}=layerValues;
+    if(longitudinal){
+      const count=longitudinal.count, length=L+0.6;
+      results.push({label:'纵向钢筋 Longitudinal',dia:longitudinal.dia,count,length,kg:count*length*_uw(longitudinal.dia)});
+    }
+    if(stirrups){
+      const count=Math.floor(L/(stirrups.spacing/1000))+1;
+      const perimeter=2*(W+H)-0.08+0.26;
+      results.push({label:'箍筋 Stirrups',dia:stirrups.dia,count,length:perimeter,kg:count*perimeter*_uw(stirrups.dia)});
+    }
+  } else if(comp.type==='slab'){
+    const {xBars,yBars,distribution}=layerValues;
+    if(xBars){
+      const count=Math.floor(W/(xBars.spacing/1000))+1, length=L+0.15;
+      results.push({label:'X向受力筋 X-Bars',dia:xBars.dia,count,length,kg:count*length*_uw(xBars.dia)});
+    }
+    if(yBars){
+      const count=Math.floor(L/(yBars.spacing/1000))+1, length=W+0.15;
+      results.push({label:'Y向受力筋 Y-Bars',dia:yBars.dia,count,length,kg:count*length*_uw(yBars.dia)});
+    }
+    if(distribution){
+      const count=Math.floor(W/(distribution.spacing/1000))+1, length=L+0.15;
+      results.push({label:'分布筋 Distribution',dia:distribution.dia,count,length,kg:count*length*_uw(distribution.dia)});
+    }
+  }
+  const totalKg=results.reduce((s,r)=>s+r.kg,0);
+  return {results, totalKg, totalTon:totalKg/1000};
+}
+
 function calcCostRange(cVol,fwArea,stWt,s){
   const cf=1+_n(s.concreteLossRate)/100, cv=cVol*cf;
   const cMin=cv*_n(s.concretePriceMin), cMax=cv*_n(s.concretePriceMax);
@@ -277,7 +387,10 @@ function calcComp(comp,gs){
   const effRatio=calcEffRatio(db.baseRatio,sf);
   let stWt=calcSteelWeight(cVol,db.baseRatio,sf,gs.steelLossRate);
   let usedDetail=false;
-  if(comp.rebarRows&&comp.rebarRows.length){
+  if(comp.rebar && comp.rebar.calculatedKg > 0){
+    stWt=+(comp.rebar.calculatedKg * qty / 1000).toFixed(4);
+    usedDetail=true;
+  } else if(comp.rebarRows&&comp.rebarRows.length){
     stWt=+(calcRebarTotal(comp.rebarRows)*qty/1000).toFixed(4);
     usedDetail=true;
   }
@@ -429,6 +542,7 @@ function _renderTable(calc){
       <td class="boq-tc">
         <span class="boq-ratio ${ratioErr?'boq-ratio-err':'boq-ratio-ok'}" title="${db.baseRatio}×${sf.factor}=${c.effRatio} kg/m³">${c.effRatio||'—'}</span>
         ${c.usedDetail?'<div class="boq-detail-badge">📐按明细算</div>':`<div class="boq-hint">${db.baseRatio||'—'}×${sf.factor}</div>`}
+        ${c.rebar && c.rebar.calculatedKg > 0?'<div class="boq-detail-badge">📐配筋算</div>':''}
       </td>
       <td class="boq-tr boq-derived">${(c.cVol||0).toFixed(2)}</td>
       <td class="boq-tr boq-derived">${(c.fwArea||0).toFixed(2)}</td>
@@ -436,6 +550,7 @@ function _renderTable(calc){
       <td class="boq-mat-cell">${tags}${db.concreteNote?`<div class="boq-norm-note">${db.concreteNote}</div>`:''}</td>
       <td class="boq-tc boq-op-cell">
         <div class="boq-cost-sm">${cur}${cMin}<br>~${cur}${cMax}</div>
+        <button class="boq-btn-sm boq-btn-sm-purple" onclick="BOQ.toggleRebarCfg(${c.id})">🔧 配筋</button>
         <button class="boq-btn-sm boq-btn-sm-blue"  onclick="BOQ.showRebar(${c.id})">🔩 钢筋</button>
         <button class="boq-btn-sm boq-btn-sm-green" onclick="BOQ.showImgs('${c.type}')">📐 详图</button>
         <button class="boq-btn-sm boq-btn-sm-red"   onclick="BOQ.rm(${c.id})">🗑</button>
@@ -544,7 +659,132 @@ function _renderRebarTable(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// 12. 事件绑定
+// 11b. 配筋内联面板 (Inline Rebar Config Panel)
+// ══════════════════════════════════════════════════════════════
+function _buildRebarCfgLayerInputsHTML(comp){
+  const defs=REBAR_LAYER_DEFS[comp.type];
+  if(!defs||!defs.length) return '<p style="color:#94a3b8;font-size:12px">该构件类型暂无配筋层定义</p>';
+  const savedLayers=(comp.rebar&&comp.rebar.layers)||[];
+  return defs.map(def=>{
+    const saved=savedLayers.find(l=>l.key===def.key)||{};
+    const dia=saved.dia||def.diaDefault;
+    const diaOpts=[6,8,10,12,14,16,18,20,22,25].map(d=>`<option value="${d}"${d==dia?' selected':''}>φ${d}</option>`).join('');
+    if(def.inputType==='spacing'){
+      const sp=saved.spacing||def.spacingDefault;
+      return `<div class="boq-rcfg-row">
+        <label>${def.label}</label>
+        <select class="boq-rcfg-input boq-rcfg-dia" id="boq-rcfg-${comp.id}-${def.key}-dia" onchange="BOQ.rebarCfgChange(${comp.id})">${diaOpts}</select>
+        <span class="boq-rcfg-sep">@</span>
+        <input type="number" class="boq-rcfg-input boq-rcfg-sp" id="boq-rcfg-${comp.id}-${def.key}-spacing" value="${sp}" min="50" step="25" oninput="BOQ.rebarCfgChange(${comp.id})">
+        <span class="boq-rcfg-sep">mm</span>
+      </div>`;
+    } else if(def.inputType==='count'){
+      const cnt=saved.count!=null?saved.count:def.countDefault;
+      return `<div class="boq-rcfg-row">
+        <label>${def.label}</label>
+        <select class="boq-rcfg-input boq-rcfg-dia" id="boq-rcfg-${comp.id}-${def.key}-dia" onchange="BOQ.rebarCfgChange(${comp.id})">${diaOpts}</select>
+        <span class="boq-rcfg-sep">×</span>
+        <input type="number" class="boq-rcfg-input boq-rcfg-cnt" id="boq-rcfg-${comp.id}-${def.key}-count" value="${cnt}" min="1" step="1" oninput="BOQ.rebarCfgChange(${comp.id})">
+        <span class="boq-rcfg-sep">根</span>
+      </div>`;
+    } else { // tie
+      const spH=saved.spacingH||def.spacingHDefault;
+      const spV=saved.spacingV||def.spacingVDefault;
+      return `<div class="boq-rcfg-row">
+        <label>${def.label}</label>
+        <select class="boq-rcfg-input boq-rcfg-dia" id="boq-rcfg-${comp.id}-${def.key}-dia" onchange="BOQ.rebarCfgChange(${comp.id})">${diaOpts}</select>
+        <span class="boq-rcfg-sep">@</span>
+        <input type="number" class="boq-rcfg-input boq-rcfg-sp" id="boq-rcfg-${comp.id}-${def.key}-spacingH" value="${spH}" min="50" step="25" oninput="BOQ.rebarCfgChange(${comp.id})">
+        <span class="boq-rcfg-sep">×</span>
+        <input type="number" class="boq-rcfg-input boq-rcfg-sp" id="boq-rcfg-${comp.id}-${def.key}-spacingV" value="${spV}" min="50" step="25" oninput="BOQ.rebarCfgChange(${comp.id})">
+        <span class="boq-rcfg-sep">mm</span>
+      </div>`;
+    }
+  }).join('');
+}
+
+function boqToggleRebarConfig(id){
+  const existingRow=document.getElementById(`boq-rebar-cfg-${id}`);
+  if(existingRow){ existingRow.remove(); return; }
+  const mainRow=document.getElementById(`boq-row-${id}`);
+  if(!mainRow) return;
+  const comp=STATE.components.find(x=>x.id===id);
+  if(!comp) return;
+  const newRow=document.createElement('tr');
+  newRow.id=`boq-rebar-cfg-${id}`;
+  newRow.innerHTML=`<td colspan="12"><div class="boq-rcfg-panel">
+    <div class="boq-rcfg-header">
+      <span>🔧 钢筋配置 Rebar Configuration — ${_esc(comp.name)}</span>
+      <button onclick="BOQ.toggleRebarCfg(${id})">✕ 关闭</button>
+    </div>
+    <div class="boq-rcfg-inputs">${_buildRebarCfgLayerInputsHTML(comp)}</div>
+    <div class="boq-rcfg-results" id="boq-rcfg-results-${id}"></div>
+    <div class="boq-rcfg-footer">
+      <div class="boq-rcfg-total" id="boq-rcfg-total-${id}">钢筋合计: —</div>
+      <button class="boq-btn-update" onclick="BOQ.applyRebarCfg(${id})">✅ 更新主表 Update Component</button>
+    </div>
+  </div></td>`;
+  mainRow.insertAdjacentElement('afterend', newRow);
+  boqRebarCfgRecalc(id);
+}
+
+function _readCfgLayerValues(id){
+  const comp=STATE.components.find(x=>x.id===id);
+  if(!comp) return {};
+  const defs=REBAR_LAYER_DEFS[comp.type]||[];
+  const layerValues={};
+  defs.forEach(def=>{
+    const dia=parseFloat(document.getElementById(`boq-rcfg-${id}-${def.key}-dia`)?.value)||def.diaDefault;
+    if(def.inputType==='spacing'){
+      const spacing=parseFloat(document.getElementById(`boq-rcfg-${id}-${def.key}-spacing`)?.value)||def.spacingDefault;
+      layerValues[def.key]={dia,spacing};
+    } else if(def.inputType==='count'){
+      const count=parseFloat(document.getElementById(`boq-rcfg-${id}-${def.key}-count`)?.value)||def.countDefault;
+      layerValues[def.key]={dia,count};
+    } else {
+      const spacingH=parseFloat(document.getElementById(`boq-rcfg-${id}-${def.key}-spacingH`)?.value)||def.spacingHDefault;
+      const spacingV=parseFloat(document.getElementById(`boq-rcfg-${id}-${def.key}-spacingV`)?.value)||def.spacingVDefault;
+      layerValues[def.key]={dia,spacingH,spacingV};
+    }
+  });
+  return layerValues;
+}
+
+function boqRebarCfgRecalc(id){
+  const comp=STATE.components.find(x=>x.id===id);
+  if(!comp) return;
+  const defs=REBAR_LAYER_DEFS[comp.type];
+  if(!defs) return;
+  const layerValues=_readCfgLayerValues(id);
+  const {results,totalKg,totalTon}=calcRebarConfigLayers(comp,layerValues);
+  const resEl=document.getElementById(`boq-rcfg-results-${id}`);
+  if(resEl){
+    resEl.innerHTML=`<table>${results.map(r=>`<tr><td>${r.label}</td><td>${r.count} × ${r.length.toFixed(2)}m × φ${r.dia}</td><td>${r.kg.toFixed(1)} kg</td></tr>`).join('')}</table>`;
+  }
+  const totEl=document.getElementById(`boq-rcfg-total-${id}`);
+  if(totEl) totEl.textContent=`钢筋合计: ${totalKg.toFixed(0)} kg = ${totalTon.toFixed(3)} TON`;
+}
+
+function boqApplyRebarCfg(id){
+  const comp=STATE.components.find(x=>x.id===id);
+  if(!comp) return;
+  const defs=REBAR_LAYER_DEFS[comp.type];
+  if(!defs) return;
+  const layerValues=_readCfgLayerValues(id);
+  const {totalKg,totalTon}=calcRebarConfigLayers(comp,layerValues);
+  const layers=defs.map(def=>{
+    const v=layerValues[def.key]||{};
+    return {key:def.key,...v};
+  });
+  comp.rebar={type:comp.type, layers, calculatedKg:totalKg};
+  const cfgRow=document.getElementById(`boq-rebar-cfg-${id}`);
+  if(cfgRow) cfgRow.remove();
+  _recalcRender();
+  boqToast(`✅ 钢筋配置已更新 | ${totalKg.toFixed(0)} kg = ${(totalKg/1000).toFixed(3)} TON`,'info');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 12. 事件绑定 (Events)
 // ══════════════════════════════════════════════════════════════
 function _bindEvents(){
   // 全局设置
@@ -629,6 +869,10 @@ const BOQ = {
     else { delete c.rebarRows; boqToast('已清空钢筋明细，恢复系数估算','info'); }
     BOQ.hideRebar(); _recalcRender();
   },
+  // 配筋内联面板
+  toggleRebarCfg(id){ boqToggleRebarConfig(id); },
+  rebarCfgChange(id){ boqRebarCfgRecalc(id); },
+  applyRebarCfg(id) { boqApplyRebarCfg(id); },
 };
 
 window.BOQ = BOQ;

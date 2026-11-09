@@ -298,6 +298,61 @@
 }
 .boq-rebar-tbl td { padding: 5px 7px; border-bottom: 1px solid #f1f5f9; }
 
+/* ── 配筋内联面板 Inline Rebar Config Panel ─────────────── */
+.boq-rcfg-panel {
+  background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+  padding:12px 16px; margin:4px 0;
+}
+.boq-rcfg-header {
+  display:flex; justify-content:space-between; align-items:center;
+  font-weight:600; font-size:13px; color:#1e3a5f;
+  border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:10px;
+}
+.boq-rcfg-header button {
+  background:none; border:1px solid #cbd5e1; border-radius:4px;
+  padding:2px 10px; cursor:pointer; font-size:12px; color:#64748b;
+}
+.boq-rcfg-inputs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.boq-rcfg-row {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  background:#f8fafc; border-radius:6px; padding:6px 10px; min-width:200px;
+}
+.boq-rcfg-row label { font-size:11px; color:#475569; min-width:110px; }
+.boq-rcfg-input {
+  height:36px; border:1.5px solid #cbd5e1; border-radius:4px;
+  padding:0 6px; font-size:13px; background:#fff;
+}
+.boq-rcfg-input.boq-rcfg-dia { width:64px; }
+.boq-rcfg-input.boq-rcfg-sp  { width:60px; text-align:center; }
+.boq-rcfg-input.boq-rcfg-cnt { width:52px; text-align:center; }
+.boq-rcfg-sep { font-size:11px; color:#94a3b8; }
+.boq-rcfg-results {
+  background:#f8fafc; border-radius:6px; padding:8px 12px;
+  font-size:12px; margin-bottom:10px; overflow-x:auto;
+}
+.boq-rcfg-results table { width:100%; border-collapse:collapse; }
+.boq-rcfg-results td { padding:3px 8px; border-bottom:1px solid #f1f5f9; }
+.boq-rcfg-results td:last-child { text-align:right; font-weight:700; color:#15803d; }
+.boq-rcfg-footer {
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:8px; border-top:1px solid #f1f5f9; padding-top:10px;
+}
+.boq-rcfg-total { font-size:14px; font-weight:700; color:#1e3a5f; }
+.boq-btn-update {
+  background:#16a34a; color:#fff; border:none; border-radius:6px;
+  padding:8px 18px; cursor:pointer; font-size:13px; font-weight:600;
+}
+.boq-btn-update:hover { background:#15803d; }
+.boq-btn-sm-purple {
+  background:#7c3aed; color:#fff; border:none; border-radius:4px;
+  padding:3px 8px; cursor:pointer; font-size:11px; font-weight:500;
+}
+.boq-btn-sm-purple:hover { background:#6d28d9; }
+@media(max-width:640px){
+  .boq-rcfg-input { height:44px; font-size:14px; }
+  .boq-rcfg-row { min-width:100%; }
+}
+
 /* ── 规范卡片 ─────────────────────────────────────────────── */
 .boq-norm-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

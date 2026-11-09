@@ -1349,17 +1349,17 @@ const BOQ = {
           let count = layer.count || 0;
           let length = 0;
 
-          if (layer.spacing) {
+          if (layer.spacingH !== undefined) {
+              // Tie bar — uses spacingH × spacingV grid
+              const sh = layer.spacingH || 600;  // mm
+              const sv = layer.spacingV || layer.spacingH || 600;  // mm
+              count  = Math.max(1, Math.ceil(L / (sh / 1000))) * Math.max(1, Math.ceil(H / (sv / 1000)));
+              length = Math.max(0.05, W - 0.05);
+          } else if (layer.spacing) {
               const isVertical = layer.name.includes('竖') || layer.name.includes('Vert');
               const isHoriz    = layer.name.includes('水平') || layer.name.includes('Horiz') || layer.name.includes('水');
-              const isTie      = layer.name.includes('拉') || layer.name.includes('Tie');
 
-              if (isTie) {
-                  const sh = layer.spacingH || layer.spacing;
-                  const sv = layer.spacingV || layer.spacing;
-                  count = Math.ceil(L / (sh / 1000)) * Math.ceil(H / (sv / 1000));
-                  length = W - 0.05;
-              } else if (isVertical) {
+              if (isVertical) {
                   count = Math.ceil(L / (layer.spacing / 1000)) + 1;
                   length = H + 0.3;
               } else if (isHoriz) {

@@ -43,14 +43,6 @@ const STEEL_RATIO_MIN_PCT = {
 };
 // Conversion helper: kg/m³ ↔ ρ%
 // ρ% = effRatio_kg_m3 / 78.50    (because 7850/100 = 78.50)
-  retainingWall:   160,  // kg/m³ — ACI 318 + seismic zone requirement
-  basementWall:    160,  // kg/m³
-  shearWall:       140,  // kg/m³ — ρ≥0.12% vertical + 0.20% horizontal
-  column:          160,  // kg/m³ — ρ≥1.0% longitudinal (ACI 318 §18.7.4)
-  beam:            130,  // kg/m³ — ρ≥0.36% (ACI 318 §9.6.1)
-  slab:            100,  // kg/m³ — ρ≥0.18% temperature/shrinkage (ACI 318 §24.4.3)
-  foundation:      120,  // kg/m³ — conservative footing minimum
-};
 const STEEL_SAFETY_BY_FLOOR = {
   1: { retainingWall:120, basementWall:120, shearWall:110, column:120, beam:100, slab:80,  foundation:100 },
   2: { retainingWall:130, basementWall:130, shearWall:120, column:130, beam:110, slab:90,  foundation:110 },

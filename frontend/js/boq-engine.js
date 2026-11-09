@@ -498,16 +498,19 @@ function calcLoadArea(area) {
   return { slabSelfWeight, finishDL, totalDL, liveLoad, factoredLoad, areaM2, totalFactoredKg, totalFactoredKN };
 }
 
-// ACI 318-19 §22.4.2.1 — simplified tied column capacity
-// φ=0.65 is absorbed into the 0.8 factor as a combined capacity estimate for initial screening
-// Pn = 0.8 × (0.85 × f'c × (Ag - As) + fy × As)
+// ACI 318-19 §22.4.2.1 — tied column design strength
+// φ = 0.65 (tied column, ACI 318-19 Table 21.2.2)
+// φPn = φ × 0.80 × [0.85×f'c×(Ag-As) + fy×As]
+// Demand Pu must be ≤ φPn (NOT Pn)
 function calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm, fyMPa) {
+  const phi = 0.65;  // ACI 318-19 Table 21.2.2 — tied column
   const Ag = colL_mm * colW_mm;  // mm²
   const As = rebarCount * (Math.PI / 4) * rebarDiaMm * rebarDiaMm;  // mm²
-  const Pn_N = 0.8 * (0.85 * fPrimeMPa * (Ag - As) + fyMPa * As);  // N (MPa × mm² = N)
-  const kg = Pn_N / 9.81;
-  const kN = Pn_N / 1000;
-  return { Ag, As, Pn_N, kg, kN };
+  const Pn_N   = 0.80 * (0.85 * fPrimeMPa * (Ag - As) + fyMPa * As);  // N — nominal
+  const phiPn_N = phi * Pn_N;  // N — design strength (what is compared to Pu)
+  const kg = phiPn_N / 9.81;
+  const kN = phiPn_N / 1000;
+  return { Ag, As, Pn_N, phiPn_N, kg, kN, phi };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -732,7 +735,7 @@ function _buildLoadResultHTML(area, res) {
       const ll = col.rebar.layers.find(l => l.key === 'longitudinal');
       if (ll) { rebarCount = parseInt(ll.count) || 8; rebarDiaMm = parseInt(ll.dia) || 16; }
     }
-    const fyMPa = 400; // HRB400 / SD40T Thailand
+    const fyMPa = 390; // SD40T Thailand — TIS 24-2548 (fy=390 MPa, NOT 400 MPa)
     const cap = calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm, fyMPa);
     const ratio = perColKg > 0 ? cap.kg / perColKg : Infinity;
     const ok = cap.kg >= perColKg;

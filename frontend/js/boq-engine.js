@@ -637,7 +637,7 @@ function calcCompLoad(comp) {
   }
 
   // ── 2. Retaining Wall / Basement Wall (挡土墙/地下室外墙) — LATERAL EARTH PRESSURE ──
-  if (type === 'retainingWall' || type === 'basementWall' || type === 'shearWall') {
+  if (type === 'retainingWall' || type === 'basementWall') {
     // Rankine active earth pressure theory — standard soil mechanics
     // Ka = (1 - sin φ) / (1 + sin φ)  where φ = soil friction angle
     const phi_deg = 30;  // degrees — typical loose-medium soil friction angle
@@ -886,17 +886,17 @@ function _renderTable(calc){
   } else if (ldType === 'column') {
     html += '<span class="boq-lb boq-lb-axial">' + _esc(ld.label_main) + '</span>';
     html += '<span class="boq-lb boq-lb-axial">' + _esc(ld.label_sub) + '</span>';
-    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f30\u7b97' + '</span>';
   } else if (ldType === 'beam') {
     html += '<span class="boq-lb boq-lb-udl">' + _esc(ld.label_main) + '</span>';
     html += '<span class="boq-lb boq-lb-udl">' + _esc(ld.label_sub) + '</span>';
     html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
-    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f30\u7b97' + '</span>';
   } else if (ldType === 'foundation') {
     html += '<span class="boq-lb boq-lb-found">' + _esc(ld.label_main) + '</span>';
     html += '<span class="boq-lb ' + (ld.ok ? 'boq-lb-found' : 'boq-lb-warn') + '">' + _esc(ld.label_sub) + '</span>';
     html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
-    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f30\u7b97' + '</span>';
   }
   html += '</div>';
   return html;

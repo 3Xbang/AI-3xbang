@@ -19,6 +19,31 @@ const NORM_REFS = {
   localPrice:    { icon:'💰', title:'本地化单价参考来源',              refs:['泰国SCG建材市场指导价','King Engineering实际项目账单'],         detail:'单价区间仅作参考，不含税费、运费及施工管理费。' },
   steelRatio:    { icon:'🔩', title:'含钢量底线（最小配筋率）',        refs:['GB 50010-2010 第8.5条','GB 50011-2010 抗震构造'],              detail:'含钢量为综合指标，涵盖主筋、箍筋、腰筋等，实际以结构施工图为准。' },
 };
+const CITE = {
+  // Load calculations
+  DL_RC:    { src:'ISO 6707-1',              formula:'DL = \u03b3_rc \u00d7 t',                note:'\u03b3_rc = 2400 kg/m\u00b3 (\u6df7\u51dd\u571f\u91cd\u5ea6)' },
+  DL_FINISH:{ src:'\u5de5\u7a0b\u5b9e\u8df5', formula:'DL_finish = 120 kg/m\u00b2',         note:'\u74f7\u780610mm + \u6c34\u6ce5\u7802\u524640mm' },
+  LL_RES:   { src:'\u0e01\u0e0e\u0e01\u0e23\u0e30\u0e17\u0e23\u0e27\u0e07 \u00a74',  formula:'LL = 200 kg/m\u00b2',  note:'\u4f4f\u5b85\u8d77\u5c45\u5ba4/\u5367\u5ba4 Residential' },
+  LL_BAL:   { src:'\u0e01\u0e0e\u0e01\u0e23\u0e30\u0e17\u0e23\u0e27\u0e07 \u00a74',  formula:'LL = 300 kg/m\u00b2',  note:'\u9633\u53f0/\u697c\u68af Balcony/Stairs' },
+  LL_ROOF:  { src:'\u0e01\u0e0e\u0e01\u0e23\u0e30\u0e17\u0e23\u0e27\u0e07 \u00a74',  formula:'LL = 75\u2013150 kg/m\u00b2', note:'\u5c4b\u9876 Roof' },
+  LL_PARK:  { src:'\u0e01\u0e0e\u0e01\u0e23\u0e30\u0e17\u0e23\u0e27\u0e07/BS6399-1', formula:'LL = 400 kg/m\u00b2', note:'\u79c1\u4eba\u505c\u8f66 Private parking' },
+  COMBO:    { src:'ACI 318-19 \u00a75.3.1',   formula:'Pu = 1.2\u00d7DL + 1.6\u00d7LL',    note:'\u8377\u8f7d\u7ec4\u5408 Load combination' },
+  WATER:    { src:'\u7269\u7406\u5e38\u6570 ISO', formula:'\u03b3_water = 1000 kg/m\u00b3', note:'\u6c34\u7684\u5bc6\u5ea6 Water density' },
+  // Reinforcement ratios
+  RHO_WALL: { src:'ACI 318-19 \u00a711.6.1',   formula:'\u03c1_min = 0.35%',               note:'\u6321\u571f\u5899\u53cc\u9762\u53cc\u5411\u6700\u4f4e\u8981\u6c42' },
+  RHO_COL:  { src:'ACI 318-19 \u00a718.7.4.1', formula:'\u03c1_min = 1.50% (long+ties)',   note:'\u6846\u67b6\u67f1\u7eb5\u7b4b+\u7b50\u7b4b\u7efc\u5408' },
+  RHO_BEAM: { src:'ACI 318-19 \u00a79.6.1.2',  formula:'\u03c1_min = 0.80% (long+stir)',  note:'\u6846\u67b6\u6881\u7eb5\u7b4b+\u7b50\u7b4b\u7efc\u5408' },
+  RHO_SLAB: { src:'ACI 318-19 \u00a724.4.3.2', formula:'\u03c1_min = 0.25%',               note:'\u697c\u677f\u6e29\u5ea6\u6536\u7f29\u7b4b' },
+  RHO_FDN:  { src:'ACI 318-19 \u00a713.3.1',   formula:'\u03c1_min = 0.20%',               note:'\u57fa\u7840\u5e95\u677f\u6700\u4f4e\u8981\u6c42' },
+  RHO_CONV: { src:'\u7269\u7406\u63a8\u5bfc',  formula:'\u03c1% = effRatio / 78.50',       note:'78.50 = 7850\u00f7100 (\u9502\u5bc6\u5ea6/100)' },
+  // Earth pressure
+  RANKINE:  { src:'Rankine 1857 \u571f\u538b\u529b\u7406\u8bba', formula:'Ka=(1-sin\u03c6)/(1+sin\u03c6), p=Ka\u00b7\u03b3\u00b7H', note:'\u03c6=30\u00b0\u5178\u578b\u571f, \u03b3=1800 kg/m\u00b3' },
+  // Steel properties
+  SD40T:    { src:'TIS 24-2548 (\u0e44\u0e17\u0e22)', formula:'fy = 390 MPa', note:'SD40T \u6cf0\u56fd\u6807\u51c6\u53d8\u5f62\u9502\u7b4b' },
+  PHI_TIE:  { src:'ACI 318-19 Table 21.2.2', formula:'\u03c6 = 0.65', note:'\u7ed1\u624e\u7b50\u7b4b\u67f1\u5f3a\u5ea6\u6298\u51cf\u7cfb\u6570' },
+  // Concrete
+  B25:      { src:'TIS 213-2560 (\u0e44\u0e17\u0e22)', formula:"f'c = 25 MPa", note:'B25 \u6cf0\u56fd\u6807\u51c6\u6df7\u51dd\u571f' },
+};
 const SEISMIC_FACTORS = {
   '1':{ label:'一级', factor:1.15, desc:'一级抗震，综合用钢量系数×1.15' },
   '2':{ label:'二级', factor:1.05, desc:'二级抗震，综合用钢量系数×1.05' },
@@ -539,7 +564,14 @@ function validateComp(typeKey,ratio,gs){
   const minRho = STEEL_RATIO_MIN_PCT[typeKey] || 0.25;
   if (rhoPct < minRho) {
     const compName = COMP_DB[typeKey]?.shortName || typeKey;
-    w.push({field:'steelRatio', message:`${compName} 配筋率 ρ=${rhoPct.toFixed(2)}% < ${minRho}% (ACI 318-19 最低要求) / Below ACI min ρ`, level:'error'});
+    const _rhoCiteMap = {
+      retainingWall:'RHO_WALL', basementWall:'RHO_WALL', shearWall:'RHO_WALL',
+      column:'RHO_COL', beam:'RHO_BEAM', slab:'RHO_SLAB', foundation:'RHO_FDN',
+    };
+    const _rhoCiteKey = _rhoCiteMap[typeKey] || 'RHO_SLAB';
+    const _citeD = CITE[_rhoCiteKey];
+    const _citeStr = _citeD ? ` [${_citeD.src}: ${_citeD.formula}]` : '';
+    w.push({field:'steelRatio', message:`${compName} 配筋率 ρ=${rhoPct.toFixed(2)}% < ${minRho}%${_citeStr} — 低于ACI最低要求`, level:'error'});
   }
   if(_n(gs.steelLossRate)<SAFETY_BASELINES.lossRate.steel.min)    w.push({field:'steelLoss',message:SAFETY_BASELINES.lossRate.steel.warn,level:'warning'});
   if(_n(gs.concreteLossRate)<SAFETY_BASELINES.lossRate.concrete.min) w.push({field:'concLoss',message:SAFETY_BASELINES.lossRate.concrete.warn,level:'warning'});
@@ -854,6 +886,12 @@ function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;
 function _fmt(n){return Math.round(n||0).toLocaleString();}
 function _setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 
+function _citeTag(key) {
+  const c = CITE[key]; if (!c) return '';
+  const tip = `${c.formula} [${c.src}] ${c.note}`;
+  return `<span class="boq-cite" title="${tip.replace(/"/g,'&quot;')}" onclick="event.stopPropagation()">ⓘ</span>`;
+}
+
 function _recalcRender(){
   const calc=STATE.components.map(c=>calcComp(c,STATE.global));
   _renderTable(calc);
@@ -887,13 +925,13 @@ function _renderTable(calc){
   let html = '<div class="boq-load-badges" title="' + _esc(ld.note || '') + '">';
   if (ldType === 'slab') {
     html += '<span class="boq-lb boq-lb-dl">' + _esc(ld.label_DL) + '</span>';
-    html += '<span class="boq-lb boq-lb-ll">' + _esc(ld.label_LL) + '</span>';
-    html += '<span class="boq-lb boq-lb-pu">' + _esc(ld.label_design) + '</span>';
+    html += '<span class="boq-lb boq-lb-ll">' + _esc(ld.label_LL) + _citeTag('LL_RES') + '</span>';
+    html += '<span class="boq-lb boq-lb-pu">' + _esc(ld.label_design) + _citeTag('COMBO') + '</span>';
     html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
   } else if (ldType === 'retainingWall') {
     html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_DL) + '</span>';
     html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_LL) + '</span>';
-    html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_design) + '</span>';
+    html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_design) + _citeTag('RANKINE') + '</span>';
     html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
   } else if (ldType === 'column') {
     html += '<span class="boq-lb boq-lb-axial">' + _esc(ld.label_main) + '</span>';
@@ -992,8 +1030,8 @@ function _buildLoadResultHTML(area, res) {
   // Dead Load table
   s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
   s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">恒荷载 Dead Load (DL)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
-  s += `<tr><td style="padding:2px 6px">楼板自重 Slab: ${_n(area.slabThickMm)}mm × 2400 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.slabSelfWeight.toFixed(0)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ISO 6707-1, RC密度=2400</td></tr>`;
-  if (area.finishes.tilesScreed) s += `<tr><td style="padding:2px 6px">瓷砖+找平 Tiles+screed 50mm</td><td style="text-align:right;padding:2px 6px">120</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 material density</td></tr>`;
+  s += `<tr><td style="padding:2px 6px">楼板自重 Slab: ${_n(area.slabThickMm)}mm × 2400 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.slabSelfWeight.toFixed(0)}${_citeTag('DL_RC')}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ISO 6707-1, RC密度=2400</td></tr>`;
+  if (area.finishes.tilesScreed) s += `<tr><td style="padding:2px 6px">瓷砖+找平 Tiles+screed 50mm</td><td style="text-align:right;padding:2px 6px">120${_citeTag('DL_FINISH')}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 material density</td></tr>`;
   if (area.finishes.plasterBoth) s += `<tr><td style="padding:2px 6px">双面抹灰 Plaster both faces 2×15mm</td><td style="text-align:right;padding:2px 6px">54</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 2×27 kg/m²</td></tr>`;
   if (area.finishes.waterproof)  s += `<tr><td style="padding:2px 6px">防水层 Waterproof membrane</td><td style="text-align:right;padding:2px 6px">20</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">物理密度 material density</td></tr>`;
   s += `<tr style="background:#f0fdf4;font-weight:700"><td style="padding:3px 6px">DL 合计 Total</td><td style="text-align:right;padding:3px 6px">${res.totalDL.toFixed(0)}</td><td></td></tr>`;
@@ -1002,9 +1040,16 @@ function _buildLoadResultHTML(area, res) {
   // Live Load table
   s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
   s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">活荷载 Live Load (LL)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
-  s += `<tr><td style="padding:2px 6px">${_esc(entry.label)}</td><td style="text-align:right;padding:2px 6px">${res.liveLoad}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">${_esc(res.llNote)}</td></tr>`;
+  const llCiteKey = (() => {
+    const ut = area.useType;
+    if (ut === 'balcony' || ut === 'corridor' || ut === 'stairs') return 'LL_BAL';
+    if (ut && ut.startsWith('roof')) return 'LL_ROOF';
+    if (ut === 'parking_private' || ut === 'parking_public') return 'LL_PARK';
+    return 'LL_RES';
+  })();
+  s += `<tr><td style="padding:2px 6px">${_esc(entry.label)}</td><td style="text-align:right;padding:2px 6px">${res.liveLoad}${_citeTag(llCiteKey)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">${_esc(res.llNote)}</td></tr>`;
   if (res.isPool) {
-    s += `<tr><td style="padding:2px 6px">泳池水压 Pool water: ${res.poolDepth.toFixed(1)}m × 1000 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.waterLoad.toFixed(0)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">水密度=1000 kg/m³, 物理常数</td></tr>`;
+    s += `<tr><td style="padding:2px 6px">泳池水压 Pool water: ${res.poolDepth.toFixed(1)}m × 1000 kg/m³</td><td style="text-align:right;padding:2px 6px">${res.waterLoad.toFixed(0)}${_citeTag('WATER')}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">水密度=1000 kg/m³, 物理常数</td></tr>`;
     s += `<tr style="background:#fef9c3;font-weight:700"><td style="padding:3px 6px">总活荷载 Total LL</td><td style="text-align:right;padding:3px 6px">${res.totalLL.toFixed(0)}</td><td></td></tr>`;
   }
   s += `</tbody></table>`;
@@ -1012,7 +1057,7 @@ function _buildLoadResultHTML(area, res) {
   // Factored load table
   s += `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:6px">`;
   s += `<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px">设计荷载 Design Load (Factored)</th><th style="text-align:right;padding:3px 6px">kg/m²</th><th style="text-align:left;padding:3px 6px;color:#6b7280">来源 Source</th></tr></thead><tbody>`;
-  s += `<tr><td style="padding:2px 6px">Pu = 1.2×DL + 1.6×LL = 1.2×${res.totalDL.toFixed(0)} + 1.6×${res.totalLL.toFixed(0)}</td><td style="text-align:right;padding:2px 6px;font-weight:700">${res.factoredLoad.toFixed(1)}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ACI 318-19 §5.3.1</td></tr>`;
+  s += `<tr><td style="padding:2px 6px">Pu = 1.2×DL + 1.6×LL = 1.2×${res.totalDL.toFixed(0)} + 1.6×${res.totalLL.toFixed(0)}</td><td style="text-align:right;padding:2px 6px;font-weight:700">${res.factoredLoad.toFixed(1)}${_citeTag('COMBO')}</td><td style="padding:2px 6px;color:#6b7280;font-size:11px">ACI 318-19 §5.3.1</td></tr>`;
   s += `<tr style="background:#eff6ff;font-weight:700"><td style="padding:3px 6px">总重 Total (this area): ${res.factoredLoad.toFixed(1)} × ${res.areaM2.toFixed(2)} m²</td><td style="text-align:right;padding:3px 6px">${res.totalFactoredKg.toFixed(0)} kg</td><td></td></tr>`;
   s += `</tbody></table>`;
 
@@ -1241,10 +1286,15 @@ function _renderRebarTable(){
   const rhoOk    = rhoVal >= minRho;
   const rColor   = rhoOk ? '#16a34a' : '#dc2626';
   _setText('boq-rebar-total',`${total.toFixed(2)} kg`);
+  const _rhoCiteKeyMap = {
+    retainingWall:'RHO_WALL', basementWall:'RHO_WALL',
+    column:'RHO_COL', beam:'RHO_BEAM', slab:'RHO_SLAB', foundation:'RHO_FDN'
+  };
+  const _rbarCiteKey = _rhoCiteKeyMap[compType] || 'RHO_SLAB';
   document.getElementById('boq-rebar-info').innerHTML =
-    `含钢量: <b>${effR === '—' ? '—' : effR + ' kg/m³'}</b>` +
+    `含钢量: <b>${effR === '—' ? '—' : effR + ' kg/m³'}</b>` + _citeTag('RHO_CONV') +
     (effRatio > 0 ? `　配筋率 ρ: <b style="color:${rColor}">${rhoVal.toFixed(2)}%</b> ` +
-    `${rhoOk ? '≥' : '<'}${minRho}% <span style="color:${rColor}">${rhoOk ? '✅ 达标' : '⚠️ 低于ACI最低要求'}</span>` : '');  _setText('boq-rebar-all-lbl',`全部合计（×${qty}件）`);
+    `${rhoOk ? '≥' : '<'}${minRho}% <span style="color:${rColor}">${rhoOk ? '✅ 达标' : '⚠️ 低于ACI最低要求'}</span>` + _citeTag(_rbarCiteKey) : '');  _setText('boq-rebar-all-lbl',`全部合计（×${qty}件）`);
   _setText('boq-rebar-all',`${totalTon} ton (${(total*qty).toFixed(1)} kg)`);
 }
 

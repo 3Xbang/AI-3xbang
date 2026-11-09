@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="css/site-board.css?v=33">
     <link rel="stylesheet" href="css/ui-v2.css?v=22">
     <link rel="stylesheet" href="css/mobile.css?v=6">
-    <link rel="stylesheet" href="css/boq-engine.css?v=3">
+    <link rel="stylesheet" href="css/boq-engine.css?v=13">
     <!-- CDN: ECharts + PapaParse for purchase audit -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -110,7 +110,7 @@
                     <button onclick="boqSetFloors(4)" id="boq-fl-4" class="boq-fl-btn">4层</button>
                     <button onclick="boqSetFloors(5)" id="boq-fl-5" class="boq-fl-btn">5层</button>
                   </div>
-                  <span id="boq-floor-hint" style="font-size:0.78rem;color:#6b7280;">ACI 318 / EIT Thailand</span>
+                  <span id="boq-floor-hint" style="font-size:0.72rem;color:#718096;">依据: กฎกระทรวง / ACI 318-19 §5.3.1 / TIS 24-2548</span>
                 </div>
               </div>
 
@@ -382,7 +382,7 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
-    <script src="js/boq-engine.js?v=12"></script>
+    <script src="js/boq-engine.js?v=13"></script>
     <script>
       // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
       document.addEventListener('DOMContentLoaded', () => {

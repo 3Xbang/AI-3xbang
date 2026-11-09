@@ -441,3 +441,17 @@
 .boq-lb-axial { background: #e9d8fd; color: #553c9a; }  /* axial force */
 .boq-lb-udl   { background: #feebc8; color: #7b341e; }  /* distributed load */
 .boq-lb-found { background: #c6f6d5; color: #22543d; }  /* foundation */
+
+/* -- Inline citation tags (i) -- v13 */
+.boq-cite {
+  display: inline-block;
+  font-size: 0.65rem;
+  color: #4299e1;
+  cursor: pointer;
+  margin-left: 3px;
+  vertical-align: super;
+  user-select: none;
+  font-style: normal;
+}
+.boq-cite:hover { color: #2b6cb0; }
+/* Mobile tap tooltip via title attribute -- works natively */

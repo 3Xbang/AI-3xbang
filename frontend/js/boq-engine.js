@@ -607,22 +607,131 @@ function calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm,
 }
 
 function calcCompLoad(comp) {
-  // Quick load estimate per component for row display
-  // Source: MATERIAL_DENSITY (physics) + LIVE_LOADS (กฎกระทรวง)
-  const H_m = _n(comp.H);
-  let DL = 0;
-  if (comp.type === 'slab' || comp.type === 'foundation') {
-    DL = Math.round(2400 * H_m);  // RC slab self-weight (kg/m³ × m)
-    DL += 120;  // typical finish: tiles + screed (kg/m²)
-  } else if (comp.type === 'retainingWall' || comp.type === 'basementWall' || comp.type === 'shearWall') {
-    DL = Math.round(2400 * _n(comp.W));  // wall cross-section (per m² wall area)
-  } else if (comp.type === 'column' || comp.type === 'beam') {
-    return null;  // load comes from slabs
+  // Per-element-type load calculation for row badge display
+  // Sources: ACI 318-19 §5.3.1, Rankine earth pressure theory, กฎกระทรวง §4, ISO 6707-1
+
+  const type = comp.type;
+
+  // ── 1. Slab / Floor (楼板/板/floor) — VERTICAL LOADS ──────────────────────
+  if (type === 'slab') {
+    // Dead load (DL):
+    const slabThickness_m = _n(comp.H);  // H = thickness in meters
+    const DL_self = Math.round(2400 * slabThickness_m);  // RC self-weight, ρ=2400 kg/m³ (ISO 6707-1)
+    const DL_finish = 120;  // tiles 10mm + screed 40mm = 120 kg/m² (material density)
+    const DL = DL_self + DL_finish;
+
+    // Live load (LL): use bedroom residential entry per กฎกระทรวง §4
+    const LL = LIVE_LOADS.bedroom?.q || 200;
+
+    const design = Math.round(1.2 * DL + 1.6 * LL);  // ACI 318-19 §5.3.1
+
+    return {
+      type: 'slab',
+      DL, LL, design,
+      label_DL: `DL ${DL}`,
+      label_LL: `LL ${LL}`,
+      label_design: `设计 ${design}`,
+      unit: 'kg/m\u00b2',
+      note: '\u0e01\u0e0e\u0e01\u0e23\u0e30\u0e17\u0e23\u0e27\u0e07/ACI318-19'
+    };
   }
-  if (DL <= 0) return null;
-  const LL = 200;  // kg/m² residential default — กฎกระทรวง §4
-  const design = Math.round(1.2 * DL + 1.6 * LL);  // ACI 318-19 §5.3.1
-  return { DL, LL, design, standard: 'กฎกระทรวง/ACI318' };
+
+  // ── 2. Retaining Wall / Basement Wall (挡土墙/地下室外墙) — LATERAL EARTH PRESSURE ──
+  if (type === 'retainingWall' || type === 'basementWall' || type === 'shearWall') {
+    // Rankine active earth pressure theory — standard soil mechanics
+    // Ka = (1 - sin φ) / (1 + sin φ)  where φ = soil friction angle
+    const phi_deg = 30;  // degrees — typical loose-medium soil friction angle
+    const Ka = (1 - Math.sin(phi_deg * Math.PI / 180)) / (1 + Math.sin(phi_deg * Math.PI / 180));
+    const gamma_soil = 1800;  // kg/m³ — typical soil density (physics constant)
+    const H_m = _n(comp.H);  // wall height in meters
+
+    // Triangular pressure distribution: 0 at top, maximum at base
+    const p_base = Math.round(Ka * gamma_soil * H_m);       // pressure at base (kg/m²)
+    const p_avg  = Math.round(Ka * gamma_soil * H_m / 2);   // average pressure (kg/m²)
+    // Total lateral thrust per meter of wall width (triangular area)
+    const thrust_per_m = Math.round(0.5 * Ka * gamma_soil * H_m * H_m);  // kg/m
+
+    return {
+      type: 'retainingWall',
+      label_DL: `\u571f\u538b \u5e95${p_base}`,
+      label_LL: `\u5747 ${p_avg}`,
+      label_design: `\u63a8\u529b ${thrust_per_m}`,
+      unit: 'kg/m\u00b2',
+      note: `Rankine Ka=${Ka.toFixed(3)}, \u03c6=30\u00b0, \u03b3=1800`,
+      detail: `H=${H_m}m: \u5e95\u90e8=${p_base}kg/m\u00b2, \u5e73\u5747=${p_avg}kg/m\u00b2, \u5355\u4f4d\u63a8\u529b=${thrust_per_m}kg/m`
+    };
+  }
+
+  // ── 3. Column (柱) — ACCUMULATED AXIAL LOAD ─────────────────────────────
+  if (type === 'column') {
+    // Column height ≈ floor height; estimate number of floors above
+    const H_col = _n(comp.H);
+    const floors = Math.max(1, Math.round(H_col / 3.0));  // assume 3 m per floor
+    // Tributary area: standard 4-column grid, column supports ~4×4 m = 16 m²
+    const trib_area_est = 16;  // m² rough estimate
+    // Design load per floor ≈ 900 kg/m² (1.2D+1.6L, typical residential)
+    const load_per_floor = 900;
+    const axial_est = Math.round(floors * trib_area_est * load_per_floor / 1000);  // tonnes
+
+    return {
+      type: 'column',
+      label_main: `\u8f74\u538b ~${axial_est}t`,
+      label_sub: `${floors}\u5c42 \u00d716m\u00b2`,
+      unit: '',
+      note: '\u4f30\u7b97 / \u53d7\u8377\u9762\u79ef\u9700\u6309\u56fe\u7eb8\u786e\u8ba4',
+      isEstimate: true
+    };
+  }
+
+  // ── 4. Beam (梁) — DISTRIBUTED LOAD FROM SLAB ───────────────────────────
+  if (type === 'beam') {
+    const beam_W = _n(comp.W);   // beam width (m)
+    const beam_H = _n(comp.H);   // beam depth (m)
+    // Tributary slab width on both sides; assume beam spacing ≈ 4 m (2 m each side)
+    const trib_W = 4;  // m
+    const LL_slab = 200;   // kg/m² residential (กฎกระทรวง §4)
+    const DL_slab = 408;   // kg/m² — 120mm RC slab (288) + 120 kg/m² finish
+    const design_slab = Math.round(1.2 * DL_slab + 1.6 * LL_slab);  // ACI 318-19 §5.3.1 → 810 kg/m²
+    // Beam self-weight per metre run (RC density × cross-section)
+    const beam_sw = Math.round(2400 * beam_W * beam_H);  // kg/m
+
+    return {
+      type: 'beam',
+      label_main: `UDL ~${Math.round(design_slab * trib_W)}`,
+      label_sub: `+\u81ea\u91cd ${beam_sw}kg/m`,
+      unit: 'kg/m',
+      note: '\u4f30\u7b97\uff0c\u6309\u5b9e\u9645\u6392\u5e03\u786e\u8ba4',
+      isEstimate: true
+    };
+  }
+
+  // ── 5. Foundation (基础) — BEARING PRESSURE ─────────────────────────────
+  if (type === 'foundation') {
+    const base_area = _n(comp.L) * _n(comp.W);  // m²
+    // Rough column load: 3 floors × 16 m² × 900 kg/m²
+    const floors_est = 3;
+    const axial_est_kg = floors_est * 16 * 900;  // kg
+    const self_wt = Math.round(2400 * base_area * _n(comp.H));  // foundation self-weight (kg)
+    const total_load = axial_est_kg + self_wt;
+    const bearing_pressure = base_area > 0 ? Math.round(total_load / base_area) : 0;  // kg/m²
+    // Thai soil allowable bearing capacity (medium soil, conservative):
+    // Soft clay 5 000-10 000 kg/m²; Medium 10 000-20 000 kg/m²; Hard 20 000-40 000 kg/m²
+    const allow_bearing = 10000;  // kg/m² — medium soil
+
+    return {
+      type: 'foundation',
+      label_main: `\u5730\u538b ${bearing_pressure}`,
+      label_sub: bearing_pressure < allow_bearing
+        ? `<${allow_bearing} \u2713`
+        : `>${allow_bearing} \u26a0`,
+      unit: 'kg/m\u00b2',
+      note: `\u4f30\u7b97 / \u5730\u57fa\u5bb9\u8bb8\u503c${allow_bearing}kg/m\u00b2 (\u4e2d\u7b49\u571f)`,
+      ok: bearing_pressure < allow_bearing,
+      isEstimate: true
+    };
+  }
+
+  return null;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -760,16 +869,38 @@ function _renderTable(calc){
     const tags=(c.mats||[]).map(m=>`<span class="boq-tag ${m.critical?'boq-tag-crit':'boq-tag-norm'}" title="${_esc(m.tooltip)}">${m.name} <b>${m.qty}</b>${m.unit}</span>`).join('');
     const typeOpts=COMP_TYPE_LIST.map(t=>`<option value="${t.key}"${t.key===c.type?' selected':''}>${t.name}</option>`).join('');
     const loadBadge = (() => {
-      const ld = calcCompLoad(c);
-      if (ld) {
-        return `<div class="boq-load-badges" title="荷载核算 / กฎกระทรวง+ACI318">` +
-          `<span class="boq-lb boq-lb-dl">DL ${ld.DL}</span>` +
-          `<span class="boq-lb boq-lb-ll">LL ${ld.LL}</span>` +
-          `<span class="boq-lb boq-lb-pu">设 ${ld.design}</span>` +
-          `<span class="boq-lb boq-lb-unit">kg/m²</span></div>`;
-      }
-      return `<div class="boq-load-badges"><span class="boq-lb boq-lb-info">荷载由楼板传来</span></div>`;
-    })();
+  const ld = calcCompLoad(c);
+  if (!ld) return '<div class="boq-load-badges"><span class="boq-lb boq-lb-info">\u8377\u8f7d\u7531\u697c\u677f\u4f20\u6765</span></div>';
+  const ldType = ld.type;
+  let html = '<div class="boq-load-badges" title="' + _esc(ld.note || '') + '">';
+  if (ldType === 'slab') {
+    html += '<span class="boq-lb boq-lb-dl">' + _esc(ld.label_DL) + '</span>';
+    html += '<span class="boq-lb boq-lb-ll">' + _esc(ld.label_LL) + '</span>';
+    html += '<span class="boq-lb boq-lb-pu">' + _esc(ld.label_design) + '</span>';
+    html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
+  } else if (ldType === 'retainingWall') {
+    html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_DL) + '</span>';
+    html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_LL) + '</span>';
+    html += '<span class="boq-lb boq-lb-ep">' + _esc(ld.label_design) + '</span>';
+    html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
+  } else if (ldType === 'column') {
+    html += '<span class="boq-lb boq-lb-axial">' + _esc(ld.label_main) + '</span>';
+    html += '<span class="boq-lb boq-lb-axial">' + _esc(ld.label_sub) + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+  } else if (ldType === 'beam') {
+    html += '<span class="boq-lb boq-lb-udl">' + _esc(ld.label_main) + '</span>';
+    html += '<span class="boq-lb boq-lb-udl">' + _esc(ld.label_sub) + '</span>';
+    html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+  } else if (ldType === 'foundation') {
+    html += '<span class="boq-lb boq-lb-found">' + _esc(ld.label_main) + '</span>';
+    html += '<span class="boq-lb ' + (ld.ok ? 'boq-lb-found' : 'boq-lb-warn') + '">' + _esc(ld.label_sub) + '</span>';
+    html += '<span class="boq-lb boq-lb-unit">' + _esc(ld.unit) + '</span>';
+    html += '<span class="boq-lb boq-lb-warn" title="\u4f30\u7b97\u503c\uff0c\u9700\u7ed3\u5408\u5b9e\u9645\u56fe\u7eb8">' + '\u26a0\u4f53\u7b97' + '</span>';
+  }
+  html += '</div>';
+  return html;
+})();
     return `<tr class="${c.hasErr?'boq-row-err':''}" id="boq-row-${c.id}">
       <td><input class="boq-ti boq-ti-name" value="${_esc(c.name)}" data-id="${c.id}" data-f="name" placeholder="构件名称"></td>
       <td><select class="boq-tsel" data-id="${c.id}" data-f="type">${typeOpts}</select></td>

@@ -434,3 +434,10 @@
 .boq-lb-pu   { background: #c6f6d5; color: #276749; }
 .boq-lb-unit { background: transparent; color: #a0aec0; font-weight: 400; }
 .boq-lb-info { background: #fefcbf; color: #744210; }
+
+/* ©¤©¤ Per-type load badge colours (added for calcCompLoad v11) ©¤©¤ */
+.boq-lb-warn  { background: #fefcbf; color: #92400e; font-size: 0.65rem; }  /* warning / estimate */
+.boq-lb-ep    { background: #fed7d7; color: #742a2a; }  /* earth pressure */
+.boq-lb-axial { background: #e9d8fd; color: #553c9a; }  /* axial force */
+.boq-lb-udl   { background: #feebc8; color: #7b341e; }  /* distributed load */
+.boq-lb-found { background: #c6f6d5; color: #22543d; }  /* foundation */

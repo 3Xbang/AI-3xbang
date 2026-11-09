@@ -111,6 +111,81 @@ const REBAR_LAYER_DEFS = {
   ],
 };
 
+// Rebar preset levels — EIT Thailand / ACI 318-19 / TIS 24-2548
+// 最低安全线: just meets code minimum (ρ_min)
+// 标准推荐:   good practice for Thai residential (ρ ≈ 1.2-1.5×min)
+// 高级保守:   coastal/seismic zone, higher safety margin (ρ ≈ 1.8-2×min)
+const REBAR_PRESETS = {
+  retainingWall: {
+    min: [
+      { key:'outerV',  name:'竖向外层筋', dia:12, spacing:200, note:'外侧@200mm' },
+      { key:'outerH',  name:'水平外层筋', dia:10, spacing:200, note:'外侧@200mm' },
+      { key:'innerV',  name:'竖向内层筋', dia:12, spacing:200, note:'内侧@200mm' },
+      { key:'innerH',  name:'水平内层筋', dia:10, spacing:200, note:'内侧@200mm' },
+      { key:'tieBars', name:'拉结筋',     dia:8,  spacingH:600, spacingV:600, note:'@600×600mm' },
+    ],
+    std: [
+      { key:'outerV',  name:'竖向外层筋', dia:14, spacing:150, note:'外侧@150mm' },
+      { key:'outerH',  name:'水平外层筋', dia:12, spacing:200, note:'外侧@200mm' },
+      { key:'innerV',  name:'竖向内层筋', dia:14, spacing:150, note:'内侧@150mm' },
+      { key:'innerH',  name:'水平内层筋', dia:12, spacing:200, note:'内侧@200mm' },
+      { key:'tieBars', name:'拉结筋',     dia:8,  spacingH:500, spacingV:500, note:'@500×500mm' },
+    ],
+    high: [
+      { key:'outerV',  name:'竖向外层筋', dia:16, spacing:150, note:'外侧@150mm' },
+      { key:'outerH',  name:'水平外层筋', dia:12, spacing:150, note:'外侧@150mm' },
+      { key:'innerV',  name:'竖向内层筋', dia:16, spacing:150, note:'内侧@150mm' },
+      { key:'innerH',  name:'水平内层筋', dia:12, spacing:150, note:'内侧@150mm' },
+      { key:'tieBars', name:'拉结筋',     dia:8,  spacingH:400, spacingV:400, note:'@400×400mm' },
+    ],
+  },
+  column: {
+    min: [
+      { key:'longitudinal', name:'纵向钢筋', dia:14, count:4,  note:'4根' },
+      { key:'stirrups',     name:'箍筋',     dia:6,  spacing:200, note:'@200mm' },
+    ],
+    std: [
+      { key:'longitudinal', name:'纵向钢筋', dia:16, count:4,  note:'4根' },
+      { key:'stirrups',     name:'箍筋',     dia:8,  spacing:150, note:'@150mm' },
+    ],
+    high: [
+      { key:'longitudinal', name:'纵向钢筋', dia:20, count:8,  note:'8根' },
+      { key:'stirrups',     name:'箍筋',     dia:8,  spacing:100, note:'@100mm加密' },
+    ],
+  },
+  beam: {
+    min: [
+      { key:'topRebar',    name:'上部纵筋', dia:14, count:2,  note:'上排2根' },
+      { key:'bottomRebar', name:'下部纵筋', dia:16, count:2,  note:'下排2根' },
+      { key:'stirrups',    name:'箍筋',     dia:8,  spacing:200, note:'@200mm' },
+    ],
+    std: [
+      { key:'topRebar',    name:'上部纵筋', dia:16, count:2,  note:'上排2根' },
+      { key:'bottomRebar', name:'下部纵筋', dia:20, count:3,  note:'下排3根' },
+      { key:'stirrups',    name:'箍筋',     dia:8,  spacing:150, note:'@150mm' },
+    ],
+    high: [
+      { key:'topRebar',    name:'上部纵筋', dia:20, count:3,  note:'上排3根' },
+      { key:'bottomRebar', name:'下部纵筋', dia:22, count:4,  note:'下排4根' },
+      { key:'stirrups',    name:'箍筋',     dia:10, spacing:100, note:'@100mm' },
+    ],
+  },
+  slab: {
+    min: [
+      { key:'xBars', name:'X向受力筋', dia:10, spacing:250, note:'@250mm' },
+      { key:'yBars', name:'Y向受力筋', dia:10, spacing:250, note:'@250mm' },
+    ],
+    std: [
+      { key:'xBars', name:'X向受力筋', dia:10, spacing:200, note:'@200mm' },
+      { key:'yBars', name:'Y向受力筋', dia:10, spacing:200, note:'@200mm' },
+    ],
+    high: [
+      { key:'xBars', name:'X向受力筋', dia:12, spacing:150, note:'@150mm' },
+      { key:'yBars', name:'Y向受力筋', dia:12, spacing:150, note:'@150mm' },
+    ],
+  },
+};
+
 // ══════════════════════════════════════════════════════════════
 // 2. 构件数据库 (componentDB)
 // ══════════════════════════════════════════════════════════════
@@ -977,27 +1052,72 @@ function _buildRebarCfgLayerInputsHTML(comp){
   }).join('');
 }
 
+function boqLoadPreset(compId, level) {
+  const comp = STATE.components.find(c => c.id === compId);
+  if (!comp) return;
+  const typeMap = {
+    retainingWall: 'retainingWall', basementWall: 'retainingWall',
+    column: 'column', beam: 'beam',
+    slab: 'slab', foundation: 'slab',
+  };
+  const presetKey = typeMap[comp.type];
+  if (!presetKey || !REBAR_PRESETS[presetKey]) return;
+  const layers = REBAR_PRESETS[presetKey][level];
+  if (!layers) return;
+  if (!comp.rebar) comp.rebar = {};
+  comp.rebar.layers = layers.map(function(l){ return Object.assign({}, l); });
+  comp.rebar.preset = level;
+  // Re-render panel: close and reopen so inputs reflect new values
+  const existingRow = document.getElementById('boq-rebar-cfg-' + compId);
+  if (existingRow) {
+    existingRow.remove();
+    boqToggleRebarConfig(compId);
+  }
+  const labels = { min:'最低安全线', std:'标准推荐', high:'高级保守' };
+  boqToast('已加载' + (labels[level] || level) + '配筋 (' + presetKey + ')', 'info');
+}
+window.boqLoadPreset = boqLoadPreset;
+
 function boqToggleRebarConfig(id){
-  const existingRow=document.getElementById(`boq-rebar-cfg-${id}`);
+  const existingRow=document.getElementById('boq-rebar-cfg-'+id);
   if(existingRow){ existingRow.remove(); return; }
-  const mainRow=document.getElementById(`boq-row-${id}`);
+  const mainRow=document.getElementById('boq-row-'+id);
   if(!mainRow) return;
-  const comp=STATE.components.find(x=>x.id===id);
+  const comp=STATE.components.find(function(x){ return x.id===id; });
   if(!comp) return;
+  const activePreset = comp.rebar && comp.rebar.preset ? comp.rebar.preset : null;
+  const presetLabels = { min:'🟢 最低', std:'🟡 标准', high:'🔴 高级', custom:'✏️ 自定义' };
+  const activeBadge = activePreset
+    ? '<span id="boq-preset-badge-'+id+'" style="font-size:11px;background:#f0fdf4;border:1px solid #86efac;border-radius:4px;padding:2px 6px;color:#15803d;margin-left:8px">'+(presetLabels[activePreset]||activePreset)+'</span>'
+    : '<span id="boq-preset-badge-'+id+'" style="font-size:11px;color:#94a3b8;margin-left:8px">未选择预设</span>';
+  function btnStyle(level){
+    var base='flex:1;min-height:44px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.85rem;';
+    var colors={ min:'background:#22c55e;color:#fff;', std:'background:#f59e0b;color:#fff;', high:'background:#ef4444;color:#fff;' };
+    var active = activePreset===level ? 'outline:3px solid #1e40af;outline-offset:2px;' : '';
+    return base+(colors[level]||'')+active;
+  }
   const newRow=document.createElement('tr');
-  newRow.id=`boq-rebar-cfg-${id}`;
-  newRow.innerHTML=`<td colspan="12"><div class="boq-rcfg-panel">
-    <div class="boq-rcfg-header">
-      <span>🔧 钢筋配置 Rebar Configuration — ${_esc(comp.name)}</span>
-      <button onclick="BOQ.toggleRebarCfg(${id})">✕ 关闭</button>
-    </div>
-    <div class="boq-rcfg-inputs">${_buildRebarCfgLayerInputsHTML(comp)}</div>
-    <div class="boq-rcfg-results" id="boq-rcfg-results-${id}"></div>
-    <div class="boq-rcfg-footer">
-      <div class="boq-rcfg-total" id="boq-rcfg-total-${id}">钢筋合计: —</div>
-      <button class="boq-btn-update" onclick="BOQ.applyRebarCfg(${id})">✅ 更新主表 Update Component</button>
-    </div>
-  </div></td>`;
+  newRow.id='boq-rebar-cfg-'+id;
+  newRow.innerHTML='<td colspan="12"><div class="boq-rcfg-panel">'
+    +'<div class="boq-rcfg-header">'
+    +'<span>🔧 钢筋配置 Rebar Configuration — '+_esc(comp.name)+activeBadge+'</span>'
+    +'<button onclick="BOQ.toggleRebarCfg('+id+')">✕ 关闭</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">'
+    +'<button id="boq-preset-btn-'+id+'-min" onclick="boqLoadPreset('+id+',\'min\')" style="'+btnStyle('min')+'">'
+    +'🟢 最低安全线<br><small style="font-weight:400;font-size:0.75rem;">Code Minimum</small></button>'
+    +'<button id="boq-preset-btn-'+id+'-std" onclick="boqLoadPreset('+id+',\'std\')" style="'+btnStyle('std')+'">'
+    +'🟡 标准推荐<br><small style="font-weight:400;font-size:0.75rem;">Standard</small></button>'
+    +'<button id="boq-preset-btn-'+id+'-high" onclick="boqLoadPreset('+id+',\'high\')" style="'+btnStyle('high')+'">'
+    +'🔴 高级保守<br><small style="font-weight:400;font-size:0.75rem;">Premium Safe</small></button>'
+    +'</div>'
+    +'<div style="font-size:0.75rem;color:#6b7280;margin-bottom:10px;">依据: EIT Thailand / ACI 318-19 / TIS 24-2548</div>'
+    +'<div class="boq-rcfg-inputs">'+_buildRebarCfgLayerInputsHTML(comp)+'</div>'
+    +'<div class="boq-rcfg-results" id="boq-rcfg-results-'+id+'"></div>'
+    +'<div class="boq-rcfg-footer">'
+    +'<div class="boq-rcfg-total" id="boq-rcfg-total-'+id+'">钢筋合计: —</div>'
+    +'<button class="boq-btn-update" onclick="BOQ.applyRebarCfg('+id+')">✅ 更新主表 Update Component</button>'
+    +'</div></div></td>';
   mainRow.insertAdjacentElement('afterend', newRow);
   boqRebarCfgRecalc(id);
 }
@@ -1151,7 +1271,19 @@ const BOQ = {
   },
   // 配筋内联面板
   toggleRebarCfg(id){ boqToggleRebarConfig(id); },
-  rebarCfgChange(id){ boqRebarCfgRecalc(id); },
+  rebarCfgChange(id){
+    var comp=STATE.components.find(function(x){ return x.id===id; });
+    if(comp && comp.rebar && comp.rebar.preset && comp.rebar.preset!=='custom'){
+      comp.rebar.preset='custom';
+      var badge=document.getElementById('boq-preset-badge-'+id);
+      if(badge){ badge.textContent='✏️ 自定义'; badge.style.color='#64748b'; badge.style.background='#f8fafc'; badge.style.borderColor='#e2e8f0'; }
+      ['min','std','high'].forEach(function(l){
+        var btn=document.getElementById('boq-preset-btn-'+id+'-'+l);
+        if(btn) btn.style.outline='none';
+      });
+    }
+    boqRebarCfgRecalc(id);
+  },
   applyRebarCfg(id) { boqApplyRebarCfg(id); },
   // 荷载计算公开API
   loadAddArea() {

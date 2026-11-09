@@ -407,3 +407,16 @@
   .boq-load-inputs { gap:8px; padding:10px; }
   .boq-load-result { font-size:11px; }
 }
+
+/* Preset buttons in ¸Ö½î modal toolbar */
+.boq-preset-btn {
+  flex: 1; min-width: 100px; min-height: 44px;
+  border: none; border-radius: 8px;
+  color: #fff; font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; line-height: 1.3; padding: 6px 4px;
+  transition: opacity 0.15s;
+}
+.boq-preset-min  { background: #22c55e; }
+.boq-preset-std  { background: #f59e0b; }
+.boq-preset-high { background: #ef4444; }
+.boq-preset-btn:hover { opacity: 0.85; }

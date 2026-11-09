@@ -287,11 +287,18 @@
                     <div><div class="boq-mtitle" id="boq-rebar-title">🔩 钢筋明细计算</div><div class="boq-msub" id="boq-rebar-sub"></div></div>
                     <button class="boq-mclose" onclick="BOQ.hideRebar()">✕</button>
                   </div>
-                  <div style="display:flex;gap:8px;padding:8px 14px;background:#fafafa;border-bottom:1px solid var(--border-color);flex-wrap:wrap;align-items:center">
-                    <button class="boq-btn-primary" onclick="BOQ.rbarLoad()">📋 加载建议配筋</button>
-                    <button class="boq-btn-primary" style="background:#16a34a" onclick="BOQ.rbarAdd()">＋ 添加钢筋</button>
-                    <button class="boq-btn-primary" style="background:#6b7280" onclick="BOQ.rbarClear()">🗑 清空</button>
-                    <span style="font-size:11px;color:#64748b;margin-left:auto" id="boq-rebar-tmpl-desc"></span>
+                  <div style="padding:8px 14px;background:#fafafa;border-bottom:1px solid var(--border-color);">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                      <button class="boq-preset-btn boq-preset-min" onclick="BOQ.rbarLoadPreset('min')">🟢 最低安全线<br><small>Code Min</small></button>
+                      <button class="boq-preset-btn boq-preset-std" onclick="BOQ.rbarLoadPreset('std')">🟡 标准推荐<br><small>Standard</small></button>
+                      <button class="boq-preset-btn boq-preset-high" onclick="BOQ.rbarLoadPreset('high')">🔴 高级保守<br><small>Premium</small></button>
+                      <button class="boq-btn-sm" onclick="BOQ.rbarClear()" style="min-height:44px;">🗑 清空</button>
+                    </div>
+                    <div style="font-size:0.72rem;color:#6b7280;margin-bottom:8px;">依据: EIT Thailand / ACI 318-19 / TIS 24-2548</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                      <button class="boq-btn-primary" style="background:#16a34a" onclick="BOQ.rbarAdd()">＋ 添加钢筋</button>
+                      <span style="font-size:11px;color:#64748b;margin-left:auto" id="boq-rebar-tmpl-desc"></span>
+                    </div>
                   </div>
                   <div style="overflow-x:auto;padding:0 4px">
                     <table class="boq-rebar-tbl">
@@ -375,7 +382,7 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
-    <script src="js/boq-engine.js?v=8"></script>
+    <script src="js/boq-engine.js?v=9"></script>
     <script>
       // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
       document.addEventListener('DOMContentLoaded', () => {

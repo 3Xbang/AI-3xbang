@@ -1323,6 +1323,73 @@ const BOQ = {
     _rbarRows=t.rows.map(r=>({...r,id:_rbarNid++})); _renderRebarTable();
     boqToast(`已加载建议配筋：${t.desc}`,'info');
   },
+  rbarLoadPreset(level) {
+      const comp = STATE.components.find(x => x.id === _rbarCompId);
+      if (!comp) return;
+
+      const typeMap = {
+          retainingWall: 'retainingWall', basementWall: 'retainingWall',
+          column: 'column', beam: 'beam', slab: 'slab', foundation: 'slab',
+      };
+      const presetKey = typeMap[comp.type];
+      if (!presetKey || !REBAR_PRESETS?.[presetKey]?.[level]) {
+          boqToast('该构件暂无此等级预设 / No preset for this type', 'info');
+          return;
+      }
+
+      if (_rbarRows.length && !confirm('将替换当前钢筋明细，确定吗？')) return;
+
+      const layers = REBAR_PRESETS[presetKey][level];
+      const L = _n(comp.L), W = _n(comp.W), H = _n(comp.H);
+      _rbarNid = _rbarNid || 1;
+
+      _rbarRows = layers.map(layer => {
+          const dia = layer.dia;
+          const uw = REBAR_UNIT_WEIGHT[dia] || (dia * dia / 162.27);
+          let count = layer.count || 0;
+          let length = 0;
+
+          if (layer.spacing) {
+              const isVertical = layer.name.includes('竖') || layer.name.includes('Vert');
+              const isHoriz    = layer.name.includes('水平') || layer.name.includes('Horiz') || layer.name.includes('水');
+              const isTie      = layer.name.includes('拉') || layer.name.includes('Tie');
+
+              if (isTie) {
+                  const sh = layer.spacingH || layer.spacing;
+                  const sv = layer.spacingV || layer.spacing;
+                  count = Math.ceil(L / (sh / 1000)) * Math.ceil(H / (sv / 1000));
+                  length = W - 0.05;
+              } else if (isVertical) {
+                  count = Math.ceil(L / (layer.spacing / 1000)) + 1;
+                  length = H + 0.3;
+              } else if (isHoriz) {
+                  count = Math.ceil(H / (layer.spacing / 1000)) + 1;
+                  length = L + 0.3;
+              } else {
+                  count = Math.ceil(L / (layer.spacing / 1000)) + 1;
+                  length = W + 0.15;
+              }
+          } else if (layer.count) {
+              count = layer.count;
+              length = L + 0.6;
+          }
+
+          count  = Math.max(1, Math.round(count));
+          length = Math.max(0.1, Math.round(length * 100) / 100);
+
+          return { id: _rbarNid++, name: layer.name, dia, lineWeight: uw, count, length, note: layer.note || '' };
+      });
+
+      _renderRebarTable();
+
+      ['min','std','high'].forEach(l => {
+          const btn = document.querySelector(`.boq-preset-${l}`);
+          if (btn) btn.style.opacity = l === level ? '1' : '0.55';
+      });
+
+      const labels = { min:'最低安全线', std:'标准推荐', high:'高级保守' };
+      boqToast(`已加载 ${labels[level]} 配筋 (${presetKey})`, 'info');
+  },
   rbarClear(){ if(!_rbarRows.length||confirm('确定清空？')){_rbarRows=[];_renderRebarTable();} },
   rbarApply(){
     const c=STATE.components.find(x=>x.id===_rbarCompId); if(!c) return;

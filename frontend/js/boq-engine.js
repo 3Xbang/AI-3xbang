@@ -1248,7 +1248,14 @@ function _openRebarModal(id){
   document.getElementById('boq-rebar-title').textContent=`🔩 钢筋明细 — ${c.name}`;
   document.getElementById('boq-rebar-sub').textContent=`${db.name||''} | L=${c.L}m W=${c.W}m H=${c.H}m ×${c.qty}件`;
   const tmpl=REBAR_TMPLS[c.type];
-  document.getElementById('boq-rebar-tmpl-desc').textContent=tmpl?`建议模板基于：${tmpl.desc}`:'';
+  // Show ACTUAL component dimensions, not fixed template reference
+  const wallDesc = c.type==='retainingWall'||c.type==='basementWall'
+    ? `${Math.round(_n(c.W)*1000)}mm厚墙，${c.L}m长，${c.H}m高，双层双向`
+    : `${c.type==='column'?`${Math.round(_n(c.W)*1000)}×${Math.round(_n(c.H)*1000)}mm，高${c.L}m`:
+       c.type==='beam'?`${Math.round(_n(c.W)*1000)}×${Math.round(_n(c.H)*1000)}mm，跨度${c.L}m`:
+       c.type==='slab'?`${Math.round(_n(c.H)*1000)}mm厚，${c.L}×${c.W}m`:
+       `L=${c.L}m W=${c.W}m H=${c.H}m`}`;
+  document.getElementById('boq-rebar-tmpl-desc').textContent = `计算基于你的实际尺寸：${wallDesc}`;
   _renderRebarTable();
   document.getElementById('boq-rebar-modal').classList.add('boq-open');
   document.body.style.overflow='hidden';

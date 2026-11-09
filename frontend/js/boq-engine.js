@@ -1279,6 +1279,7 @@ function _renderRebarTable(){
   const qty=_n(c?.qty,1), totalTon=+((total*qty)/1000).toFixed(4);
   const vol=c?.cVol||calcConcreteVol(_n(c?.L),_n(c?.W),_n(c?.H),qty);
   const effR=vol>0?(total/(vol/qty)).toFixed(1):'—';
+  const effRatio = vol>0 ? (total/(vol/qty)) : 0;  // numeric for ρ% calculation
   const _fl = window._boqFloors || 2;
   const _flMin = STEEL_SAFETY_BY_FLOOR[_fl] || STEEL_SAFETY_BY_FLOOR[2];
   const bl = (_flMin[c?.type]) || 0;

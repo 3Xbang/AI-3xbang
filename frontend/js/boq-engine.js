@@ -25,13 +25,26 @@ const SEISMIC_FACTORS = {
   '3':{ label:'三级', factor:1.00, desc:'三级抗震，系数×1.00（基准值）' },
   '4':{ label:'四级', factor:0.95, desc:'四级抗震，系数×0.95' },
 };
+// Universal minimum steel content for residential buildings ≤5 stories
+// Standard: ACI 318 / EIT Thailand / GB50010
+const STEEL_SAFETY_MIN = {
+  retainingWall:   160,  // kg/m³ — ACI 318 + seismic zone requirement
+  basementWall:    160,  // kg/m³
+  shearWall:       140,  // kg/m³ — ρ≥0.12% vertical + 0.20% horizontal
+  column:          160,  // kg/m³ — ρ≥1.0% longitudinal (ACI 318 §18.7.4)
+  beam:            130,  // kg/m³ — ρ≥0.36% (ACI 318 §9.6.1)
+  slab:            100,  // kg/m³ — ρ≥0.18% temperature/shrinkage (ACI 318 §24.4.3)
+  foundation:      120,  // kg/m³ — conservative footing minimum
+};
 const SAFETY_BASELINES = {
   steelRatio: {
-    retainingWall:{ min:130, warn:'挡土墙含钢量<130 kg/m³，低于安全底线（GB 50010）' },
-    column:       { min:100, warn:'框架柱含钢量<100 kg/m³，低于安全底线（GB 50010 第11章）' },
-    beam:         { min:80,  warn:'框架梁含钢量<80 kg/m³，低于安全底线（GB 50010 第6章）' },
-    slab:         { min:70,  warn:'楼板含钢量<70 kg/m³，低于安全底线（GB 50010 第7章）' },
-    foundation:   { min:50,  warn:'基础含钢量<50 kg/m³，低于安全底线（GB 50010 第8章）' },
+    retainingWall:{ min:STEEL_SAFETY_MIN.retainingWall, warn:`挡土墙含钢量<${STEEL_SAFETY_MIN.retainingWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    basementWall: { min:STEEL_SAFETY_MIN.basementWall,  warn:`地下室墙含钢量<${STEEL_SAFETY_MIN.basementWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    shearWall:    { min:STEEL_SAFETY_MIN.shearWall,     warn:`剪力墙含钢量<${STEEL_SAFETY_MIN.shearWall} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    column:       { min:STEEL_SAFETY_MIN.column,        warn:`框架柱含钢量<${STEEL_SAFETY_MIN.column} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    beam:         { min:STEEL_SAFETY_MIN.beam,          warn:`框架梁含钢量<${STEEL_SAFETY_MIN.beam} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    slab:         { min:STEEL_SAFETY_MIN.slab,          warn:`楼板含钢量<${STEEL_SAFETY_MIN.slab} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
+    foundation:   { min:STEEL_SAFETY_MIN.foundation,    warn:`基础含钢量<${STEEL_SAFETY_MIN.foundation} kg/m³，低于5层以下住宅最低标准 (ACI318/EIT) Below min for ≤5-storey residential` },
   },
   lossRate: {
     steel:   { min:1.5, warn:'钢筋损耗率<1.5%，低于定额标准（GB 50500）' },

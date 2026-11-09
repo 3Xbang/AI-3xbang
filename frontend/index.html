@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="css/site-board.css?v=33">
     <link rel="stylesheet" href="css/ui-v2.css?v=22">
     <link rel="stylesheet" href="css/mobile.css?v=6">
-    <link rel="stylesheet" href="css/boq-engine.css?v=2">
+    <link rel="stylesheet" href="css/boq-engine.css?v=3">
     <!-- CDN: ECharts + PapaParse for purchase audit -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -218,8 +218,43 @@
                 <div class="boq-breakdown"><h4>费用构成分析</h4><div id="boq-breakdown"></div></div>
               </div>
 
-              <!-- 规范依据 -->
-              <div class="boq-card">
+              <!-- 荷载计算 Load Calculation Section -->
+              <div class="boq-card" id="boq-load-section">
+                <div class="boq-card-head">
+                  <div>
+                    <h3>📊 荷载计算 Load Calculation</h3>
+                    <small>依据: กฎกระทรวงกำหนดมาตรฐาน (EIT Thailand) + ACI 318-19 §5.3.1 | U = 1.2D + 1.6L</small>
+                  </div>
+                  <button class="boq-btn-primary" onclick="BOQ.loadAddArea()">＋ 添加楼板区域 Add Area</button>
+                </div>
+
+                <!-- Input areas -->
+                <div id="boq-load-areas"></div>
+
+                <!-- Summary table -->
+                <div class="boq-load-summary" id="boq-load-summary" style="display:none">
+                  <h4 style="padding:12px 18px 4px;margin:0;font-size:13px;color:#374151">📋 荷载汇总 Load Summary</h4>
+                  <div class="boq-tbl-wrap">
+                    <table class="boq-tbl boq-load-tbl">
+                      <thead><tr>
+                        <th>区域 Area</th>
+                        <th class="boq-tr">面积 m²</th>
+                        <th class="boq-tr">恒荷载 DL<br><small>kg/m²</small></th>
+                        <th class="boq-tr">活荷载 LL<br><small>kg/m²</small></th>
+                        <th class="boq-tr">设计荷载<br><small>1.2D+1.6L kg/m²</small></th>
+                        <th class="boq-tr">总重 Total<br><small>kg</small></th>
+                      </tr></thead>
+                      <tbody id="boq-load-tbody"></tbody>
+                      <tfoot id="boq-load-tfoot"></tfoot>
+                    </table>
+                  </div>
+                  <div style="padding:8px 18px 14px;font-size:11px;color:#6b7280">
+                    标准依据: กฎกระทรวงกำหนดมาตรฐาน / EIT Thailand 活荷载 + ACI 318-19 §5.3.1 荷载组合 1.2D+1.6L
+                  </div>
+                </div>
+              </div>
+
+              <!-- 规范依据 -->              <div class="boq-card">
                 <div class="boq-card-head"><h3>📚 规范依据</h3></div>
                 <div class="boq-norm-grid">
                   <div class="boq-norm-item"><b>GB 50010-2010</b> 《混凝土结构设计规范》<br><span>含钢量底线 / 最小配筋率 / 保护层厚度</span></div>
@@ -338,7 +373,7 @@
     <script src="js/user-manager.js?v=108"></script>
     <script src="js/project-members.js?v=105"></script>
     <script src="js/task-assignment.js?v=103"></script>
-    <script src="js/boq-engine.js?v=5"></script>
+    <script src="js/boq-engine.js?v=6"></script>
     <script>
       // 钩入 app.showView，当切换到 BOQ 视图时初始化引擎
       document.addEventListener('DOMContentLoaded', () => {

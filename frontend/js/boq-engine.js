@@ -193,6 +193,45 @@ const COMP_DB = {
 };
 const COMP_TYPE_LIST = Object.values(COMP_DB).map(c=>({key:c.key,name:c.name}));
 
+// ──────────────────────────────────────────────────────────────
+// LOAD CALCULATION CONSTANTS
+// ──────────────────────────────────────────────────────────────
+
+// Live Loads — กฎกระทรวงกำหนดมาตรฐานในการบริหารจัดการอาคาร / EIT Thailand
+const LIVE_LOADS = {
+  residential:    200,  // kg/m² — ห้องพักอาศัย living/bedroom
+  corridor:       300,  // kg/m² — ทางเดิน/บันได corridor/stairs
+  balcony:        300,  // kg/m² — ระเบียง/เฉลียง balcony/terrace
+  roof_no_access:  75,  // kg/m² — หลังคาไม่ขึ้น inaccessible roof
+  roof_access:    150,  // kg/m² — หลังคาขึ้นได้ accessible roof/terrace
+  pool_area:      300,  // kg/m² — บริเวณสระว่ายน้ำ (plus water weight separately)
+};
+
+const LIVE_LOAD_LABELS = {
+  residential:    '住宅起居室 Residential (LL=200 kg/m²)',
+  corridor:       '走廊/楼梯 Corridor/Stairs (LL=300 kg/m²)',
+  balcony:        '阳台/露台 Balcony/Terrace (LL=300 kg/m²)',
+  roof_no_access: '不上人屋面 Inaccessible Roof (LL=75 kg/m²)',
+  roof_access:    '上人屋面 Accessible Roof (LL=150 kg/m²)',
+  pool_area:      '泳池区域 Pool Area (LL=300 kg/m²)',
+};
+
+// Dead Loads — physical material densities (ISO/physics constants)
+const MATERIAL_DENSITY = {
+  rc_concrete:    2400,  // kg/m³ — Reinforced concrete (ISO 6707-1)
+  plain_concrete: 2300,  // kg/m³ — Plain concrete (ISO 6707-1)
+  tiles_screed:    120,  // kg/m²  — Ceramic tiles 10mm + cement screed 40mm
+  plaster_both:     54,  // kg/m²  — 15mm plaster both faces (2×27 kg/m²)
+  brick_200mm:     380,  // kg/m²  — 200mm thick brick wall per m²
+  waterproof:       20,  // kg/m²  — Waterproofing membrane
+};
+
+// Load Combination Factors — ACI 318-19 §5.3.1 / Thailand adopted standard
+const LOAD_COMBO = {
+  Uf: { D: 1.2, L: 1.6 },  // U = 1.2D + 1.6L  (factored/ultimate)
+  Us: { D: 1.0, L: 1.0 },  // Service load (unfactored)
+};
+
 // ══════════════════════════════════════════════════════════════
 // 3. 钢筋计算数据 (rebarCalc)
 // ══════════════════════════════════════════════════════════════
@@ -440,11 +479,44 @@ function calcComp(comp,gs){
 }
 
 // ══════════════════════════════════════════════════════════════
+// 5b. 荷载计算引擎 (Load Calculation Engine)
+// ══════════════════════════════════════════════════════════════
+
+// Pure function: given a loadArea definition, returns per-m² and total load breakdown
+function calcLoadArea(area) {
+  const slabSelfWeight = (_n(area.slabThickMm) / 1000) * MATERIAL_DENSITY.rc_concrete;  // kg/m²
+  let finishDL = 0;
+  if (area.finishes.tilesScreed) finishDL += MATERIAL_DENSITY.tiles_screed;
+  if (area.finishes.plasterBoth) finishDL += MATERIAL_DENSITY.plaster_both;
+  if (area.finishes.waterproof)  finishDL += MATERIAL_DENSITY.waterproof;
+  const totalDL = slabSelfWeight + finishDL;
+  const liveLoad = LIVE_LOADS[area.useType] || LIVE_LOADS.residential;
+  const factoredLoad = LOAD_COMBO.Uf.D * totalDL + LOAD_COMBO.Uf.L * liveLoad;  // 1.2D + 1.6L
+  const areaM2 = _n(area.slabL) * _n(area.slabW);
+  const totalFactoredKg = factoredLoad * areaM2;
+  const totalFactoredKN = totalFactoredKg * 9.81 / 1000;
+  return { slabSelfWeight, finishDL, totalDL, liveLoad, factoredLoad, areaM2, totalFactoredKg, totalFactoredKN };
+}
+
+// ACI 318-19 §22.4.2.1 — simplified tied column capacity
+// φ=0.65 is absorbed into the 0.8 factor as a combined capacity estimate for initial screening
+// Pn = 0.8 × (0.85 × f'c × (Ag - As) + fy × As)
+function calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm, fyMPa) {
+  const Ag = colL_mm * colW_mm;  // mm²
+  const As = rebarCount * (Math.PI / 4) * rebarDiaMm * rebarDiaMm;  // mm²
+  const Pn_N = 0.8 * (0.85 * fPrimeMPa * (Ag - As) + fyMPa * As);  // N (MPa × mm² = N)
+  const kg = Pn_N / 9.81;
+  const kN = Pn_N / 1000;
+  return { Ag, As, Pn_N, kg, kN };
+}
+
+// ══════════════════════════════════════════════════════════════
 // 6. 状态管理 (State)
 // ══════════════════════════════════════════════════════════════
 const STATE = {
   global: {...DEFAULT_SETTINGS},
   components: [],
+  loadAreas: [],
   _nid: 1,
   projectId: null,
   projectName: '',
@@ -456,7 +528,7 @@ function _saveLS(){
   try{
     const proj=window.app?.currentProject;
     const key = proj?`boq_${proj.id}`:_STORAGE_KEY;
-    localStorage.setItem(key,JSON.stringify({global:STATE.global,components:STATE.components,_nid:STATE._nid}));
+    localStorage.setItem(key,JSON.stringify({global:STATE.global,components:STATE.components,loadAreas:STATE.loadAreas,_nid:STATE._nid}));
   }catch(e){}
 }
 
@@ -468,6 +540,7 @@ function _loadLS(){
     if(d){
       STATE.global={...DEFAULT_SETTINGS,...(d.global||{})};
       STATE.components=d.components||[];
+      STATE.loadAreas=d.loadAreas||[];
       STATE._nid=d._nid||1;
       return true;
     }
@@ -554,6 +627,7 @@ function _recalcRender(){
   _renderSummary(calc);
   const shown=new Set();
   calc.forEach(c=>(c.warns||[]).forEach(w=>{if(w.level==='error'&&!shown.has(w.message)){boqToast(w.message,'error');shown.add(w.message);}}));
+  _renderLoadAll();
   _autoSave();
 }
 
@@ -619,6 +693,163 @@ function _renderSummary(calc){
     {label:'🔩 钢筋',  cls:'boq-bar-s',min:T.steMin,max:T.steMax,p:pct(T.steMax)},
     {label:'🪵 模板',  cls:'boq-bar-f',min:T.fwMin, max:T.fwMax, p:pct(T.fwMax)},
   ].map(r=>`<div class="boq-bd-row"><div class="boq-bd-lbl">${r.label}</div><div class="boq-bd-bar"><div class="boq-bd-fill ${r.cls}" style="width:${r.p}%"></div></div><div class="boq-bd-val">${cur}${_fmt(r.min)}~${cur}${_fmt(r.max)} <span class="boq-bd-pct">(${r.p}%)</span></div></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 9b. 荷载计算渲染 (Load Calculation Render)
+// ══════════════════════════════════════════════════════════════
+
+function _buildLoadResultHTML(area, res) {
+  const label = LIVE_LOAD_LABELS[area.useType] || area.useType;
+  let s = '';
+  s += `<strong>${_esc(area.name)}: ${_n(area.slabL)}m \xD7 ${_n(area.slabW)}m = ${res.areaM2.toFixed(2)} m\xB2</strong>\n`;
+  s += `\u6052\u8377\u8F7D Dead Load:\n`;
+  s += `  \u697C\u677F\u81EA\u91CD: ${_n(area.slabThickMm)}mm \xD7 2400 kg/m\xB3 = ${res.slabSelfWeight.toFixed(1)} kg/m\xB2  [ISO 6707-1]\n`;
+  if (area.finishes.tilesScreed) s += `  \u74F7\u7816+\u627E\u5E73: 120 kg/m\xB2  [material density]\n`;
+  if (area.finishes.plasterBoth) s += `  \u53CC\u9762\u6284\u7070:   54 kg/m\xB2  [material density]\n`;
+  if (area.finishes.waterproof)  s += `  \u9632\u6C34\u5C42:      20 kg/m\xB2  [material density]\n`;
+  s += `  \u5C0F\u8BA1 DL: <strong>${res.totalDL.toFixed(1)} kg/m\xB2</strong>\n`;
+  s += `\u6D3B\u8377\u8F7D Live Load:\n`;
+  s += `  ${_esc(label)}: ${res.liveLoad} kg/m\xB2  [\u0E01\u0E0E\u0E01\u0E23\u0E30\u0E17\u0E23\u0E27\u0E07 / EIT Thailand]\n`;
+  s += `\u8BBE\u8BA1\u8377\u8F7D (1.2D + 1.6L)  [ACI 318-19 \xA75.3.1]:\n`;
+  s += `  = 1.2\xD7${res.totalDL.toFixed(1)} + 1.6\xD7${res.liveLoad}\n`;
+  s += `  = ${(LOAD_COMBO.Uf.D * res.totalDL).toFixed(1)} + ${(LOAD_COMBO.Uf.L * res.liveLoad).toFixed(1)} = <strong>${res.factoredLoad.toFixed(1)} kg/m\xB2</strong>\n`;
+  s += `\u603B\u8BBE\u8BA1\u8377\u8F7D: ${res.factoredLoad.toFixed(1)} kg/m\xB2 \xD7 ${res.areaM2.toFixed(2)} m\xB2 = <strong>${res.totalFactoredKg.toFixed(0)} kg = ${res.totalFactoredKN.toFixed(1)} kN</strong>`;
+
+  // Column capacity check
+  const columns = STATE.components.filter(c => c.type === 'column');
+  if (!columns.length) {
+    s += `\n\n<span class="boq-load-hint">\u8BF7\u5728\u6784\u4EF6\u5217\u8868\u4E2D\u6DFB\u52A0\u67F1\u89C4\u683C\u4EE5\u67E5\u770B\u67F1\u627F\u8F7D\u529B\u9A8C\u8BC1</span>`;
+  } else {
+    const N = columns.reduce((sum, c) => sum + (_n(c.qty) || 1), 0);
+    const perColKg = res.totalFactoredKg / (N || 1);
+    const col = columns[0];
+    const colL_mm = _n(col.L) * 1000;
+    const colW_mm = _n(col.W) * 1000;
+    const fPrimeMPa = CONCRETE_GRADE_VALS[STATE.global.concreteGrade] || 30;
+    let rebarCount = 8, rebarDiaMm = 16;
+    if (col.rebar && col.rebar.layers) {
+      const ll = col.rebar.layers.find(l => l.key === 'longitudinal');
+      if (ll) { rebarCount = parseInt(ll.count) || 8; rebarDiaMm = parseInt(ll.dia) || 16; }
+    }
+    const fyMPa = 400; // HRB400 / SD40T Thailand
+    const cap = calcColumnCapacity(colL_mm, colW_mm, fPrimeMPa, rebarCount, rebarDiaMm, fyMPa);
+    const ratio = perColKg > 0 ? cap.kg / perColKg : Infinity;
+    const ok = cap.kg >= perColKg;
+    s += `\n\n\u8377\u8F7D\u4F20\u9012 Load Path:\n`;
+    s += `\u82E5\u7531 ${N} \u6839\u67F1\u627F\u53D7\uFF08\u5747\u5300\u5206\u914D\uFF09:\n`;
+    s += `\u6BCF\u67F1\u627F\u53D7: ${perColKg.toFixed(0)} kg per column\n`;
+    s += `\n\u67F1\u627F\u8F7D\u529B\u9A8C\u8BC1\uFF08ACI 318-19 \xA722.4.2.1\uFF0C\u7CFB\u6570\u7EFC\u5408\u53960.8\uFF09:\n`;
+    s += `\u67F1\u622A\u9762 ${colL_mm}\xD7${colW_mm}mm\uFF0C${STATE.global.concreteGrade}\u6DF7\u51DD\u571F (f'c=${fPrimeMPa} MPa)\n`;
+    s += `Pn = 0.8 \xD7 (0.85\xD7${fPrimeMPa}\xD7(Ag-As) + fy\xD7As)\n`;
+    s += `As = ${rebarCount}-\u03C6${rebarDiaMm} = ${cap.As.toFixed(0)} mm\xB2\n`;
+    s += `Pn = ${cap.Pn_N.toFixed(0)} N = ${cap.kg.toFixed(0)} kg\n`;
+    s += `\u9A8C\u8BC1: ${perColKg.toFixed(0)} ${ok ? '<' : '>'} ${cap.kg.toFixed(0)} `;
+    s += ok
+      ? `<span class="boq-load-ok">\u2713 OK</span>`
+      : `<span class="boq-load-warn">\u2717 \u4E0D\u5B89\u5168!</span>`;
+    s += ` \u5B89\u5168\u7CFB\u6570 ${isFinite(ratio) ? ratio.toFixed(2) : '\u221E'}`;
+  }
+  return s;
+}
+
+function _renderLoadAreas() {
+  const container = document.getElementById('boq-load-areas');
+  if (!container) return;
+  if (!STATE.loadAreas.length) { container.innerHTML = ''; return; }
+
+  container.innerHTML = STATE.loadAreas.map(area => {
+    const res = calcLoadArea(area);
+    const useOpts = Object.keys(LIVE_LOADS).map(k =>
+      `<option value="${k}"${k === area.useType ? ' selected' : ''}>${_esc(LIVE_LOAD_LABELS[k])}</option>`
+    ).join('');
+    return `<div class="boq-load-area-card" id="boq-larea-${area.id}">
+      <div class="boq-load-area-header">
+        <input value="${_esc(area.name)}" class="boq-ti boq-ti-name" placeholder="\u533A\u57DF\u540D\u79F0 Area name"
+          oninput="BOQ.loadAreaChange(${area.id},'name',this.value)">
+        <button class="boq-btn-sm boq-btn-sm-red" onclick="BOQ.loadRemoveArea(${area.id})">\uD83D\uDDD1</button>
+      </div>
+      <div class="boq-load-inputs">
+        <div>
+          <span class="boq-load-label">\u957F L (m)</span>
+          <input type="number" class="boq-load-inp" value="${_n(area.slabL)}" min="0.1" step="0.1"
+            oninput="BOQ.loadAreaChange(${area.id},'slabL',this.value)">
+        </div>
+        <div>
+          <span class="boq-load-label">\u5BBD W (m)</span>
+          <input type="number" class="boq-load-inp" value="${_n(area.slabW)}" min="0.1" step="0.1"
+            oninput="BOQ.loadAreaChange(${area.id},'slabW',this.value)">
+        </div>
+        <div>
+          <span class="boq-load-label">\u677F\u539A Slab (mm)</span>
+          <input type="number" class="boq-load-inp" value="${_n(area.slabThickMm)}" min="80" step="10"
+            oninput="BOQ.loadAreaChange(${area.id},'slabThickMm',this.value)">
+        </div>
+        <div>
+          <span class="boq-load-label">\u4F7F\u7528\u7C7B\u578B Use Type</span>
+          <select class="boq-load-sel" onchange="BOQ.loadAreaChange(${area.id},'useType',this.value)">${useOpts}</select>
+        </div>
+        <div>
+          <span class="boq-load-label">\u9762\u5C42 Finishes</span>
+          <div class="boq-load-checks">
+            <label class="boq-load-check-item">
+              <input type="checkbox" ${area.finishes.tilesScreed ? 'checked' : ''}
+                onchange="BOQ.loadAreaChange(${area.id},'finishes.tilesScreed',this.checked)">
+              \u74F7\u7816+\u627E\u5E73 120 kg/m\xB2
+            </label>
+            <label class="boq-load-check-item">
+              <input type="checkbox" ${area.finishes.plasterBoth ? 'checked' : ''}
+                onchange="BOQ.loadAreaChange(${area.id},'finishes.plasterBoth',this.checked)">
+              \u53CC\u9762\u6284\u7070 54 kg/m\xB2
+            </label>
+            <label class="boq-load-check-item">
+              <input type="checkbox" ${area.finishes.waterproof ? 'checked' : ''}
+                onchange="BOQ.loadAreaChange(${area.id},'finishes.waterproof',this.checked)">
+              \u9632\u6C34\u5C42 20 kg/m\xB2
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="boq-load-result" id="boq-lresult-${area.id}">${_buildLoadResultHTML(area, res)}</div>
+    </div>`;
+  }).join('');
+}
+
+function _renderLoadSummary() {
+  const summary = document.getElementById('boq-load-summary');
+  if (!summary) return;
+  if (!STATE.loadAreas.length) { summary.style.display = 'none'; return; }
+  summary.style.display = '';
+  const tbody = document.getElementById('boq-load-tbody');
+  const tfoot = document.getElementById('boq-load-tfoot');
+  if (!tbody || !tfoot) return;
+  let totalArea = 0, totalKg = 0;
+  tbody.innerHTML = STATE.loadAreas.map(area => {
+    const res = calcLoadArea(area);
+    totalArea += res.areaM2;
+    totalKg += res.totalFactoredKg;
+    return `<tr>
+      <td>${_esc(area.name)}</td>
+      <td class="boq-tr">${res.areaM2.toFixed(2)}</td>
+      <td class="boq-tr">${res.totalDL.toFixed(1)}</td>
+      <td class="boq-tr">${res.liveLoad}</td>
+      <td class="boq-tr">${res.factoredLoad.toFixed(1)}</td>
+      <td class="boq-tr">${res.totalFactoredKg.toFixed(0)}</td>
+    </tr>`;
+  }).join('');
+  tfoot.innerHTML = `<tr style="font-weight:700;background:#f0fdf4">
+    <td>\u5408\u8BA1 Total</td>
+    <td class="boq-tr">${totalArea.toFixed(2)}</td>
+    <td class="boq-tr">\u2014</td>
+    <td class="boq-tr">\u2014</td>
+    <td class="boq-tr">\u2014</td>
+    <td class="boq-tr">${totalKg.toFixed(0)}</td>
+  </tr>`;
+}
+
+function _renderLoadAll() {
+  _renderLoadAreas();
+  _renderLoadSummary();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -919,6 +1150,42 @@ const BOQ = {
   toggleRebarCfg(id){ boqToggleRebarConfig(id); },
   rebarCfgChange(id){ boqRebarCfgRecalc(id); },
   applyRebarCfg(id) { boqApplyRebarCfg(id); },
+  // 荷载计算公开API
+  loadAddArea() {
+    const id = STATE.nextId();
+    STATE.loadAreas.push({
+      id,
+      name: `\u533A\u57DF-${id}`,
+      slabL: 5.0,
+      slabW: 4.0,
+      slabThickMm: 120,
+      useType: 'residential',
+      finishes: { tilesScreed: true, plasterBoth: true, waterproof: false },
+    });
+    _renderLoadAll();
+    _autoSave();
+  },
+  loadRemoveArea(id) {
+    STATE.loadAreas = STATE.loadAreas.filter(a => a.id !== id);
+    _renderLoadAll();
+    _autoSave();
+  },
+  loadAreaChange(id, field, val) {
+    const area = STATE.loadAreas.find(x => x.id === id);
+    if (!area) return;
+    if (field.startsWith('finishes.')) {
+      const key = field.slice(9);
+      area.finishes[key] = (val === true || val === 'true');
+    } else if (['slabL', 'slabW'].includes(field)) {
+      area[field] = parseFloat(val) || 0;
+    } else if (field === 'slabThickMm') {
+      area[field] = parseInt(val) || 120;
+    } else {
+      area[field] = val;
+    }
+    _renderLoadAll();
+    _autoSave();
+  },
 };
 
 window.BOQ = BOQ;

@@ -25,9 +25,24 @@ const SEISMIC_FACTORS = {
   '3':{ label:'三级', factor:1.00, desc:'三级抗震，系数×1.00（基准值）' },
   '4':{ label:'四级', factor:0.95, desc:'四级抗震，系数×0.95' },
 };
-// Universal minimum steel content for residential buildings ≤5 stories
-// Standard: ACI 318 / EIT Thailand / GB50010
-const STEEL_SAFETY_MIN = {
+// ── Minimum REINFORCEMENT RATIO ρ% (not kg/m³) — ACI 318-19 actual code values
+// ρ% = (steel_kg/m³ / 7850) × 100  →  steel_density = 7850 kg/m³ (ISO constant)
+// These are VOLUMETRIC ratios (total steel / concrete volume) for quick screening
+const STEEL_RATIO_MIN_PCT = {
+  // Source: ACI 318-19 §11.6.1 — both faces, vertical + horizontal
+  retainingWall:   0.35,  // % — total both directions, both faces
+  basementWall:    0.35,
+  shearWall:       0.40,  // % — ACI §11.6 with seismic consideration
+  // Source: ACI 318-19 §18.7.4.1 — longitudinal 1% + stirrups ~0.5%
+  column:          1.50,  // % — total (longitudinal + transverse combined)
+  // Source: ACI 318-19 §9.6.1.2 — longitudinal 0.33% + stirrups
+  beam:            0.80,  // % — total (longitudinal + transverse combined)
+  // Source: ACI 318-19 §24.4.3.2 — temperature/shrinkage 0.18%, structural higher
+  slab:            0.25,
+  foundation:      0.20,  // Source: ACI 318-19 §13.3.1
+};
+// Conversion helper: kg/m³ ↔ ρ%
+// ρ% = effRatio_kg_m3 / 78.50    (because 7850/100 = 78.50)
   retainingWall:   160,  // kg/m³ — ACI 318 + seismic zone requirement
   basementWall:    160,  // kg/m³
   shearWall:       140,  // kg/m³ — ρ≥0.12% vertical + 0.20% horizontal
@@ -525,12 +540,14 @@ function calcCostRange(cVol,fwArea,stWt,s){
 
 function validateComp(typeKey,ratio,gs){
   const w=[];
-  const floors = window._boqFloors || 2;
-  const minimums = STEEL_SAFETY_BY_FLOOR[floors] || STEEL_SAFETY_BY_FLOOR[2];
-  const minKgM3 = minimums[typeKey] || 100;
-  if (_n(ratio) < minKgM3) {
+  // ── Safety check: use reinforcement ratio ρ% (not kg/m³)
+  // ρ% = effRatio(kg/m³) / 78.50  (steel density 7850 kg/m³ ÷ 100)
+  // This correctly handles thin walls where kg/m³ is inherently low but ρ% can still be adequate
+  const rhoPct = _n(ratio) / 78.50;
+  const minRho = STEEL_RATIO_MIN_PCT[typeKey] || 0.25;
+  if (rhoPct < minRho) {
     const compName = COMP_DB[typeKey]?.shortName || typeKey;
-    w.push({field:'steelRatio', message:`${compName}含钢量<${minKgM3} kg/m³，低于${floors}层住宅最低标准 (ACI318/EIT) / Below ${floors}-storey min`, level:'error'});
+    w.push({field:'steelRatio', message:`${compName} 配筋率 ρ=${rhoPct.toFixed(2)}% < ${minRho}% (ACI 318-19 最低要求) / Below ACI min ρ`, level:'error'});
   }
   if(_n(gs.steelLossRate)<SAFETY_BASELINES.lossRate.steel.min)    w.push({field:'steelLoss',message:SAFETY_BASELINES.lossRate.steel.warn,level:'warning'});
   if(_n(gs.concreteLossRate)<SAFETY_BASELINES.lossRate.concrete.min) w.push({field:'concLoss',message:SAFETY_BASELINES.lossRate.concrete.warn,level:'warning'});
@@ -863,7 +880,10 @@ function _renderTable(calc){
   }
   tbody.innerHTML=calc.map(c=>{
     const db=COMP_DB[c.type]||{}, sf=SEISMIC_FACTORS[STATE.global.seismicLevel]||SEISMIC_FACTORS['3'];
-    const bl=SAFETY_BASELINES.steelRatio[c.type], ratioErr=bl&&(c.effRatio||0)<((STEEL_SAFETY_BY_FLOOR[window._boqFloors||2]||STEEL_SAFETY_BY_FLOOR[2])[c.type]||bl.min);
+    const bl=SAFETY_BASELINES.steelRatio[c.type];
+    const rhoPct = (c.effRatio||0) / 78.50;
+    const minRho = STEEL_RATIO_MIN_PCT?.[c.type] || 0.25;
+    const ratioErr = rhoPct < minRho;
     const cur=STATE.global.currency;
     const cMin=_fmt(c.cost?.total?.min), cMax=_fmt(c.cost?.total?.max);
     const tags=(c.mats||[]).map(m=>`<span class="boq-tag ${m.critical?'boq-tag-crit':'boq-tag-norm'}" title="${_esc(m.tooltip)}">${m.name} <b>${m.qty}</b>${m.unit}</span>`).join('');
@@ -1223,10 +1243,16 @@ function _renderRebarTable(){
   const _fl = window._boqFloors || 2;
   const _flMin = STEEL_SAFETY_BY_FLOOR[_fl] || STEEL_SAFETY_BY_FLOOR[2];
   const bl = (_flMin[c?.type]) || 0;
-  const rColor=effR!=='—'&&parseFloat(effR)<bl?'#dc2626':'#16a34a';
+  const rhoVal   = effRatio / 78.50;  // ρ% = kg/m³ ÷ 78.50
+  const compType = STATE.components.find(x=>x.id===_rbarCompId)?.type;
+  const minRho   = STEEL_RATIO_MIN_PCT?.[compType] || 0.25;
+  const rhoOk    = rhoVal >= minRho;
+  const rColor   = rhoOk ? '#16a34a' : '#dc2626';
   _setText('boq-rebar-total',`${total.toFixed(2)} kg`);
-  document.getElementById('boq-rebar-info').innerHTML=`折合含钢量: <b style="color:${rColor}">${effR} kg/m³</b>${bl?` (底线${bl})`:''}`;
-  _setText('boq-rebar-all-lbl',`全部合计（×${qty}件）`);
+  document.getElementById('boq-rebar-info').innerHTML =
+    `含钢量: <b>${effR === '—' ? '—' : effR + ' kg/m³'}</b>` +
+    (effRatio > 0 ? `　配筋率 ρ: <b style="color:${rColor}">${rhoVal.toFixed(2)}%</b> ` +
+    `${rhoOk ? '≥' : '<'}${minRho}% <span style="color:${rColor}">${rhoOk ? '✅ 达标' : '⚠️ 低于ACI最低要求'}</span>` : '');  _setText('boq-rebar-all-lbl',`全部合计（×${qty}件）`);
   _setText('boq-rebar-all',`${totalTon} ton (${(total*qty).toFixed(1)} kg)`);
 }
 
